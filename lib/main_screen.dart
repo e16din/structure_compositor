@@ -53,6 +53,8 @@ class _MainPageState extends State<MainPage> {
   Rect? _lastRect;
   String _title = 'Structure Compositor';
 
+  List<GlobalKey> elementsKeys = [];
+
   Widget _buildEditedLayoutWidget() {
     var selectedScreenBundle =
         appDataTree.selectedProject!.selectedScreenBundle;
@@ -137,6 +139,8 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     developer.log("build", name: 'debug');
 
+    elementsKeys.clear();
+
     var screenBundle = getScreenBundle();
     return Scaffold(
       appBar: AppBar(
@@ -191,8 +195,10 @@ class _MainPageState extends State<MainPage> {
                 ListView.builder(
                   itemCount: screenBundle?.elements.length,
                   itemBuilder: (BuildContext context, int index) {
-                    return _buildElementRow(
-                        screenBundle!.elements[index], index);
+                    var elementRow =
+                        _buildElementRow(screenBundle!.elements[index], index);
+                    elementsKeys.add(elementRow.key! as GlobalKey);
+                    return elementRow;
                   },
                 ),
             ])),
@@ -202,22 +208,77 @@ class _MainPageState extends State<MainPage> {
               color: Colors.yellow,
               child: Column(
                 children: [
-                  Draggable(
-                    feedback: FloatingActionButton(
-                      onPressed: () {},
-                      child: const Text("Listen Event"),
-                    ),
-                    onDragUpdate: _onDragUpdate(),
-                    child: FloatingActionButton(
-                      onPressed: () {},
-                      child: const Text("Listen Event"),
+                  Container(
+                    child: Draggable(
+                      feedback: FloatingActionButton(
+                        onPressed: () {},
+                        child: const Text(
+                          "Listen Event",
+                          style: TextStyle(fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      onDragUpdate: (details) {
+                        for (var i = 0; i < elementsKeys.length; i++) {
+                          var key = elementsKeys[i];
+                          RenderBox? box = key.currentContext
+                              ?.findRenderObject() as RenderBox?;
+
+                          if (box != null) {
+                            setState(() {
+                              final size1 = box.size;
+
+                              final position1 = box.localToGlobal(Offset.zero);
+                              final position2 = details.globalPosition;
+
+                              final collide = (position1.dx <
+                                      position2.dx + 4 &&
+                                  position1.dx + size1.width > position2.dx &&
+                                  position1.dy < position2.dy + 4 &&
+                                  position1.dy + size1.height > position2.dy);
+
+                              if (collide) {
+                                getScreenBundle()!.elements[i].isHovered = true;
+                                debugPrint("Got it! ${key}");
+                              } else {
+                                getScreenBundle()!.elements[i].isHovered =
+                                    false;
+                              }
+                            });
+                          }
+                        }
+                        // details.globalPosition
+                      },
+                      onDragEnd: (details) {
+                        setState(() {
+                          for (var element in getScreenBundle()!.elements) {
+                            element.isHovered = false;
+                          }
+                        });
+                      },
+                      child: FloatingActionButton(
+                        onPressed: () {},
+                        child: const Text(
+                          "Listen Event",
+                          style: TextStyle(fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                     ),
                   ),
-                  Draggable(
-                    feedback: FloatingActionButton(
-                        onPressed: () {}, child: const Text("Send Request")),
-                    child: FloatingActionButton(
-                        onPressed: () {}, child: const Text("Send Request")),
+                  Container(
+                    child: Draggable(
+                      feedback: FloatingActionButton(
+                          onPressed: () {},
+                          child: const Text("Send Request",
+                              style: TextStyle(fontSize: 12),
+                              textAlign: TextAlign.center)),
+                      child: FloatingActionButton(
+                          onPressed: () {},
+                          child: const Text("Send Request",
+                              style: TextStyle(fontSize: 12),
+                              textAlign: TextAlign.center)),
+                    ),
                   ),
                 ],
               )),
@@ -283,9 +344,11 @@ class _MainPageState extends State<MainPage> {
   ScreenElement? _activeElement;
 
   Widget _buildElementRow(ScreenElement element, int index) {
+    var color = element.isHovered ? Colors.blueAccent : element.color;
     return Container(
-      padding: const EdgeInsets.only(left: 8, top: 12, bottom: 12),
-      color: element.color,
+      key: GlobalKey(),
+      padding: const EdgeInsets.only(left: 8, top: 12, right: 8, bottom: 12),
+      color: color,
       child: Column(
         children: [
           Row(
@@ -346,15 +409,20 @@ class _MainPageState extends State<MainPage> {
             ],
           ),
           Container(
+            color: Colors.black.withAlpha(36),
               padding: const EdgeInsets.only(
                   left: 16, top: 8, right: 16, bottom: 12),
               child: TextFormField(
+                initialValue: element.taskText,
                 keyboardType: TextInputType.multiline,
                 textInputAction: TextInputAction.newline,
                 maxLength: 140,
                 minLines: 1,
                 maxLines: 7,
                 style: const TextStyle(color: Colors.white),
+                onChanged: (text) {
+                  element.taskText = text;
+                },
               ))
         ],
       ),

@@ -68,5 +68,7 @@ class ScreenElement {
   
   bool inEdit = false;
 
+  bool isHovered = false;
+
   ScreenElement(this.functionalArea, this.color, this.inEdit);
 }
