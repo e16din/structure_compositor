@@ -64,11 +64,23 @@ class ScreenElement {
   String? nameId;
   
   @HiveField(4)
-  String? taskText;
+  String? description;
+  
+  @HiveField(5)
+  List<CodeBlock> listeners = [];
   
   bool inEdit = false;
 
-  bool isHovered = false;
-
   ScreenElement(this.functionalArea, this.color, this.inEdit);
+}
+
+enum CodeType { action, listener }
+
+@HiveType(typeId: 3)
+class CodeBlock {
+  CodeType type;
+  String name;
+  Color color;
+
+  CodeBlock(this.name, this.type, this.color);
 }

@@ -4,6 +4,7 @@
 // import 'dart:math';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui';
 
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
@@ -20,10 +21,25 @@ int _nextColorPosition = 0;
 ScreenBundle? getScreenBundle() =>
     appDataTree.selectedProject?.selectedScreenBundle;
 
+var codeBlocks = [
+  // Listeners:
+  CodeBlock("onClick() { }", CodeType.listener, Colors.purple),
+  CodeBlock("onTextChanged() { }", CodeType.listener, Colors.purple),
+  CodeBlock("onItemSelected() { }", CodeType.listener, Colors.purple),
+  CodeBlock("onResponse() { }", CodeType.listener, Colors.purple),
+  CodeBlock("onDataChanged() { }", CodeType.listener, Colors.purple),
+  // Actions:
+  CodeBlock("sendRequest()", CodeType.action, Colors.green),
+  CodeBlock("updateWidget()", CodeType.action, Colors.green),
+  CodeBlock("openNextScreen()", CodeType.action, Colors.green),
+  CodeBlock("changeData()", CodeType.action, Colors.green),
+  CodeBlock("callFunction()", CodeType.action, Colors.green),
+];
+
 class MainScreen extends StatelessWidget {
   const MainScreen({Key? key}) : super(key: key);
 
-  // This widget is the root of your application.
+// This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -53,7 +69,15 @@ class _MainPageState extends State<MainPage> {
   Rect? _lastRect;
   String _title = 'Structure Compositor';
 
-  List<GlobalKey> elementsKeys = [];
+  ScreenElement? hoveredElement;
+
+  List<Widget> _buildCodeBlocksList() {
+    List<Widget> widgets = [];
+    for (var codeBlock in codeBlocks) {
+      widgets.add(_buildActionWidget(codeBlock));
+    }
+    return widgets;
+  }
 
   Widget _buildEditedLayoutWidget() {
     var selectedScreenBundle =
@@ -89,10 +113,10 @@ class _MainPageState extends State<MainPage> {
     );
 
     if (result != null) {
-      // _prefs.then((prefs) {
-      //   var string = base64.encode(_layoutBase64!.toList());
-      //   prefs.setString(KEY_LAYOUT_IMAGE, string);
-      // });
+// _prefs.then((prefs) {
+//   var string = base64.encode(_layoutBase64!.toList());
+//   prefs.setString(KEY_LAYOUT_IMAGE, string);
+// });
       var layoutBytes = result.files.single.bytes;
 
       ScreenBundle screenBundle = ScreenBundle(name: "New Screen");
@@ -125,21 +149,19 @@ class _MainPageState extends State<MainPage> {
     super.initState();
 
     _title = 'Structure Compositor: ${appDataTree.selectedProject?.name}';
-    // _prefs.then((prefs) {
-    //   var string = prefs.getString(KEY_LAYOUT_IMAGE);
-    //   if (prefs.containsKey(KEY_LAYOUT_IMAGE)) {
-    //     setState(() {
-    //       _selectedLayout = base64.decode(string!);
-    //     });
-    //   }
-    // });
+// _prefs.then((prefs) {
+//   var string = prefs.getString(KEY_LAYOUT_IMAGE);
+//   if (prefs.containsKey(KEY_LAYOUT_IMAGE)) {
+//     setState(() {
+//       _selectedLayout = base64.decode(string!);
+//     });
+//   }
+// });
   }
 
   @override
   Widget build(BuildContext context) {
     developer.log("build", name: 'debug');
-
-    elementsKeys.clear();
 
     var screenBundle = getScreenBundle();
     return Scaffold(
@@ -197,115 +219,41 @@ class _MainPageState extends State<MainPage> {
                   itemBuilder: (BuildContext context, int index) {
                     var elementRow =
                         _buildElementRow(screenBundle!.elements[index], index);
-                    elementsKeys.add(elementRow.key! as GlobalKey);
                     return elementRow;
                   },
                 ),
             ])),
         Expanded(
-          flex: 3,
+          flex: 5,
           child: Container(
               color: Colors.yellow,
               child: Column(
-                children: [
-                  Container(
-                    child: Draggable(
-                      feedback: FloatingActionButton(
-                        onPressed: () {},
-                        child: const Text(
-                          "Listen Event",
-                          style: TextStyle(fontSize: 12),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      onDragUpdate: (details) {
-                        for (var i = 0; i < elementsKeys.length; i++) {
-                          var key = elementsKeys[i];
-                          RenderBox? box = key.currentContext
-                              ?.findRenderObject() as RenderBox?;
-
-                          if (box != null) {
-                            setState(() {
-                              final size1 = box.size;
-
-                              final position1 = box.localToGlobal(Offset.zero);
-                              final position2 = details.globalPosition;
-
-                              final collide = (position1.dx <
-                                      position2.dx + 4 &&
-                                  position1.dx + size1.width > position2.dx &&
-                                  position1.dy < position2.dy + 4 &&
-                                  position1.dy + size1.height > position2.dy);
-
-                              if (collide) {
-                                getScreenBundle()!.elements[i].isHovered = true;
-                                debugPrint("Got it! ${key}");
-                              } else {
-                                getScreenBundle()!.elements[i].isHovered =
-                                    false;
-                              }
-                            });
-                          }
-                        }
-                        // details.globalPosition
-                      },
-                      onDragEnd: (details) {
-                        setState(() {
-                          for (var element in getScreenBundle()!.elements) {
-                            element.isHovered = false;
-                          }
-                        });
-                      },
-                      child: FloatingActionButton(
-                        onPressed: () {},
-                        child: const Text(
-                          "Listen Event",
-                          style: TextStyle(fontSize: 12),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Container(
-                    child: Draggable(
-                      feedback: FloatingActionButton(
-                          onPressed: () {},
-                          child: const Text("Send Request",
-                              style: TextStyle(fontSize: 12),
-                              textAlign: TextAlign.center)),
-                      child: FloatingActionButton(
-                          onPressed: () {},
-                          child: const Text("Send Request",
-                              style: TextStyle(fontSize: 12),
-                              textAlign: TextAlign.center)),
-                    ),
-                  ),
-                ],
+                children: _buildCodeBlocksList(),
               )),
         ),
         _buildEditedLayoutWidget()
-        // Shortcuts(// todo: add shortcut
-        //   shortcuts: <LogicalKeySet, Intent>{
-        //     LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyZ):
-        //     UndoShortcutIntent(),
-        //   },
-        //   child: Actions(
-        //     actions: <Type, Action<Intent>>{
-        //       UndoShortcutIntent: CallbackAction<UndoShortcutIntent>(
-        //           onInvoke: (UndoShortcutIntent intent) => {
-        //             if(_elements.isNotEmpty) {
-        //               setState(() {
-        //                 _elements.removeLast();
-        //               })
-        //             }
-        //           }),
-        //     },
-        //     child: Focus(
-        //         autofocus: true,
-        //         child:
-        //     ),
-        //   ),
-        // )
+// Shortcuts(// todo: add shortcut
+//   shortcuts: <LogicalKeySet, Intent>{
+//     LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyZ):
+//     UndoShortcutIntent(),
+//   },
+//   child: Actions(
+//     actions: <Type, Action<Intent>>{
+//       UndoShortcutIntent: CallbackAction<UndoShortcutIntent>(
+//           onInvoke: (UndoShortcutIntent intent) => {
+//             if(_elements.isNotEmpty) {
+//               setState(() {
+//                 _elements.removeLast();
+//               })
+//             }
+//           }),
+//     },
+//     child: Focus(
+//         autofocus: true,
+//         child:
+//     ),
+//   ),
+// )
         ,
       ]),
       floatingActionButton: FloatingActionButton(
@@ -314,6 +262,67 @@ class _MainPageState extends State<MainPage> {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  Container _buildActionWidget(CodeBlock codeBlock) {
+    return Container(
+      padding: const EdgeInsets.only(left: 8, right: 8, top: 16),
+      alignment: Alignment.topLeft,
+      child: Draggable(
+        feedback: FilledButton(
+            style: ButtonStyle(
+                backgroundColor: MaterialStateProperty.all(codeBlock.color)),
+            onPressed: () {},
+            child: Text(codeBlock.name,
+                style: const TextStyle(fontSize: 12),
+                textAlign: TextAlign.center)),
+        onDragEnd: (details) {
+          _onActionButtonMovingEnd(details, codeBlock, hoveredElement);
+        },
+        child: FilledButton(
+            style: ButtonStyle(
+                backgroundColor: MaterialStateProperty.all(codeBlock.color)),
+            onPressed: () {},
+            child: Text(codeBlock.name,
+                style: const TextStyle(fontSize: 12),
+                textAlign: TextAlign.center)),
+      ),
+    );
+  }
+
+  void _onActionButtonMovingEnd(
+      details, CodeBlock codeBlock, ScreenElement? element) {
+//     showDialog(
+//         context: context,
+//         builder: (BuildContext context) => AlertDialog(
+//               title: Text("${codeBlock.name}:"),
+// // content: _makeMenuWidget(items, context, dialogTitle),
+//             )).then((value) => {_resetElementsHoverState()});
+
+    setState(() {
+      element?.listeners.add(codeBlock);
+    });
+  }
+
+  Widget _makeMenuWidget(
+      List<String> items, BuildContext context, String dialogTitle) {
+    List<Widget> menuItems = [];
+    for (var value in items) {
+      menuItems.add(InkWell(
+        child: Container(
+            width: 240,
+            padding:
+                const EdgeInsets.only(top: 8, bottom: 8, left: 15, right: 17),
+            child: Text("-> $value")),
+        onTap: () {
+          Navigator.pop(context, dialogTitle);
+        },
+      ));
+    }
+    return Container(
+        alignment: Alignment.centerLeft,
+        height: items.length * 36,
+        child: Column(children: menuItems));
   }
 
   Widget _buildScreenItemRow(ScreenBundle screenBundle) {
@@ -344,89 +353,131 @@ class _MainPageState extends State<MainPage> {
   ScreenElement? _activeElement;
 
   Widget _buildElementRow(ScreenElement element, int index) {
-    var color = element.isHovered ? Colors.blueAccent : element.color;
     return Container(
-      key: GlobalKey(),
       padding: const EdgeInsets.only(left: 8, top: 12, right: 8, bottom: 12),
-      color: color,
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              Text("${index + 1}. "),
-              SizedBox(
-                  width: 140,
-                  child: TextFormField(
-                      initialValue:
-                          'element${getScreenBundle()!.elements.length}',
-                      decoration: const InputDecoration(labelText: "name(id)"),
-                      onChanged: (value) {
-                        _activeElement = element;
-                        _onElementNameChanged.call(value);
-                      })),
-              DropdownButton(
-                  value: element.functionType,
-                  items: FunctionType.values
-                      .map((type) => DropdownMenuItem<FunctionType>(
-                            value: type,
-                            child: Text(type.name),
-                          ))
-                      .toList(),
-                  onTap: () {
-                    _activeElement = element;
+      decoration: BoxDecoration(
+          color: element.color,
+          border: Border.all(
+            width: 2,
+              color: hoveredElement == element
+                  ? Colors.blue.withAlpha(166)
+                  : element.color)),
+      child: InkWell(
+        onTap: () {
+          // need to onHover
+        },
+        onHover: (hovered) {
+          if (hovered) {
+            if (hoveredElement != element) {
+              setState(() {
+                hoveredElement = element;
+              });
+            }
+          } else {
+            setState(() {
+              hoveredElement = null;
+            });
+          }
+        },
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Text("${index + 1}. "),
+                SizedBox(
+                    width: 140,
+                    child: TextFormField(
+                        initialValue:
+                            'element${getScreenBundle()!.elements.length}',
+                        decoration:
+                            const InputDecoration(labelText: "name(id)"),
+                        onChanged: (value) {
+                          _activeElement = element;
+                          _onElementNameChanged.call(value);
+                        })),
+                DropdownButton(
+                    value: element.functionType,
+                    items: FunctionType.values
+                        .map((type) => DropdownMenuItem<FunctionType>(
+                              value: type,
+                              child: Text(type.name),
+                            ))
+                        .toList(),
+                    onTap: () {
+                      _activeElement = element;
+                    },
+                    onChanged: _onElementTypeChanged),
+                Column(
+                  children: [
+                    IconButton(
+// alignment: Alignment.topRight,
+                        icon: const Icon(Icons.close),
+                        onPressed: () {
+                          setState(() {
+                            if (_nextColorPosition > 0) {
+                              _nextColorPosition -= 1;
+                            }
+                            getScreenBundle()!.elements.remove(element);
+                          });
+                        }),
+                    IconButton(
+// alignment: Alignment.topRight,
+                        icon: const Icon(
+                          Icons.alt_route_rounded,
+                          color: Colors.white,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            if (_nextColorPosition > 0) {
+                              _nextColorPosition -= 1;
+                            }
+                            getScreenBundle()!.elements.remove(element);
+                          });
+                        }),
+                  ],
+                )
+              ],
+            ),
+            Container(
+                color: Colors.black.withAlpha(36),
+                padding: const EdgeInsets.only(
+                    left: 16, top: 8, right: 16, bottom: 12),
+                child: TextFormField(
+                  decoration: const InputDecoration(labelText: "Description"),
+                  initialValue: element.description,
+                  keyboardType: TextInputType.multiline,
+                  textInputAction: TextInputAction.newline,
+                  maxLength: 140,
+                  minLines: 1,
+                  maxLines: 7,
+                  style: const TextStyle(color: Colors.white),
+                  onChanged: (text) {
+                    element.description = text;
                   },
-                  onChanged: _onElementTypeChanged),
-              Column(
-                children: [
-                  IconButton(
-                      // alignment: Alignment.topRight,
-                      icon: const Icon(Icons.close),
-                      onPressed: () {
-                        setState(() {
-                          if (_nextColorPosition > 0) {
-                            _nextColorPosition -= 1;
-                          }
-                          getScreenBundle()!.elements.remove(element);
-                        });
-                      }),
-                  IconButton(
-                      // alignment: Alignment.topRight,
-                      icon: const Icon(
-                        Icons.alt_route_rounded,
-                        color: Colors.white,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          if (_nextColorPosition > 0) {
-                            _nextColorPosition -= 1;
-                          }
-                          getScreenBundle()!.elements.remove(element);
-                        });
-                      }),
-                ],
-              )
-            ],
-          ),
-          Container(
-            color: Colors.black.withAlpha(36),
-              padding: const EdgeInsets.only(
-                  left: 16, top: 8, right: 16, bottom: 12),
-              child: TextFormField(
-                initialValue: element.taskText,
-                keyboardType: TextInputType.multiline,
-                textInputAction: TextInputAction.newline,
-                maxLength: 140,
-                minLines: 1,
-                maxLines: 7,
-                style: const TextStyle(color: Colors.white),
-                onChanged: (text) {
-                  element.taskText = text;
-                },
-              ))
-        ],
+                )),
+            Container(
+              child: _buildCodeActionsWidgets(element),
+            )
+          ],
+        ),
       ),
     );
+  }
+
+  Widget _buildCodeActionsWidgets(ScreenElement screenElement) {
+    List<Widget> widgets = [];
+
+    for (var codeBlock in screenElement.listeners) {
+      widgets.add(Container(
+          alignment: Alignment.topLeft,
+          padding:
+              const EdgeInsets.only(left: 42, right: 16, top: 12, bottom: 8),
+          child: TextFormField(
+              decoration: InputDecoration(labelText: codeBlock.name))));
+    }
+
+    return Column(children: widgets);
   }
 
   void _onPointerDown(PointerDownEvent event) {
@@ -446,8 +497,8 @@ class _MainPageState extends State<MainPage> {
   }
 
   void _onPointerUp(PointerUpEvent event) {
-    // debugPrint(
-    //     "left: ${_elements.last.functionalArea.left.floor()} right: ${_elements.last.functionalArea.right.floor()} top: ${_elements.last.functionalArea.top.floor()} bottom: ${_elements.last.functionalArea.bottom.floor()}");
+// debugPrint(
+//     "left: ${_elements.last.functionalArea.left.floor()} right: ${_elements.last.functionalArea.right.floor()} top: ${_elements.last.functionalArea.top.floor()} bottom: ${_elements.last.functionalArea.bottom.floor()}");
     var area = getScreenBundle()!.elements.last.functionalArea;
     if (area.left.floor() == area.right.floor() &&
         area.top.floor() == area.bottom.floor()) {
@@ -455,10 +506,10 @@ class _MainPageState extends State<MainPage> {
         getScreenBundle()!.elements.removeLast();
       });
     } else {
-      // todo: save data to db
+// todo: save data to db
       _prefs.then((prefs) {
-        // var elements = _elements.to.encode(_layoutBase64!.toList());
-        // prefs.setStringList(KEY_ELEMENTS, string);
+// var elements = _elements.to.encode(_layoutBase64!.toList());
+// prefs.setStringList(KEY_ELEMENTS, string);
       });
     }
 
@@ -509,11 +560,9 @@ class _MainPageState extends State<MainPage> {
   }
 }
 
-_onDragUpdate() {}
-
 class ElementPainter extends CustomPainter {
   @override
-  void paint(Canvas canvas, Size size) {
+  void paint(Canvas canvas, Size size) async {
     var paint = Paint()..style = PaintingStyle.stroke;
     getScreenBundle()?.elements.forEach((element) {
       paint.strokeWidth = element.inEdit ? 2 : 5;
@@ -529,5 +578,5 @@ class ElementPainter extends CustomPainter {
 }
 
 class UndoShortcutIntent extends Intent {
-  // final String name;
+// final String name;
 }
