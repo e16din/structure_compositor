@@ -3,11 +3,11 @@
 // import 'dart:ffi';
 // import 'dart:math';
 import 'dart:io';
-import 'dart:typed_data';
-import 'dart:ui';
+import 'dart:ui' as ui;
 
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer' as developer;
@@ -88,8 +88,12 @@ class _MainPageState extends State<MainPage> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.memory(selectedScreenBundle!.layoutBytes!,
-                  fit: BoxFit.fitHeight),
+              RepaintBoundary(
+                key: screenImageKey,
+                child: Image.memory(
+                    selectedScreenBundle!.layoutBytes!,
+                    fit: BoxFit.contain),
+              ),
               Listener(
                   onPointerDown: _onPointerDown,
                   onPointerUp: _onPointerUp,
@@ -304,27 +308,6 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
-  Widget _makeMenuWidget(
-      List<String> items, BuildContext context, String dialogTitle) {
-    List<Widget> menuItems = [];
-    for (var value in items) {
-      menuItems.add(InkWell(
-        child: Container(
-            width: 240,
-            padding:
-                const EdgeInsets.only(top: 8, bottom: 8, left: 15, right: 17),
-            child: Text("-> $value")),
-        onTap: () {
-          Navigator.pop(context, dialogTitle);
-        },
-      ));
-    }
-    return Container(
-        alignment: Alignment.centerLeft,
-        height: items.length * 36,
-        child: Column(children: menuItems));
-  }
-
   Widget _buildScreenItemRow(ScreenBundle screenBundle) {
     bool isSelected =
         appDataTree.selectedProject!.selectedScreenBundle == screenBundle;
@@ -343,7 +326,7 @@ class _MainPageState extends State<MainPage> {
           width: 24,
         ),
         if (screenBundle.layoutBytes != null)
-          Image.memory(screenBundle.layoutBytes!, fit: BoxFit.cover)
+          Image.memory(screenBundle.layoutBytes!, fit: BoxFit.contain)
         else
           const Icon(Icons.ad_units)
       ]),
@@ -358,7 +341,7 @@ class _MainPageState extends State<MainPage> {
       decoration: BoxDecoration(
           color: element.color,
           border: Border.all(
-            width: 2,
+              width: 2,
               color: hoveredElement == element
                   ? Colors.blue.withAlpha(166)
                   : element.color)),
@@ -428,12 +411,7 @@ class _MainPageState extends State<MainPage> {
                           color: Colors.white,
                         ),
                         onPressed: () {
-                          setState(() {
-                            if (_nextColorPosition > 0) {
-                              _nextColorPosition -= 1;
-                            }
-                            getScreenBundle()!.elements.remove(element);
-                          });
+                          _onExtendScreenPressed(element);
                         }),
                   ],
                 )
@@ -463,6 +441,17 @@ class _MainPageState extends State<MainPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _onExtendScreenPressed(ScreenElement screenElement) async {
+    var layoutBytes = await _takeElementImage(screenElement);
+    ScreenBundle screenBundle = ScreenBundle(name: "New Screen");
+    screenBundle.layoutBytes = layoutBytes;
+
+    setState(() {
+      appDataTree.selectedProject!.selectedScreenBundle = screenBundle;
+      appDataTree.selectedProject!.screenBundles.add(screenBundle);
+    });
   }
 
   Widget _buildCodeActionsWidgets(ScreenElement screenElement) {
@@ -557,6 +546,31 @@ class _MainPageState extends State<MainPage> {
     String path = await FileSaver.instance
         .saveFile(name: "Test.xml", bytes: structure_project_bytes);
     debugPrint("temp!: $path");
+  }
+
+  GlobalKey screenImageKey = GlobalKey();
+
+  Future<Uint8List> _takeElementImage(ScreenElement screenElement) async {
+    RenderRepaintBoundary screenImageWidget = screenImageKey.currentContext!
+        .findRenderObject() as RenderRepaintBoundary;
+    var image = await screenImageWidget.toImage();
+    // ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    // Uint8List bytesList = byteData!.buffer.asUint8List();
+
+    var pictureRecorder = ui.PictureRecorder();
+    var canvas = Canvas(pictureRecorder);
+    var paint = Paint();
+    paint.isAntiAlias = true;
+    Rect funcArea = screenElement.functionalArea;
+    canvas.drawImage(image, Offset(-funcArea.left, -funcArea.top), paint);
+    canvas.clipRect(funcArea);
+    var pic = pictureRecorder.endRecording();
+
+    ui.Image img = await pic.toImage(funcArea.width.toInt(), funcArea.height.toInt());
+    var byteDataN = await img.toByteData(format: ui.ImageByteFormat.rawUnmodified);
+    var resultList = byteDataN!.buffer.asUint8List();
+
+    return resultList;
   }
 }
 
