@@ -1,5 +1,3 @@
-
-
 import 'dart:typed_data';
 import 'dart:ui';
 
@@ -50,25 +48,24 @@ enum FunctionType { LookAt, ClickOn, SelectFrom, TypeIn }
 
 @HiveType(typeId: 3)
 class ScreenElement {
-  
   @HiveField(0)
   late Rect functionalArea;
-  
+
   @HiveField(1)
   late Color color;
-  
+
   @HiveField(2)
   FunctionType functionType = FunctionType.LookAt;
-  
+
   @HiveField(3)
   String? nameId;
-  
+
   @HiveField(4)
   String? description;
-  
+
   @HiveField(5)
   List<CodeBlock> listeners = [];
-  
+
   bool inEdit = false;
 
   ScreenElement(this.functionalArea, this.color, this.inEdit);
@@ -82,5 +79,27 @@ class CodeBlock {
   String name;
   Color color;
 
+  List<CodeBlock> actions = [];
+  String description = "";
+
   CodeBlock(this.name, this.type, this.color);
+
+  CodeBlock copyStub() {
+    return CodeBlock(name, type, color)
+      ..actions = []
+      ..description = "";
+  }
+}
+
+class OpenNextScreenBlock extends CodeBlock {
+  ScreenBundle? nextScreenBundle;
+
+  OpenNextScreenBlock(super.name, super.type, super.color);
+
+  OpenNextScreenBlock copyStubWith(ScreenBundle nextScreenBundle) {
+    return OpenNextScreenBlock(name, type, color)
+      ..nextScreenBundle = nextScreenBundle
+      ..actions = []
+      ..description = "";
+  }
 }

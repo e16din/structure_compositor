@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer' as developer;
 import 'package:file_picker/file_picker.dart';
+import 'package:structure_compositor/widget_utils.dart';
 
 import 'data_classes.dart';
 import 'main.dart';
@@ -26,12 +27,13 @@ var codeBlocks = [
   CodeBlock("onClick() { }", CodeType.listener, Colors.purple),
   CodeBlock("onTextChanged() { }", CodeType.listener, Colors.purple),
   CodeBlock("onItemSelected() { }", CodeType.listener, Colors.purple),
+  CodeBlock("onTimerTick() { }", CodeType.listener, Colors.purple),
   CodeBlock("onResponse() { }", CodeType.listener, Colors.purple),
   CodeBlock("onDataChanged() { }", CodeType.listener, Colors.purple),
   // Actions:
   CodeBlock("sendRequest()", CodeType.action, Colors.green),
   CodeBlock("updateWidget()", CodeType.action, Colors.green),
-  CodeBlock("openNextScreen()", CodeType.action, Colors.green),
+  OpenNextScreenBlock("openNextScreen()", CodeType.action, Colors.green),
   CodeBlock("changeData()", CodeType.action, Colors.green),
   CodeBlock("callFunction()", CodeType.action, Colors.green),
 ];
@@ -70,8 +72,9 @@ class _MainPageState extends State<MainPage> {
   String _title = 'Structure Compositor';
 
   ScreenElement? hoveredElement;
+  CodeBlock? hoveredCodeBlock;
 
-  List<Widget> _buildCodeBlocksList() {
+  List<Widget> _buildDraggableActionsList() {
     List<Widget> widgets = [];
     for (var codeBlock in codeBlocks) {
       widgets.add(_buildActionWidget(codeBlock));
@@ -90,8 +93,7 @@ class _MainPageState extends State<MainPage> {
             children: [
               RepaintBoundary(
                 key: screenImageKey,
-                child: Image.memory(
-                    selectedScreenBundle!.layoutBytes!,
+                child: Image.memory(selectedScreenBundle!.layoutBytes!,
                     fit: BoxFit.contain),
               ),
               Listener(
@@ -110,7 +112,7 @@ class _MainPageState extends State<MainPage> {
     }
   }
 
-  Future<void> _onPickAddPressed() async {
+  Future<void> _onAddScreenPressed() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['jpg', 'png'],
@@ -123,7 +125,8 @@ class _MainPageState extends State<MainPage> {
 // });
       var layoutBytes = result.files.single.bytes;
 
-      ScreenBundle screenBundle = ScreenBundle(name: "New Screen");
+      int index = appDataTree.selectedProject!.screenBundles.length;
+      ScreenBundle screenBundle = ScreenBundle(name: "New Screen ${index + 1}");
 
       if (layoutBytes != null) {
         screenBundle.layoutBytes = layoutBytes;
@@ -191,7 +194,7 @@ class _MainPageState extends State<MainPage> {
                 var screenBundle =
                     appDataTree.selectedProject!.screenBundles[index];
                 return InkWell(
-                  child: _buildScreenItemRow(screenBundle),
+                  child: _buildScreenBundleItemRow(index, screenBundle),
                   onTap: () {
                     setState(
                       () {
@@ -204,13 +207,23 @@ class _MainPageState extends State<MainPage> {
               },
             ),
             Container(
-                padding: const EdgeInsets.all(28),
+                padding: const EdgeInsets.all(16),
                 alignment: Alignment.bottomCenter,
-                child: FilledButton(
-                    onPressed: () {
-                      _generateCode();
-                    },
-                    child: const Text("Generate Code")))
+                child: Row(
+                  children: [
+                    FilledButton(
+                        onPressed: () {
+                          _generateCode();
+                        },
+                        child: const Text("Generate Code")),
+                    Container(width: 12, height: 1,),
+                    FilledButton(
+                        onPressed: () {
+                          // open demo
+                        },
+                        child: const Text("Run Demo")),
+                  ],
+                ))
           ]),
         ),
         Expanded(
@@ -232,7 +245,7 @@ class _MainPageState extends State<MainPage> {
           child: Container(
               color: Colors.yellow,
               child: Column(
-                children: _buildCodeBlocksList(),
+                children: _buildDraggableActionsList(),
               )),
         ),
         _buildEditedLayoutWidget()
@@ -261,7 +274,7 @@ class _MainPageState extends State<MainPage> {
         ,
       ]),
       floatingActionButton: FloatingActionButton(
-        onPressed: _onPickAddPressed,
+        onPressed: _onAddScreenPressed,
         tooltip: 'Add layout image',
         child: const Icon(Icons.add),
       ),
@@ -296,19 +309,50 @@ class _MainPageState extends State<MainPage> {
 
   void _onActionButtonMovingEnd(
       details, CodeBlock codeBlock, ScreenElement? element) {
-//     showDialog(
-//         context: context,
-//         builder: (BuildContext context) => AlertDialog(
-//               title: Text("${codeBlock.name}:"),
-// // content: _makeMenuWidget(items, context, dialogTitle),
-//             )).then((value) => {_resetElementsHoverState()});
-
     setState(() {
-      element?.listeners.add(codeBlock);
+      if (hoveredCodeBlock == null) {
+        element?.listeners.add(codeBlock.copyStub());
+      } else {
+        var screenBundles = appDataTree.selectedProject!.screenBundles;
+        if (codeBlock is OpenNextScreenBlock && screenBundles.isNotEmpty) {
+          var hoveredCodeBlockHolder = hoveredCodeBlock!;
+          selectScreen(screenBundles, codeBlock, hoveredCodeBlockHolder,
+              (selected) {
+            setState(() {
+              var copyStubWith = codeBlock.copyStubWith(selected);
+              hoveredCodeBlockHolder.actions.add(copyStubWith);
+            });
+          });
+        } else {
+          hoveredCodeBlock?.actions.add(codeBlock.copyStub());
+        }
+      }
     });
   }
 
-  Widget _buildScreenItemRow(ScreenBundle screenBundle) {
+  void selectScreen(
+      List<ScreenBundle> screenBundles,
+      OpenNextScreenBlock codeBlock,
+      CodeBlock hoveredCodeBlock,
+      Function(dynamic) onItemSelected) {
+    Map<String, dynamic> itemsMap = {};
+    for (var screen in screenBundles) {
+      itemsMap.putIfAbsent(screen.name, () => screen);
+    }
+
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          var dialogTitle = "Select screen:";
+          return AlertDialog(
+            title: Text(dialogTitle),
+            content:
+                makeMenuWidget(itemsMap, context, dialogTitle, onItemSelected),
+          );
+        }).then((value) => {_resetHoveredBlocks()});
+  }
+
+  Widget _buildScreenBundleItemRow(int index, ScreenBundle screenBundle) {
     bool isSelected =
         appDataTree.selectedProject!.selectedScreenBundle == screenBundle;
     return Container(
@@ -319,7 +363,10 @@ class _MainPageState extends State<MainPage> {
         Expanded(
           child: TextFormField(
             initialValue: screenBundle.name,
-            decoration: const InputDecoration(labelText: "Screen Name"),
+            decoration: const InputDecoration(labelText: "Screen Name:"),
+            onChanged: (text) {
+              screenBundle.name = text;
+            },
           ),
         ),
         Container(
@@ -357,9 +404,7 @@ class _MainPageState extends State<MainPage> {
               });
             }
           } else {
-            setState(() {
-              hoveredElement = null;
-            });
+            _resetHoveredBlocks();
           }
         },
         child: Column(
@@ -443,9 +488,17 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
+  void _resetHoveredBlocks() {
+    setState(() {
+      hoveredElement = null;
+      hoveredCodeBlock = null;
+    });
+  }
+
   Future<void> _onExtendScreenPressed(ScreenElement screenElement) async {
     var layoutBytes = await _takeElementImage(screenElement);
-    ScreenBundle screenBundle = ScreenBundle(name: "New Screen");
+    int index = appDataTree.selectedProject!.screenBundles.length;
+    ScreenBundle screenBundle = ScreenBundle(name: "New Screen ${index + 1}");
     screenBundle.layoutBytes = layoutBytes;
 
     setState(() {
@@ -455,18 +508,113 @@ class _MainPageState extends State<MainPage> {
   }
 
   Widget _buildCodeActionsWidgets(ScreenElement screenElement) {
-    List<Widget> widgets = [];
+    List<Widget> listeners = [];
 
-    for (var codeBlock in screenElement.listeners) {
-      widgets.add(Container(
-          alignment: Alignment.topLeft,
-          padding:
-              const EdgeInsets.only(left: 42, right: 16, top: 12, bottom: 8),
-          child: TextFormField(
-              decoration: InputDecoration(labelText: codeBlock.name))));
+    for (var listenerBlock in screenElement.listeners) {
+      List<Widget> actions = [
+        TextFormField(
+            decoration: InputDecoration(labelText: listenerBlock.name))
+      ];
+      for (var actionBlock in listenerBlock.actions) {
+        if (actionBlock is OpenNextScreenBlock) {
+          var actionContainer = Container(
+              alignment: Alignment.topLeft,
+              padding: const EdgeInsets.only(
+                  left: 42 + 36, right: 16, top: 12, bottom: 8),
+              child: Column(
+                children: [
+                  TextFormField(
+                      decoration: InputDecoration(labelText: actionBlock.name)),
+                  if (actionBlock.nextScreenBundle == null)
+                    IconButton(
+                        icon: const Icon(Icons.add),
+                        onPressed: () {
+                          var screenBundles =
+                              appDataTree.selectedProject!.screenBundles;
+                          if (screenBundles.isNotEmpty) {
+                            selectScreen(
+                                screenBundles, actionBlock, listenerBlock,
+                                (selected) {
+                              setState(() {
+                                actionBlock.nextScreenBundle = selected;
+                              });
+                            });
+                          }
+                        })
+                ],
+              ));
+          actions.add(actionContainer);
+
+          if (actionBlock.nextScreenBundle != null) {
+            actions.add(Container(
+                alignment: Alignment.topLeft,
+                padding: const EdgeInsets.only(
+                    left: 42 + 36, right: 16, top: 12, bottom: 8),
+                child: Row(
+                  children: [
+                    FilledButton(
+                      style: FilledButton.styleFrom(backgroundColor: Colors.black12),
+                        onPressed: () {
+                          // do nothing
+                        },
+                        child: Text(actionBlock.nextScreenBundle!.name)),
+                    IconButton(
+// alignment: Alignment.topRight,
+                        icon: const Icon(Icons.close),
+                        onPressed: () {
+                          setState(() {
+                            actionBlock.nextScreenBundle = null;
+                          });
+                        })
+                  ],
+                )));
+          }
+        } else {
+          var actionContainer = Container(
+              alignment: Alignment.topLeft,
+              padding: const EdgeInsets.only(
+                  left: 42 + 36, right: 16, top: 12, bottom: 8),
+              child: TextFormField(
+                  decoration: InputDecoration(labelText: actionBlock.name)));
+          actions.add(actionContainer);
+        }
+      }
+
+      var listenerContainer = InkWell(
+        onTap: () {
+          // need to onHover
+        },
+        onHover: (hovered) {
+          if (hovered) {
+            if (hoveredCodeBlock != listenerBlock) {
+              setState(() {
+                hoveredCodeBlock = listenerBlock;
+              });
+            }
+          } else {
+            setState(() {
+              hoveredCodeBlock = null;
+            });
+          }
+        },
+        child: Container(
+            decoration: BoxDecoration(
+                border: Border.all(
+                    color: hoveredCodeBlock == listenerBlock
+                        ? Colors.black
+                        : screenElement.color,
+                    width: 2)),
+            alignment: Alignment.topLeft,
+            padding:
+                const EdgeInsets.only(left: 42, right: 16, top: 12, bottom: 8),
+            child: Column(
+              children: actions,
+            )),
+      );
+      listeners.add(listenerContainer);
     }
 
-    return Column(children: widgets);
+    return Column(children: listeners);
   }
 
   void _onPointerDown(PointerDownEvent event) {
@@ -566,8 +714,10 @@ class _MainPageState extends State<MainPage> {
     canvas.clipRect(funcArea);
     var pic = pictureRecorder.endRecording();
 
-    ui.Image img = await pic.toImage(funcArea.width.toInt(), funcArea.height.toInt());
-    var byteDataN = await img.toByteData(format: ui.ImageByteFormat.rawUnmodified);
+    ui.Image img =
+        await pic.toImage(funcArea.width.toInt(), funcArea.height.toInt());
+    var byteDataN =
+        await img.toByteData(format: ui.ImageByteFormat.rawUnmodified);
     var resultList = byteDataN!.buffer.asUint8List();
 
     return resultList;
