@@ -1,6 +1,8 @@
 PODS:
   - file_saver (0.0.1):
     - FlutterMacOS
+  - file_selector_macos (0.0.1):
+    - FlutterMacOS
   - FlutterMacOS (1.0.0)
   - path_provider_foundation (0.0.1):
     - Flutter
@@ -13,6 +15,7 @@ PODS:
 
 DEPENDENCIES:
   - file_saver (from `Flutter/ephemeral/.symlinks/plugins/file_saver/macos`)
+  - file_selector_macos (from `Flutter/ephemeral/.symlinks/plugins/file_selector_macos/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
   - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
   - shared_preferences_foundation (from `Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin`)
@@ -21,6 +24,8 @@ DEPENDENCIES:
 EXTERNAL SOURCES:
   file_saver:
     :path: Flutter/ephemeral/.symlinks/plugins/file_saver/macos
+  file_selector_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/file_selector_macos/macos
   FlutterMacOS:
     :path: Flutter/ephemeral
   path_provider_foundation:
@@ -32,6 +37,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   file_saver: 44e6fbf666677faf097302460e214e977fdd977b
+  file_selector_macos: 0f85c1108e2fd597b58246bc0b0c1cb483d7593b
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
   path_provider_foundation: eaf5b3e458fc0e5fbb9940fb09980e853fe058b8
   shared_preferences_foundation: e2dae3258e06f44cc55f49d42024fd8dd03c590c

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'data_classes.dart';
+
 //     showDialog(
 //         context: context,
 //         builder: (BuildContext context) => AlertDialog(
@@ -28,4 +30,26 @@ Widget makeMenuWidget(Map<String, dynamic> itemsMap, BuildContext context,
       alignment: Alignment.centerLeft,
       height: itemsMap.length * 36,
       child: Column(children: menuItems));
+}
+
+
+class ElementPainter extends CustomPainter {
+  List<ScreenElement> elements = [];
+
+  ElementPainter(this.elements);
+
+  @override
+  void paint(Canvas canvas, Size size) async {
+    var paint = Paint()..style = PaintingStyle.stroke;
+    for (var element in elements) {
+      paint.strokeWidth = element.inEdit ? 2 : 5;
+      paint.color = element.inEdit ? Colors.black : element.color;
+      canvas.drawRect(element.functionalArea, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true;
+  }
 }

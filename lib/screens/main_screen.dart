@@ -12,15 +12,14 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer' as developer;
 import 'package:file_picker/file_picker.dart';
-import 'package:structure_compositor/widget_utils.dart';
+import 'package:structure_compositor/screens/demo_screen.dart';
 
-import 'data_classes.dart';
-import 'main.dart';
+import '../box/app_utils.dart';
+import '../box/data_classes.dart';
+import '../box/widget_utils.dart';
+import 'start_screen.dart';
 
 int _nextColorPosition = 0;
-
-ScreenBundle? getScreenBundle() =>
-    appDataTree.selectedProject?.selectedScreenBundle;
 
 var codeBlocks = [
   // Listeners:
@@ -53,8 +52,6 @@ class MainScreen extends StatelessWidget {
   }
 }
 
-// todo: добавить вкладки для нескольких макетов
-// todo: сохранять последние открытые вкладки/ восстанавливать их при загрузке
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
 
@@ -73,83 +70,6 @@ class _MainPageState extends State<MainPage> {
 
   ScreenElement? hoveredElement;
   CodeBlock? hoveredCodeBlock;
-
-  List<Widget> _buildDraggableActionsList() {
-    List<Widget> widgets = [];
-    for (var codeBlock in codeBlocks) {
-      widgets.add(_buildActionWidget(codeBlock));
-    }
-    return widgets;
-  }
-
-  Widget _buildEditedLayoutWidget() {
-    var selectedScreenBundle =
-        appDataTree.selectedProject!.selectedScreenBundle;
-    if (selectedScreenBundle?.layoutBytes != null) {
-      return Expanded(
-          flex: 16,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              RepaintBoundary(
-                key: screenImageKey,
-                child: Image.memory(selectedScreenBundle!.layoutBytes!,
-                    fit: BoxFit.contain),
-              ),
-              Listener(
-                  onPointerDown: _onPointerDown,
-                  onPointerUp: _onPointerUp,
-                  onPointerMove: _onPointerMove,
-                  child: MouseRegion(
-                      cursor: SystemMouseCursors.precise,
-                      child: CustomPaint(
-                        painter: ElementPainter(),
-                      )))
-            ],
-          ));
-    } else {
-      return Expanded(flex: 16, child: Container(color: Colors.white));
-    }
-  }
-
-  Future<void> _onAddScreenPressed() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['jpg', 'png'],
-    );
-
-    if (result != null) {
-// _prefs.then((prefs) {
-//   var string = base64.encode(_layoutBase64!.toList());
-//   prefs.setString(KEY_LAYOUT_IMAGE, string);
-// });
-      var layoutBytes = result.files.single.bytes;
-
-      int index = appDataTree.selectedProject!.screenBundles.length;
-      ScreenBundle screenBundle = ScreenBundle(name: "New Screen ${index + 1}");
-
-      if (layoutBytes != null) {
-        screenBundle.layoutBytes = layoutBytes;
-      } else if (result.files.single.path != null) {
-        screenBundle.layoutBytes =
-            await _readFileByte(result.files.single.path!);
-      }
-
-      setState(() {
-        appDataTree.selectedProject!.selectedScreenBundle = screenBundle;
-        appDataTree.selectedProject!.screenBundles.add(screenBundle);
-      });
-    }
-  }
-
-  Future<Uint8List> _readFileByte(String filePath) async {
-    File audioFile = File(filePath);
-    Uint8List? bytes;
-    await audioFile.readAsBytes().then((value) {
-      bytes = Uint8List.fromList(value);
-    });
-    return bytes!;
-  }
 
   @override
   void initState() {
@@ -219,7 +139,13 @@ class _MainPageState extends State<MainPage> {
                     Container(width: 12, height: 1,),
                     FilledButton(
                         onPressed: () {
-                          // open demo
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) {
+                              var screen = appDataTree.selectedProject!.screenBundles.first;
+                              return DemoScreen(screen);
+                            }),
+                          );
                         },
                         child: const Text("Run Demo")),
                   ],
@@ -279,6 +205,83 @@ class _MainPageState extends State<MainPage> {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  List<Widget> _buildDraggableActionsList() {
+    List<Widget> widgets = [];
+    for (var codeBlock in codeBlocks) {
+      widgets.add(_buildActionWidget(codeBlock));
+    }
+    return widgets;
+  }
+
+  Widget _buildEditedLayoutWidget() {
+    var selectedScreenBundle =
+        appDataTree.selectedProject!.selectedScreenBundle;
+    if (selectedScreenBundle?.layoutBytes != null) {
+      return Expanded(
+          flex: 16,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              RepaintBoundary(
+                key: screenImageKey,
+                child: Image.memory(selectedScreenBundle!.layoutBytes!,
+                    fit: BoxFit.contain),
+              ),
+              Listener(
+                  onPointerDown: _onPointerDown,
+                  onPointerUp: _onPointerUp,
+                  onPointerMove: _onPointerMove,
+                  child: MouseRegion(
+                      cursor: SystemMouseCursors.precise,
+                      child: CustomPaint(
+                        painter: ElementPainter(getScreenBundle()!.elements),
+                      )))
+            ],
+          ));
+    } else {
+      return Expanded(flex: 16, child: Container(color: Colors.white));
+    }
+  }
+
+  Future<void> _onAddScreenPressed() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'png'],
+    );
+
+    if (result != null) {
+// _prefs.then((prefs) {
+//   var string = base64.encode(_layoutBase64!.toList());
+//   prefs.setString(KEY_LAYOUT_IMAGE, string);
+// });
+      var layoutBytes = result.files.single.bytes;
+
+      int index = appDataTree.selectedProject!.screenBundles.length;
+      ScreenBundle screenBundle = ScreenBundle(name: "New Screen ${index + 1}");
+
+      if (layoutBytes != null) {
+        screenBundle.layoutBytes = layoutBytes;
+      } else if (result.files.single.path != null) {
+        screenBundle.layoutBytes =
+        await _readFileByte(result.files.single.path!);
+      }
+
+      setState(() {
+        appDataTree.selectedProject!.selectedScreenBundle = screenBundle;
+        appDataTree.selectedProject!.screenBundles.add(screenBundle);
+      });
+    }
+  }
+
+  Future<Uint8List> _readFileByte(String filePath) async {
+    File audioFile = File(filePath);
+    Uint8List? bytes;
+    await audioFile.readAsBytes().then((value) {
+      bytes = Uint8List.fromList(value);
+    });
+    return bytes!;
   }
 
   Container _buildActionWidget(CodeBlock codeBlock) {
@@ -721,23 +724,6 @@ class _MainPageState extends State<MainPage> {
     var resultList = byteDataN!.buffer.asUint8List();
 
     return resultList;
-  }
-}
-
-class ElementPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) async {
-    var paint = Paint()..style = PaintingStyle.stroke;
-    getScreenBundle()?.elements.forEach((element) {
-      paint.strokeWidth = element.inEdit ? 2 : 5;
-      paint.color = element.inEdit ? Colors.black : element.color;
-      canvas.drawRect(element.functionalArea, paint);
-    });
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true;
   }
 }
 
