@@ -41,7 +41,7 @@ class ScreenBundle {
   @HiveField(2)
   List<ScreenElement> elements = <ScreenElement>[];
 
-  ScreenBundle({required this.name});
+  ScreenBundle(this.name);
 }
 
 enum FunctionType { LookAt, ClickOn, SelectFrom, TypeIn }
@@ -101,5 +101,24 @@ class OpenNextScreenBlock extends CodeBlock {
       ..nextScreenBundle = nextScreenBundle
       ..actions = []
       ..description = "";
+  }
+}
+
+class LifecycleEventBlock extends CodeBlock {
+  var events = [
+    "onCreate() { }",
+    "onStart() { }",
+    "onResume() { }",
+    "onPause() { }",
+    "onStop() { }",
+  ];
+
+  late String selectedEvent;
+
+  LifecycleEventBlock(super.name, super.type, super.color);
+
+  LifecycleEventBlock copyStubWith(String selectedEvent) {
+    return LifecycleEventBlock(name, type, color)
+      ..selectedEvent = selectedEvent;
   }
 }

@@ -55,36 +55,39 @@ class _DemoPageState extends State<DemoPage> {
         body: Row(
           children: [
             Expanded(
-                flex: 16,
+                flex: 15,
                 child: Container(
-                  child: Column(children: [
-                    BackButton(onPressed: () {
-                      screensHistory.removeLast();
-                      if (screensHistory.isNotEmpty) {
-                        setState(() {
-                          demoScreen = screensHistory.last;
-                        });
-                      } else {
-                        Get.back();
-                      }
-                    })
+                  child: Stack(children: [
+                    Container(
+                      alignment: Alignment.topLeft,
+                      child: BackButton(onPressed: () {
+                        screensHistory.removeLast();
+                        if (screensHistory.isNotEmpty) {
+                          setState(() {
+                            demoScreen = screensHistory.last;
+                          });
+                        } else {
+                          Get.back();
+                        }
+                      }),
+                    )
                   ]),
                 )),
-            Expanded(
-              flex: 16,
-              child: Listener(
-                  // onPointerDown: _onPointerUp,
-                  onPointerUp: _onPointerUp,
-                  // onPointerMove: _onPointerUp,
-                  child: MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: Stack(children: [
-                        Image.memory(demoScreen.layoutBytes!,
-                            fit: BoxFit.contain),
-                        CustomPaint(
+            Container(
+              width: SCREEN_IMAGE_WIDTH,
+              child: Stack(fit: StackFit.expand,
+                  children: [
+                Image.memory(demoScreen.layoutBytes!, fit: BoxFit.contain),
+                Listener(
+                    // onPointerDown: _onPointerUp,
+                    onPointerUp: _onPointerUp,
+                    // onPointerMove: _onPointerUp,
+                    child: MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: CustomPaint(
                           painter: ElementPainter(demoScreen.elements),
-                        )
-                      ]))),
+                        )))
+              ]),
             ),
             Expanded(flex: 16, child: Container()),
           ],

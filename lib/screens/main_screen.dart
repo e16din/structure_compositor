@@ -18,11 +18,13 @@ import 'package:structure_compositor/screens/demo_screen.dart';
 import '../box/app_utils.dart';
 import '../box/data_classes.dart';
 import '../box/widget_utils.dart';
-import 'start_screen.dart';
 
 int _nextColorPosition = 0;
 
 var codeBlocks = [
+  // Lifecycle Listeners
+  LifecycleEventBlock("onLifecycleEvent() { }", CodeType.listener,
+      Colors.purple.withOpacity(0.7)),
   // Listeners:
   CodeBlock("onClick() { }", CodeType.listener, Colors.purple),
   CodeBlock("onTextChanged() { }", CodeType.listener, Colors.purple),
@@ -30,6 +32,7 @@ var codeBlocks = [
   CodeBlock("onTimerTick() { }", CodeType.listener, Colors.purple),
   CodeBlock("onResponse() { }", CodeType.listener, Colors.purple),
   CodeBlock("onDataChanged() { }", CodeType.listener, Colors.purple),
+
   // Actions:
   CodeBlock("sendRequest()", CodeType.action, Colors.green),
   CodeBlock("updateWidget()", CodeType.action, Colors.green),
@@ -101,31 +104,34 @@ class _MainPageState extends State<MainPage> {
           width: 280,
           color: Colors.amber,
           child: Stack(children: [
-            ListView.separated(
-              separatorBuilder: (context, index) => const Divider(
-                height: 1,
-                indent: 16,
-                endIndent: 24,
+            Container(
+              padding: const EdgeInsets.only(bottom: 110),
+              child: ListView.separated(
+                separatorBuilder: (context, index) => const Divider(
+                  height: 1,
+                  indent: 16,
+                  endIndent: 24,
+                ),
+                scrollDirection: Axis.vertical,
+                itemCount: (appDataTree.selectedProject != null
+                    ? appDataTree.selectedProject?.screenBundles.length
+                    : 0)!,
+                itemBuilder: (BuildContext context, int index) {
+                  var screenBundle =
+                      appDataTree.selectedProject!.screenBundles[index];
+                  return InkWell(
+                    child: _buildScreenBundleRow(index, screenBundle),
+                    onTap: () {
+                      setState(
+                        () {
+                          appDataTree.selectedProject!.selectedScreenBundle =
+                              screenBundle;
+                        },
+                      );
+                    },
+                  );
+                },
               ),
-              scrollDirection: Axis.vertical,
-              itemCount: (appDataTree.selectedProject != null
-                  ? appDataTree.selectedProject?.screenBundles.length
-                  : 0)!,
-              itemBuilder: (BuildContext context, int index) {
-                var screenBundle =
-                    appDataTree.selectedProject!.screenBundles[index];
-                return InkWell(
-                  child: _buildScreenBundleItemRow(index, screenBundle),
-                  onTap: () {
-                    setState(
-                      () {
-                        appDataTree.selectedProject!.selectedScreenBundle =
-                            screenBundle;
-                      },
-                    );
-                  },
-                );
-              },
             ),
             Container(
                 padding: const EdgeInsets.all(16),
@@ -137,7 +143,10 @@ class _MainPageState extends State<MainPage> {
                           _generateCode();
                         },
                         child: const Text("Generate Code")),
-                    Container(width: 12, height: 1,),
+                    Container(
+                      width: 12,
+                      height: 1,
+                    ),
                     FilledButton(
                         onPressed: () {
                           _runDemo();
@@ -161,38 +170,16 @@ class _MainPageState extends State<MainPage> {
                   },
                 ),
             ])),
-        Expanded(
-          flex: 5,
-          child: Container(
-              color: Colors.yellow,
+        Container(
+            width: 180,
+            color: Colors.yellow,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 280),
               child: Column(
                 children: _buildDraggableActionsList(),
-              )),
-        ),
-        _buildEditedLayoutWidget()
-// Shortcuts(// todo: add shortcut
-//   shortcuts: <LogicalKeySet, Intent>{
-//     LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyZ):
-//     UndoShortcutIntent(),
-//   },
-//   child: Actions(
-//     actions: <Type, Action<Intent>>{
-//       UndoShortcutIntent: CallbackAction<UndoShortcutIntent>(
-//           onInvoke: (UndoShortcutIntent intent) => {
-//             if(_elements.isNotEmpty) {
-//               setState(() {
-//                 _elements.removeLast();
-//               })
-//             }
-//           }),
-//     },
-//     child: Focus(
-//         autofocus: true,
-//         child:
-//     ),
-//   ),
-// )
-        ,
+              ),
+            )),
+        _buildEditedLayoutWidget(),
       ]),
       floatingActionButton: FloatingActionButton(
         onPressed: _onAddScreenPressed,
@@ -204,7 +191,7 @@ class _MainPageState extends State<MainPage> {
 
   void _runDemo() {
     var demoScreen = appDataTree.selectedProject!.screenBundles.first;
-    Get.to(()=> DemoScreen(demoScreen));
+    Get.to(() => DemoScreen(demoScreen));
     print("Demo Done!!!!");
   }
 
@@ -220,8 +207,8 @@ class _MainPageState extends State<MainPage> {
     var selectedScreenBundle =
         appDataTree.selectedProject!.selectedScreenBundle;
     if (selectedScreenBundle?.layoutBytes != null) {
-      return Expanded(
-          flex: 16,
+      return Container(
+          width: SCREEN_IMAGE_WIDTH,
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -260,13 +247,13 @@ class _MainPageState extends State<MainPage> {
       var layoutBytes = result.files.single.bytes;
 
       int index = appDataTree.selectedProject!.screenBundles.length;
-      ScreenBundle screenBundle = ScreenBundle(name: "New Screen ${index + 1}");
+      ScreenBundle screenBundle = ScreenBundle("New Screen ${index + 1}");
 
       if (layoutBytes != null) {
         screenBundle.layoutBytes = layoutBytes;
       } else if (result.files.single.path != null) {
         screenBundle.layoutBytes =
-        await _readFileByte(result.files.single.path!);
+            await _readFileByte(result.files.single.path!);
       }
 
       setState(() {
@@ -287,7 +274,7 @@ class _MainPageState extends State<MainPage> {
 
   Container _buildActionWidget(CodeBlock codeBlock) {
     return Container(
-      padding: const EdgeInsets.only(left: 8, right: 8, top: 16),
+      padding: const EdgeInsets.only(left: 18, right: 8, top: 16),
       alignment: Alignment.topLeft,
       child: Draggable(
         feedback: FilledButton(
@@ -313,25 +300,48 @@ class _MainPageState extends State<MainPage> {
 
   void _onActionButtonMovingEnd(
       details, CodeBlock codeBlock, ScreenElement? element) {
-    setState(() {
-      if (hoveredCodeBlock == null) {
-        element?.listeners.add(codeBlock.copyStub());
-      } else {
-        var screenBundles = appDataTree.selectedProject!.screenBundles;
-        if (codeBlock is OpenNextScreenBlock && screenBundles.isNotEmpty) {
-          var hoveredCodeBlockHolder = hoveredCodeBlock!;
-          selectScreen(screenBundles, codeBlock, hoveredCodeBlockHolder,
-              (selected) {
-            setState(() {
-              var copyStubWith = codeBlock.copyStubWith(selected);
-              hoveredCodeBlockHolder.actions.add(copyStubWith);
-            });
-          });
-        } else {
-          hoveredCodeBlock?.actions.add(codeBlock.copyStub());
+    if (hoveredCodeBlock == null) {
+      if (codeBlock is LifecycleEventBlock) {
+        var itemsMap = <String, String>{};
+        for (var event in codeBlock.events) {
+          itemsMap.putIfAbsent(event, () => event);
         }
+        showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              var dialogTitle = "Select lifecycle event:";
+              return AlertDialog(
+                title: Text(dialogTitle),
+                content:
+                    makeMenuWidget(itemsMap, context, dialogTitle, (selected) {
+                  setState(() {
+                    element?.listeners.add(codeBlock.copyStubWith(selected));
+                  });
+                }),
+              );
+            });
+      } else {
+        setState(() {
+          element?.listeners.add(codeBlock.copyStub());
+        });
       }
-    });
+    } else {
+      var screenBundles = appDataTree.selectedProject!.screenBundles;
+      if (codeBlock is OpenNextScreenBlock && screenBundles.isNotEmpty) {
+        var hoveredCodeBlockHolder = hoveredCodeBlock!;
+        selectScreen(screenBundles, codeBlock, hoveredCodeBlockHolder,
+            (selected) {
+          setState(() {
+            var copyStubWith = codeBlock.copyStubWith(selected);
+            hoveredCodeBlockHolder.actions.add(copyStubWith);
+          });
+        });
+      } else {
+        setState(() {
+          hoveredCodeBlock?.actions.add(codeBlock.copyStub());
+        });
+      }
+    }
   }
 
   void selectScreen(
@@ -356,30 +366,52 @@ class _MainPageState extends State<MainPage> {
         }).then((value) => {_resetHoveredBlocks()});
   }
 
-  Widget _buildScreenBundleItemRow(int index, ScreenBundle screenBundle) {
-    bool isSelected =
-        appDataTree.selectedProject!.selectedScreenBundle == screenBundle;
+  Widget _buildScreenBundleRow(int index, ScreenBundle screenBundle) {
+    var selectedProject = appDataTree.selectedProject;
+    bool isSelected = selectedProject!.selectedScreenBundle == screenBundle;
     return Container(
-      height: 96,
+      height: 108,
       color: isSelected ? Colors.deepOrangeAccent : Colors.transparent,
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 21),
-      child: Row(mainAxisAlignment: MainAxisAlignment.start, children: [
-        Expanded(
-          child: TextFormField(
-            initialValue: screenBundle.name,
-            decoration: const InputDecoration(labelText: "Screen Name:"),
-            onChanged: (text) {
-              screenBundle.name = text;
-            },
+      padding: const EdgeInsets.only(left: 16, bottom: 21),
+      child: Stack(children: [
+        Row(children: [
+          Expanded(
+            child: TextFormField(
+              initialValue: screenBundle.name,
+              decoration: const InputDecoration(labelText: "Screen Name:"),
+              onChanged: (text) {
+                screenBundle.name = text;
+              },
+            ),
           ),
-        ),
+          Container(
+            width: 16,
+          ),
+          if (screenBundle.layoutBytes != null)
+            Container(
+                padding: const EdgeInsets.only(right: 36, top: 16),
+                child: Image.memory(screenBundle.layoutBytes!,
+                    fit: BoxFit.contain))
+          else
+            const Icon(Icons.ad_units)
+        ]),
         Container(
-          width: 24,
-        ),
-        if (screenBundle.layoutBytes != null)
-          Image.memory(screenBundle.layoutBytes!, fit: BoxFit.contain)
-        else
-          const Icon(Icons.ad_units)
+          alignment: Alignment.topRight,
+          child: IconButton.filledTonal(
+              color: Colors.white30,
+              onPressed: () {
+                setState(() {
+                  selectedProject.screenBundles.remove(screenBundle);
+                  if (screenBundle == selectedProject.selectedScreenBundle) {
+                    selectedProject.selectedScreenBundle =
+                        selectedProject.screenBundles.isNotEmpty
+                            ? selectedProject.screenBundles.first
+                            : null;
+                  }
+                });
+              },
+              icon: const Icon(Icons.close)),
+        )
       ]),
     );
   }
@@ -502,7 +534,7 @@ class _MainPageState extends State<MainPage> {
   Future<void> _onExtendScreenPressed(ScreenElement screenElement) async {
     var layoutBytes = await _takeElementImage(screenElement);
     int index = appDataTree.selectedProject!.screenBundles.length;
-    ScreenBundle screenBundle = ScreenBundle(name: "New Screen ${index + 1}");
+    ScreenBundle screenBundle = ScreenBundle("New Screen ${index + 1}");
     screenBundle.layoutBytes = layoutBytes;
 
     setState(() {
@@ -515,9 +547,11 @@ class _MainPageState extends State<MainPage> {
     List<Widget> listeners = [];
 
     for (var listenerBlock in screenElement.listeners) {
+      var listenerBlockName = listenerBlock is LifecycleEventBlock
+          ? listenerBlock.selectedEvent
+          : listenerBlock.name;
       List<Widget> actions = [
-        TextFormField(
-            decoration: InputDecoration(labelText: listenerBlock.name))
+        TextFormField(decoration: InputDecoration(labelText: listenerBlockName))
       ];
       for (var actionBlock in listenerBlock.actions) {
         if (actionBlock is OpenNextScreenBlock) {
@@ -557,13 +591,13 @@ class _MainPageState extends State<MainPage> {
                 child: Row(
                   children: [
                     FilledButton(
-                      style: FilledButton.styleFrom(backgroundColor: Colors.black12),
+                        style: FilledButton.styleFrom(
+                            backgroundColor: Colors.black12),
                         onPressed: () {
                           // do nothing
                         },
                         child: Text(actionBlock.nextScreenBundle!.name)),
                     IconButton(
-// alignment: Alignment.topRight,
                         icon: const Icon(Icons.close),
                         onPressed: () {
                           setState(() {
@@ -638,8 +672,6 @@ class _MainPageState extends State<MainPage> {
   }
 
   void _onPointerUp(PointerUpEvent event) {
-// debugPrint(
-//     "left: ${_elements.last.functionalArea.left.floor()} right: ${_elements.last.functionalArea.right.floor()} top: ${_elements.last.functionalArea.top.floor()} bottom: ${_elements.last.functionalArea.bottom.floor()}");
     var area = getScreenBundle()!.elements.last.functionalArea;
     if (area.left.floor() == area.right.floor() &&
         area.top.floor() == area.bottom.floor()) {
@@ -694,9 +726,9 @@ class _MainPageState extends State<MainPage> {
   void _generateCode() async {
     var xml =
         "<structure_project name=\"Test\">Hello World!</structure_project>";
-    var structure_project_bytes = Uint8List.fromList(xml.codeUnits);
+    var structureProjectBytes = Uint8List.fromList(xml.codeUnits);
     String path = await FileSaver.instance
-        .saveFile(name: "Test.xml", bytes: structure_project_bytes);
+        .saveFile(name: "Test.xml", bytes: structureProjectBytes);
     debugPrint("temp!: $path");
   }
 

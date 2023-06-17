@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'data_classes.dart';
 
+const double SCREEN_IMAGE_WIDTH = 520;
+
 //     showDialog(
 //         context: context,
 //         builder: (BuildContext context) => AlertDialog(
