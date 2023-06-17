@@ -6,6 +6,7 @@
 // import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/adapters.dart';
 
@@ -22,7 +23,7 @@ class StartScreen extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return GetMaterialApp(
       title: 'Structure Compositor',
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -136,10 +137,7 @@ class _StartPageState extends State<StartPage> {
         onTap: () {
           appDataTree.selectedProject = project;
 
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const MainScreen()),
-          );
+          Get.to(const MainScreen());
         });
   }
 }

@@ -285,7 +285,7 @@
         <entry key="flutter">
           <value>
             <list>
-              <option value="$PROJECT_DIR$/../../ANDROID/flutter/packages/flutter/lib" />
+              <option value="/usr/local/Caskroom/flutter/3.10.2/flutter/packages/flutter/lib" />
             </list>
           </value>
         </entry>
@@ -334,14 +334,14 @@
         <entry key="flutter_test">
           <value>
             <list>
-              <option value="$PROJECT_DIR$/../../ANDROID/flutter/packages/flutter_test/lib" />
+              <option value="/usr/local/Caskroom/flutter/3.10.2/flutter/packages/flutter_test/lib" />
             </list>
           </value>
         </entry>
         <entry key="flutter_web_plugins">
           <value>
             <list>
-              <option value="$PROJECT_DIR$/../../ANDROID/flutter/packages/flutter_web_plugins/lib" />
+              <option value="/usr/local/Caskroom/flutter/3.10.2/flutter/packages/flutter_web_plugins/lib" />
             </list>
           </value>
         </entry>
@@ -349,6 +349,13 @@
           <value>
             <list>
               <option value="$USER_HOME$/.pub-cache/hosted/pub.dev/frontend_server_client-3.2.0/lib" />
+            </list>
+          </value>
+        </entry>
+        <entry key="get">
+          <value>
+            <list>
+              <option value="$USER_HOME$/.pub-cache/hosted/pub.dev/get-4.6.5/lib" />
             </list>
           </value>
         </entry>
@@ -789,7 +796,7 @@
         <entry key="sky_engine">
           <value>
             <list>
-              <option value="$PROJECT_DIR$/../../ANDROID/flutter/bin/cache/pkg/sky_engine/lib" />
+              <option value="/usr/local/Caskroom/flutter/3.10.2/flutter/bin/cache/pkg/sky_engine/lib" />
             </list>
           </value>
         </entry>
@@ -1081,6 +1088,7 @@
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.15/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/flutter_svg-0.23.0+1/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/frontend_server_client-3.2.0/lib" />
+      <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/get-4.6.5/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/glob-2.1.2/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/graphs-2.3.1/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/hive-2.2.3/lib" />
@@ -1177,10 +1185,10 @@
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/xdg_directories-1.0.0/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/xml-5.4.1/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/yaml-3.1.2/lib" />
-      <root url="file://$PROJECT_DIR$/../../ANDROID/flutter/bin/cache/pkg/sky_engine/lib" />
-      <root url="file://$PROJECT_DIR$/../../ANDROID/flutter/packages/flutter/lib" />
-      <root url="file://$PROJECT_DIR$/../../ANDROID/flutter/packages/flutter_test/lib" />
-      <root url="file://$PROJECT_DIR$/../../ANDROID/flutter/packages/flutter_web_plugins/lib" />
+      <root url="file:///usr/local/Caskroom/flutter/3.10.2/flutter/bin/cache/pkg/sky_engine/lib" />
+      <root url="file:///usr/local/Caskroom/flutter/3.10.2/flutter/packages/flutter/lib" />
+      <root url="file:///usr/local/Caskroom/flutter/3.10.2/flutter/packages/flutter_test/lib" />
+      <root url="file:///usr/local/Caskroom/flutter/3.10.2/flutter/packages/flutter_web_plugins/lib" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

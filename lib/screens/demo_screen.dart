@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:structure_compositor/box/data_classes.dart';
+import 'package:structure_compositor/screens/main_screen.dart';
 
 import '../box/app_utils.dart';
 import '../box/widget_utils.dart';
@@ -33,7 +35,9 @@ class DemoPage extends StatefulWidget {
 class _DemoPageState extends State<DemoPage> {
   ScreenBundle demoScreen;
 
-  _DemoPageState(this.demoScreen);
+  _DemoPageState(this.demoScreen) {
+    screensHistory.add(demoScreen);
+  }
 
   List<ScreenBundle> screensHistory = [];
 
@@ -61,7 +65,7 @@ class _DemoPageState extends State<DemoPage> {
                           demoScreen = screensHistory.last;
                         });
                       } else {
-                        Navigator.of(context).pop();
+                        Get.back();
                       }
                     })
                   ]),

@@ -9,6 +9,7 @@ import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer' as developer;
 import 'package:file_picker/file_picker.dart';
@@ -139,13 +140,7 @@ class _MainPageState extends State<MainPage> {
                     Container(width: 12, height: 1,),
                     FilledButton(
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) {
-                              var screen = appDataTree.selectedProject!.screenBundles.first;
-                              return DemoScreen(screen);
-                            }),
-                          );
+                          _runDemo();
                         },
                         child: const Text("Run Demo")),
                   ],
@@ -205,6 +200,12 @@ class _MainPageState extends State<MainPage> {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  void _runDemo() {
+    var demoScreen = appDataTree.selectedProject!.screenBundles.first;
+    Get.to(()=> DemoScreen(demoScreen));
+    print("Demo Done!!!!");
   }
 
   List<Widget> _buildDraggableActionsList() {
