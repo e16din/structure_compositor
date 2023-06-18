@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:structure_compositor/box/data_classes.dart';
@@ -57,39 +59,54 @@ class _DemoPageState extends State<DemoPage> {
             Expanded(
                 flex: 15,
                 child: Container(
+                  color: Colors.green,
                   child: Stack(children: [
-                    Container(
-                      alignment: Alignment.topLeft,
-                      child: BackButton(onPressed: () {
-                        screensHistory.removeLast();
-                        if (screensHistory.isNotEmpty) {
-                          setState(() {
-                            demoScreen = screensHistory.last;
-                          });
-                        } else {
-                          Get.back();
-                        }
-                      }),
-                    )
+
                   ]),
                 )),
             Container(
               width: SCREEN_IMAGE_WIDTH,
-              child: Stack(fit: StackFit.expand,
-                  children: [
+              child: Stack(fit: StackFit.expand, children: [
                 Image.memory(demoScreen.layoutBytes!, fit: BoxFit.contain),
                 Listener(
-                    // onPointerDown: _onPointerUp,
-                    onPointerUp: _onPointerUp,
-                    // onPointerMove: _onPointerUp,
-                    child: MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: CustomPaint(
-                          painter: ElementPainter(demoScreen.elements),
-                        )))
+                  // onPointerDown: _onPointerUp,
+                  onPointerUp: _onPointerUp,
+                  // onPointerMove: _onPointerUp,
+                  child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: CustomPaint(
+                        painter: ElementPainter(demoScreen.elements),
+                      )),
+                ),
+                Container(
+                  alignment: Alignment.topLeft,
+                  child: BackButton(onPressed: () {
+                    screensHistory.removeLast();
+                    if (screensHistory.isNotEmpty) {
+                      setState(() {
+                        demoScreen = screensHistory.last;
+                      });
+                    } else {
+                      Get.back();
+                    }
+                  }),
+                ),
+                Container(
+                    alignment: Alignment.topRight,
+                    child: IconButton.filled(
+                        onPressed: () {
+                          Get.back();
+                        },
+                        icon: Transform.rotate(
+                            angle: -90 * pi / 180,
+                            child: const Icon(Icons.exit_to_app))))
               ]),
             ),
-            Expanded(flex: 16, child: Container()),
+            Expanded(
+                flex: 16,
+                child: Container(
+                  color: Colors.orange,
+                )),
           ],
         ));
   }
