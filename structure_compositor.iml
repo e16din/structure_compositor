@@ -64,9 +64,11 @@
       <excludeFolder url="file://$MODULE_DIR$/windows/flutter/ephemeral/.plugin_symlinks/shared_preferences_windows/example/build" />
       <excludeFolder url="file://$MODULE_DIR$/windows/flutter/ephemeral/.plugin_symlinks/shared_preferences_windows/example/.dart_tool" />
     </content>
+    <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Dart SDK" level="project" />
     <orderEntry type="library" name="Flutter Plugins" level="project" />
     <orderEntry type="library" name="Dart Packages" level="project" />
+    <orderEntry type="library" name="KotlinJavaRuntime" level="project" />
   </component>
 </module>

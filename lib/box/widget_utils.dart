@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import 'data_classes.dart';
 
@@ -12,8 +13,7 @@ const double SCREEN_IMAGE_WIDTH = 520;
 //             )).then((value) => {_resetElementsHoverState()});
 
 Widget makeMenuWidget(Map<String, dynamic> itemsMap, BuildContext context,
-    String dialogTitle, Function(dynamic) onItemSelected) {
-
+    Function(dynamic) onItemSelected) {
   List<Widget> menuItems = [];
   for (var key in itemsMap.keys) {
     menuItems.add(InkWell(
@@ -24,7 +24,7 @@ Widget makeMenuWidget(Map<String, dynamic> itemsMap, BuildContext context,
           child: Text(key)),
       onTap: () {
         onItemSelected.call(itemsMap[key]);
-        Navigator.pop(context, dialogTitle);
+        Get.back();
       },
     ));
   }
@@ -33,7 +33,6 @@ Widget makeMenuWidget(Map<String, dynamic> itemsMap, BuildContext context,
       height: itemsMap.length * 36,
       child: Column(children: menuItems));
 }
-
 
 class ElementPainter extends CustomPainter {
   List<ScreenElement> elements = [];

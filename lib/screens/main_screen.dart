@@ -235,8 +235,11 @@ class _MainPageState extends State<MainPage> {
 
   Future<void> _onAddScreenPressed() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['jpg', 'png'],
+      type: FileType.image,
+      allowMultiple: true
+      /*,
+      allowedExtensions: ['jpg', 'png']*/
+      ,
     );
 
     if (result != null) {
@@ -244,21 +247,25 @@ class _MainPageState extends State<MainPage> {
 //   var string = base64.encode(_layoutBase64!.toList());
 //   prefs.setString(KEY_LAYOUT_IMAGE, string);
 // });
-      var layoutBytes = result.files.single.bytes;
 
-      int index = appDataTree.selectedProject!.screenBundles.length;
-      ScreenBundle screenBundle = ScreenBundle("New Screen ${index + 1}");
+    List<ScreenBundle> resultScreens = [];
+      for (var f in result.files) {
+        var layoutBytes = f.bytes;
 
-      if (layoutBytes != null) {
-        screenBundle.layoutBytes = layoutBytes;
-      } else if (result.files.single.path != null) {
-        screenBundle.layoutBytes =
-            await _readFileByte(result.files.single.path!);
+        int index = appDataTree.selectedProject!.screenBundles.length;
+        ScreenBundle screenBundle = ScreenBundle("New Screen ${index + 1}");
+
+        if (layoutBytes != null) {
+          screenBundle.layoutBytes = layoutBytes;
+        } else if (f.path != null) {
+          screenBundle.layoutBytes = await _readFileByte(f.path!);
+        }
+
+        resultScreens.add(screenBundle);
       }
-
       setState(() {
-        appDataTree.selectedProject!.selectedScreenBundle = screenBundle;
-        appDataTree.selectedProject!.screenBundles.add(screenBundle);
+        appDataTree.selectedProject!.screenBundles.addAll(resultScreens);
+        appDataTree.selectedProject!.selectedScreenBundle = resultScreens.first;
       });
     }
   }
@@ -308,12 +315,10 @@ class _MainPageState extends State<MainPage> {
         }
         showDialog(
             context: context,
-            builder: (BuildContext context) {
-              var dialogTitle = "Select lifecycle event:";
+            builder: (context) {
               return AlertDialog(
-                title: Text(dialogTitle),
-                content:
-                    makeMenuWidget(itemsMap, context, dialogTitle, (selected) {
+                title: const Text("Select lifecycle event:"),
+                content: makeMenuWidget(itemsMap, context, (selected) {
                   setState(() {
                     element?.listeners.add(codeBlock.copyStubWith(selected));
                   });
@@ -356,14 +361,14 @@ class _MainPageState extends State<MainPage> {
 
     showDialog(
         context: context,
-        builder: (BuildContext context) {
-          var dialogTitle = "Select screen:";
+        builder: (context) {
           return AlertDialog(
-            title: Text(dialogTitle),
-            content:
-                makeMenuWidget(itemsMap, context, dialogTitle, onItemSelected),
+            title: const Text("Select screen:"),
+            content: makeMenuWidget(itemsMap, context, onItemSelected),
           );
-        }).then((value) => {_resetHoveredBlocks()});
+        }).then((value) {
+      _resetHoveredBlocks();
+    });
   }
 
   Widget _buildScreenBundleRow(int index, ScreenBundle screenBundle) {
@@ -675,9 +680,9 @@ class _MainPageState extends State<MainPage> {
     var area = getScreenBundle()!.elements.last.functionalArea;
     if (area.left.floor() == area.right.floor() &&
         area.top.floor() == area.bottom.floor()) {
-      setState(() {
-        getScreenBundle()!.elements.removeLast();
-      });
+        setState(() {
+          getScreenBundle()!.elements.removeLast();
+        });
     } else {
 // todo: save data to db
       _prefs.then((prefs) {
@@ -686,8 +691,23 @@ class _MainPageState extends State<MainPage> {
       });
     }
 
-    setState(() {
-      getScreenBundle()!.elements.last.inEdit = false;
+    showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+              title: const Text("Select view type:"),
+              content: makeMenuWidget({
+                "Label": "Label",
+                "Button": "Button",
+                "Image": "Image",
+                "Selector": "Selector",
+                "Container": "Container",
+                "List": "List",
+              }, context, (selected) => {}));
+        }).then((item) {
+      setState(() {
+        getScreenBundle()!.elements.last.inEdit = false;
+      });
     });
   }
 
