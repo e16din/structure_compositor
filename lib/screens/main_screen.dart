@@ -248,7 +248,7 @@ class _MainPageState extends State<MainPage> {
 //   prefs.setString(KEY_LAYOUT_IMAGE, string);
 // });
 
-    List<ScreenBundle> resultScreens = [];
+      List<ScreenBundle> resultScreens = [];
       for (var f in result.files) {
         var layoutBytes = f.bytes;
 
@@ -463,12 +463,12 @@ class _MainPageState extends State<MainPage> {
                             const InputDecoration(labelText: "name(id)"),
                         onChanged: (value) {
                           _activeElement = element;
-                          _onElementNameChanged.call(value);
+                          _onElementNameChanged.call(value, element);
                         })),
                 DropdownButton(
-                    value: element.functionType,
-                    items: FunctionType.values
-                        .map((type) => DropdownMenuItem<FunctionType>(
+                    value: element.viewType,
+                    items: ViewType.values
+                        .map((type) => DropdownMenuItem<ViewType>(
                               value: type,
                               child: Text(type.name),
                             ))
@@ -663,9 +663,9 @@ class _MainPageState extends State<MainPage> {
   void _onPointerDown(PointerDownEvent event) {
     setState(() {
       _lastRect = Rect.fromPoints(event.localPosition, event.localPosition);
-      getScreenBundle()!
-          .elements
-          .add(ScreenElement(_lastRect!, getNextColor(), true));
+      _activeElement = ScreenElement(_lastRect!, getNextColor(), true);
+
+      getScreenBundle()!.elements.add(_activeElement!);
     });
   }
 
@@ -680,9 +680,9 @@ class _MainPageState extends State<MainPage> {
     var area = getScreenBundle()!.elements.last.functionalArea;
     if (area.left.floor() == area.right.floor() &&
         area.top.floor() == area.bottom.floor()) {
-        setState(() {
-          getScreenBundle()!.elements.removeLast();
-        });
+      setState(() {
+        getScreenBundle()!.elements.removeLast();
+      });
     } else {
 // todo: save data to db
       _prefs.then((prefs) {
@@ -697,13 +697,13 @@ class _MainPageState extends State<MainPage> {
           return AlertDialog(
               title: const Text("Select view type:"),
               content: makeMenuWidget({
-                "Label": "Label",
-                "Button": "Button",
-                "Image": "Image",
-                "Selector": "Selector",
-                "Container": "Container",
-                "List": "List",
-              }, context, (selected) => {}));
+                "Label": ViewType.Label,
+                "Button": ViewType.Button,
+                "Image": ViewType.Image,
+                "Selector": ViewType.Selector,
+                "Container": ViewType.Container,
+                "List": ViewType.List,
+              }, context, (selected) => {_onElementTypeChanged(selected)}));
         }).then((item) {
       setState(() {
         getScreenBundle()!.elements.last.inEdit = false;
@@ -733,14 +733,14 @@ class _MainPageState extends State<MainPage> {
     return _rainbowColors[nextColorPosition].shade400;
   }
 
-  void _onElementTypeChanged(FunctionType? value) {
+  void _onElementTypeChanged(ViewType? value) {
     setState(() {
-      _activeElement?.functionType = value!;
+      _activeElement?.viewType = value!;
     });
   }
 
-  void _onElementNameChanged(String value) {
-    _activeElement?.nameId = value;
+  void _onElementNameChanged(String value, ScreenElement element) {
+    element.nameId = value;
   }
 
   void _generateCode() async {

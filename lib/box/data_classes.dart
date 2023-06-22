@@ -44,7 +44,16 @@ class ScreenBundle {
   ScreenBundle(this.name);
 }
 
-enum FunctionType { LookAt, ClickOn, SelectFrom, TypeIn }
+// enum FunctionType { LookAt, ClickOn, SelectFrom, TypeIn }
+enum ViewType {
+  Unknown,
+  Label,
+  Button,
+  Image,
+  Selector,
+  Container,
+  List,
+}
 
 @HiveType(typeId: 3)
 class ScreenElement {
@@ -55,7 +64,7 @@ class ScreenElement {
   late Color color;
 
   @HiveField(2)
-  FunctionType functionType = FunctionType.LookAt;
+  ViewType viewType = ViewType.Unknown;
 
   @HiveField(3)
   String? nameId;
