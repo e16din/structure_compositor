@@ -5,7 +5,6 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
-import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -79,7 +78,7 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     super.initState();
 
-    _title = 'Structure Compositor: ${appDataTree.selectedProject?.name}';
+    _title = 'Structure Compositor: ${appFruits.selectedProject?.name}';
 // _prefs.then((prefs) {
 //   var string = prefs.getString(KEY_LAYOUT_IMAGE);
 //   if (prefs.containsKey(KEY_LAYOUT_IMAGE)) {
@@ -113,18 +112,18 @@ class _MainPageState extends State<MainPage> {
                   endIndent: 24,
                 ),
                 scrollDirection: Axis.vertical,
-                itemCount: (appDataTree.selectedProject != null
-                    ? appDataTree.selectedProject?.screenBundles.length
+                itemCount: (appFruits.selectedProject != null
+                    ? appFruits.selectedProject?.screenBundles.length
                     : 0)!,
                 itemBuilder: (BuildContext context, int index) {
                   var screenBundle =
-                      appDataTree.selectedProject!.screenBundles[index];
+                      appFruits.selectedProject!.screenBundles[index];
                   return InkWell(
                     child: _buildScreenBundleRow(index, screenBundle),
                     onTap: () {
                       setState(
                         () {
-                          appDataTree.selectedProject!.selectedScreenBundle =
+                          appFruits.selectedProject!.selectedScreenBundle =
                               screenBundle;
                         },
                       );
@@ -139,9 +138,7 @@ class _MainPageState extends State<MainPage> {
                 child: Row(
                   children: [
                     FilledButton(
-                        onPressed: () {
-                          _generateCode();
-                        },
+                        onPressed: onGenerateProjectClick,
                         child: const Text("Generate Code")),
                     Container(
                       width: 12,
@@ -158,18 +155,35 @@ class _MainPageState extends State<MainPage> {
         ),
         Expanded(
             flex: 10,
-            child: Stack(children: [
-              Container(color: Colors.amberAccent),
-              if (screenBundle?.elements.isNotEmpty == true)
-                ListView.builder(
-                  itemCount: screenBundle?.elements.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    var elementRow =
-                        _buildElementRow(screenBundle!.elements[index], index);
-                    return elementRow;
-                  },
-                ),
-            ])),
+            child: Shortcuts(
+              shortcuts: <ShortcutActivator, Intent>{
+                LogicalKeySet(
+                        LogicalKeyboardKey.control, LogicalKeyboardKey.keyZ):
+                    const UndoIntent(),
+                LogicalKeySet(
+                    LogicalKeyboardKey.control,
+                    LogicalKeyboardKey.shift,
+                    LogicalKeyboardKey.keyZ): const RedoIntent(),
+              },
+              child: Actions(
+                actions: <Type, Action<Intent>>{
+                  UndoIntent: UndoAction(),
+                  RedoIntent: RedoAction(),
+                },
+                child: Stack(children: [
+                  Container(color: Colors.amberAccent),
+                  if (screenBundle?.elements.isNotEmpty == true)
+                    ListView.builder(
+                      itemCount: screenBundle?.elements.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        var elementRow = _buildElementRow(
+                            screenBundle!.elements[index], index);
+                        return elementRow;
+                      },
+                    ),
+                ]),
+              ),
+            )),
         Container(
             width: 180,
             color: Colors.yellow,
@@ -189,8 +203,31 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
+  void onGenerateProjectClick() async {
+    var project = appFruits.selectedProject!;
+    // FilePickerResult? result = await FilePicker.platform.pickFiles();
+
+    // todo: select folder
+
+    try { // macos
+      String? result = await FilePicker.platform.getDirectoryPath();
+      debugPrint("PATH! $result");
+
+//     // File folder = File(project.screenBundles.first.layoutPath!);
+//     //
+//     // String? path = await FilePicker.platform.getDirectoryPath(
+//     //   initialDirectory: folder.parent.path
+//     // );
+//     if (result != null) {
+      CodeGenerator.generate(project, Directory("$result"));
+    }catch(e) { // Web
+      CodeGenerator.generate(project, Directory("Downloads"));
+    }
+    // }
+  }
+
   void _runDemo() {
-    var demoScreen = appDataTree.selectedProject!.screenBundles.first;
+    var demoScreen = appFruits.selectedProject!.screenBundles.first;
     Get.to(() => DemoScreen(demoScreen));
     print("Demo Done!!!!");
   }
@@ -204,8 +241,7 @@ class _MainPageState extends State<MainPage> {
   }
 
   Widget _buildEditedLayoutWidget() {
-    var selectedScreenBundle =
-        appDataTree.selectedProject!.selectedScreenBundle;
+    var selectedScreenBundle = appFruits.selectedProject!.selectedScreenBundle;
     if (selectedScreenBundle?.layoutBytes != null) {
       return Container(
           width: SCREEN_IMAGE_WIDTH,
@@ -252,7 +288,8 @@ class _MainPageState extends State<MainPage> {
       for (var f in result.files) {
         var layoutBytes = f.bytes;
 
-        int index = appDataTree.selectedProject!.screenBundles.length;
+        int index = appFruits.selectedProject!.screenBundles.length +
+            resultScreens.length;
         ScreenBundle screenBundle = ScreenBundle("New Screen ${index + 1}");
 
         if (layoutBytes != null) {
@@ -264,8 +301,8 @@ class _MainPageState extends State<MainPage> {
         resultScreens.add(screenBundle);
       }
       setState(() {
-        appDataTree.selectedProject!.screenBundles.addAll(resultScreens);
-        appDataTree.selectedProject!.selectedScreenBundle = resultScreens.first;
+        appFruits.selectedProject!.screenBundles.addAll(resultScreens);
+        appFruits.selectedProject!.selectedScreenBundle = resultScreens.first;
       });
     }
   }
@@ -331,7 +368,7 @@ class _MainPageState extends State<MainPage> {
         });
       }
     } else {
-      var screenBundles = appDataTree.selectedProject!.screenBundles;
+      var screenBundles = appFruits.selectedProject!.screenBundles;
       if (codeBlock is OpenNextScreenBlock && screenBundles.isNotEmpty) {
         var hoveredCodeBlockHolder = hoveredCodeBlock!;
         selectScreen(screenBundles, codeBlock, hoveredCodeBlockHolder,
@@ -372,7 +409,7 @@ class _MainPageState extends State<MainPage> {
   }
 
   Widget _buildScreenBundleRow(int index, ScreenBundle screenBundle) {
-    var selectedProject = appDataTree.selectedProject;
+    var selectedProject = appFruits.selectedProject;
     bool isSelected = selectedProject!.selectedScreenBundle == screenBundle;
     return Container(
       height: 108,
@@ -538,13 +575,13 @@ class _MainPageState extends State<MainPage> {
 
   Future<void> _onExtendScreenPressed(ScreenElement screenElement) async {
     var layoutBytes = await _takeElementImage(screenElement);
-    int index = appDataTree.selectedProject!.screenBundles.length;
+    int index = appFruits.selectedProject!.screenBundles.length;
     ScreenBundle screenBundle = ScreenBundle("New Screen ${index + 1}");
     screenBundle.layoutBytes = layoutBytes;
 
     setState(() {
-      appDataTree.selectedProject!.selectedScreenBundle = screenBundle;
-      appDataTree.selectedProject!.screenBundles.add(screenBundle);
+      appFruits.selectedProject!.selectedScreenBundle = screenBundle;
+      appFruits.selectedProject!.screenBundles.add(screenBundle);
     });
   }
 
@@ -573,7 +610,7 @@ class _MainPageState extends State<MainPage> {
                         icon: const Icon(Icons.add),
                         onPressed: () {
                           var screenBundles =
-                              appDataTree.selectedProject!.screenBundles;
+                              appFruits.selectedProject!.screenBundles;
                           if (screenBundles.isNotEmpty) {
                             selectScreen(
                                 screenBundles, actionBlock, listenerBlock,
@@ -743,15 +780,6 @@ class _MainPageState extends State<MainPage> {
     element.nameId = value;
   }
 
-  void _generateCode() async {
-    var xml =
-        "<structure_project name=\"Test\">Hello World!</structure_project>";
-    var structureProjectBytes = Uint8List.fromList(xml.codeUnits);
-    String path = await FileSaver.instance
-        .saveFile(name: "Test.xml", bytes: structureProjectBytes);
-    debugPrint("temp!: $path");
-  }
-
   GlobalKey screenImageKey = GlobalKey();
 
   Future<Uint8List> _takeElementImage(ScreenElement screenElement) async {
@@ -780,6 +808,29 @@ class _MainPageState extends State<MainPage> {
   }
 }
 
-class UndoShortcutIntent extends Intent {
-// final String name;
+class UndoIntent extends Intent {
+  const UndoIntent();
+}
+
+class RedoIntent extends Intent {
+  const RedoIntent();
+}
+
+class UndoAction extends Action<UndoIntent> {
+  UndoAction();
+
+  @override
+  void invoke(covariant UndoIntent intent) {
+    // todo: add stack of actions
+    debugPrint("Undo");
+  }
+}
+
+class RedoAction extends Action<RedoIntent> {
+  RedoAction();
+
+  @override
+  void invoke(covariant RedoIntent intent) {
+    debugPrint("Redo");
+  }
 }

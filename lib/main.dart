@@ -13,7 +13,7 @@ main() async {
   var box = await Hive.openBox(BOX_APP_DATA_TREE);
 
   if (box.length > 0) {
-    appDataTree = await box.getAt(0);
+    appFruits = await box.getAt(0);
   }
 
   runApp(const StartScreen());

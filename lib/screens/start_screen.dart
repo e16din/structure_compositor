@@ -88,9 +88,9 @@ class _StartPageState extends State<StartPage> {
                       endIndent: 24,
                     ),
                 scrollDirection: Axis.vertical,
-                itemCount: appDataTree.projects.length,
+                itemCount: appFruits.projects.length,
                 itemBuilder: (BuildContext context, int index) {
-                  return _buildProjectRow(appDataTree.projects[index]);
+                  return _buildProjectRow(appFruits.projects[index]);
                 }),
           ),
         ],
@@ -114,7 +114,7 @@ class _StartPageState extends State<StartPage> {
 
     // var box = Hive.box(BOX_APP_DATA_TREE);
     setState(() {
-      appDataTree.projects.add(newProject);
+      appFruits.projects.add(newProject);
       // var className = appDataTree.runtimeType.toString();
       // box.put(className, appDataTree);
     });
@@ -135,7 +135,7 @@ class _StartPageState extends State<StartPage> {
           ),
         ),
         onTap: () {
-          appDataTree.selectedProject = project;
+          appFruits.selectedProject = project;
 
           Get.to(const MainScreen());
         });

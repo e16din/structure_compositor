@@ -3,26 +3,23 @@ import 'dart:ui';
 
 import 'package:hive/hive.dart';
 
+
 @HiveType(typeId: 0)
-class AppDataTree {
+class AppDataFruits {
   @HiveField(0)
   List<Project> projects = [];
 
   @HiveField(1)
   Project? selectedProject;
 
-  AppDataTree();
+  AppDataFruits();
 }
 
-@HiveType(typeId: 1)
 class Project {
-  @HiveField(0)
   String name = "";
 
-  @HiveField(1)
   List<ScreenBundle> screenBundles = [];
 
-  @HiveField(2)
   ScreenBundle? selectedScreenBundle;
 
   Project({required this.name});

@@ -52,7 +52,7 @@ class _DemoPageState extends State<DemoPage> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: Text("${appDataTree.selectedProject!.name} Demo"),
+          title: Text("${appFruits.selectedProject!.name} Demo"),
         ),
         body: Row(
           children: [
