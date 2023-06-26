@@ -735,6 +735,7 @@ class _MainPageState extends State<MainPage> {
               title: const Text("Select view type:"),
               content: makeMenuWidget({
                 "Label": ViewType.Label,
+                "Field": ViewType.Field,
                 "Button": ViewType.Button,
                 "Image": ViewType.Image,
                 "Selector": ViewType.Selector,
@@ -777,7 +778,7 @@ class _MainPageState extends State<MainPage> {
   }
 
   void _onElementNameChanged(String value, ScreenElement element) {
-    element.nameId = value;
+    element.name = value;
   }
 
   GlobalKey screenImageKey = GlobalKey();

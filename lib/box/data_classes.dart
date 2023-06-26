@@ -45,6 +45,7 @@ class ScreenBundle {
 enum ViewType {
   Unknown,
   Label,
+  Field,
   Button,
   Image,
   Selector,
@@ -52,25 +53,23 @@ enum ViewType {
   List,
 }
 
-@HiveType(typeId: 3)
 class ScreenElement {
-  @HiveField(0)
+
   late Rect functionalArea;
 
-  @HiveField(1)
   late Color color;
 
-  @HiveField(2)
+
   ViewType viewType = ViewType.Unknown;
 
-  @HiveField(3)
-  String? nameId;
+  String? name;
 
-  @HiveField(4)
+  String? value;
+
   String? description;
 
-  @HiveField(5)
   List<CodeBlock> listeners = [];
+
 
   bool inEdit = false;
 
