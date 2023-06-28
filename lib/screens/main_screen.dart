@@ -15,6 +15,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:structure_compositor/screens/demo_screen.dart';
 
 import '../box/app_utils.dart';
+import '../box/code_generation.dart';
 import '../box/data_classes.dart';
 import '../box/widget_utils.dart';
 
@@ -209,7 +210,8 @@ class _MainPageState extends State<MainPage> {
 
     // todo: select folder
 
-    try { // macos
+    try {
+      // macos
       String? result = await FilePicker.platform.getDirectoryPath();
       debugPrint("PATH! $result");
 
@@ -220,7 +222,8 @@ class _MainPageState extends State<MainPage> {
 //     // );
 //     if (result != null) {
       CodeGenerator.generate(project, Directory("$result"));
-    }catch(e) { // Web
+    } catch (e) {
+      // Web
       CodeGenerator.generate(project, Directory("Downloads"));
     }
     // }
@@ -290,7 +293,8 @@ class _MainPageState extends State<MainPage> {
 
         int index = appFruits.selectedProject!.screenBundles.length +
             resultScreens.length;
-        ScreenBundle screenBundle = ScreenBundle("New Screen ${index + 1}");
+        ScreenBundle screenBundle = ScreenBundle("New Screen ${index + 1}")
+          ..isLauncher = index == 0;
 
         if (layoutBytes != null) {
           screenBundle.layoutBytes = layoutBytes;
@@ -494,8 +498,7 @@ class _MainPageState extends State<MainPage> {
                 SizedBox(
                     width: 140,
                     child: TextFormField(
-                        initialValue:
-                            'element${getScreenBundle()!.elements.length}',
+                        initialValue: element.name,
                         decoration:
                             const InputDecoration(labelText: "name(id)"),
                         onChanged: (value) {
@@ -700,7 +703,8 @@ class _MainPageState extends State<MainPage> {
   void _onPointerDown(PointerDownEvent event) {
     setState(() {
       _lastRect = Rect.fromPoints(event.localPosition, event.localPosition);
-      _activeElement = ScreenElement(_lastRect!, getNextColor(), true);
+      _activeElement = ScreenElement(_lastRect!, getNextColor(), true)
+        ..name = 'element${getScreenBundle()!.elements.length + 1}';
 
       getScreenBundle()!.elements.add(_activeElement!);
     });
@@ -773,6 +777,33 @@ class _MainPageState extends State<MainPage> {
 
   void _onElementTypeChanged(ViewType? value) {
     setState(() {
+      switch (value) {
+        case ViewType.Field:
+          if (_activeElement != null &&
+              !_activeElement!.listeners
+                  .any((element) => element.type == CodeType.listener)) {
+            _activeElement!.listeners.add(codeBlocks[2].copyStub());
+          }
+          break;
+        case ViewType.Button:
+          if (_activeElement != null &&
+              !_activeElement!.listeners
+                  .any((element) => element.type == CodeType.listener)) {
+            _activeElement!.listeners.add(codeBlocks[1].copyStub());
+          }
+          break;
+        case ViewType.Selector:
+        case ViewType.List:
+          if (_activeElement != null &&
+              !_activeElement!.listeners
+                  .any((element) => element.type == CodeType.listener)) {
+            _activeElement!.listeners.add(codeBlocks[3].copyStub());
+          }
+          break;
+        default:
+          // do nothing
+          break;
+      }
       _activeElement?.viewType = value!;
     });
   }

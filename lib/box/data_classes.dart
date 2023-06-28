@@ -3,7 +3,6 @@ import 'dart:ui';
 
 import 'package:hive/hive.dart';
 
-
 @HiveType(typeId: 0)
 class AppDataFruits {
   @HiveField(0)
@@ -38,6 +37,8 @@ class ScreenBundle {
   @HiveField(2)
   List<ScreenElement> elements = <ScreenElement>[];
 
+  var isLauncher = false;
+
   ScreenBundle(this.name);
 }
 
@@ -54,26 +55,27 @@ enum ViewType {
 }
 
 class ScreenElement {
-
   late Rect functionalArea;
 
   late Color color;
 
-
   ViewType viewType = ViewType.Unknown;
 
-  String? name;
+  String name = "";
 
-  String? value;
+  String value = "";
 
-  String? description;
+  String description = "";
 
   List<CodeBlock> listeners = [];
-
 
   bool inEdit = false;
 
   ScreenElement(this.functionalArea, this.color, this.inEdit);
+
+  bool hasDataSource() {
+    return viewType == ViewType.List; // todo: add data sources feature
+  }
 }
 
 enum CodeType { action, listener }
