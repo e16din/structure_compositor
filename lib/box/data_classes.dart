@@ -52,6 +52,7 @@ enum ViewType {
   Selector,
   Container,
   List,
+  ListItem,
 }
 
 class ScreenElement {
@@ -109,6 +110,10 @@ class OpenNextScreenBlock extends CodeBlock {
       ..actions = []
       ..description = "";
   }
+}
+
+class BackToPreviousBlock extends CodeBlock {
+  BackToPreviousBlock(super.name, super.type, super.color);
 }
 
 class LifecycleEventBlock extends CodeBlock {

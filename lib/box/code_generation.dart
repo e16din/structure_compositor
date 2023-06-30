@@ -84,6 +84,8 @@ class CodeGenerator {
     var result = """package $_package
 
 import android.app.Application
+import $_package.data.*
+import $_package.*
 
 object AppDataState {
 $dataSources
@@ -216,6 +218,7 @@ class App: Application() {
       ScreenBundle screen, Directory folder) async {
     var addToEndCodeList = "";
 
+    var activityName = _makeActivityName(screen);
     var result = """
 package $_package.screens
 
@@ -234,11 +237,13 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import $_package.data.*
+import $_package.*
 
 import $_package.R
 
 
-class ${_makeActivityName(screen)} : AppCompatActivity() {
+class ${activityName} : AppCompatActivity() {
 \toverride fun onCreate(savedInstanceState: Bundle?) {
 \t\tsuper.onCreate(savedInstanceState)
 \t\tsetContentView(R.layout.${_makeLayoutName(screen)})""";
@@ -278,7 +283,14 @@ class ${_makeActivityName(screen)} : AppCompatActivity() {
 \t\t\tstartActivity(
 \t\t\t\tIntent(this, ${_makeActivityName(action!.nextScreenBundle!)}::class.java)
 \t\t\t)""";
+          } // else {
+
+          var backToPrevBlock = e.listeners.firstWhereOrNull((listener) =>
+              listener.actions.any((action) => action is BackToPreviousBlock));
+          if (backToPrevBlock != null) {
+            onButtonClick = "\t\t\tonBackPressedDispatcher.onBackPressed()";
           }
+
           result += """\n\t\t$valName.setOnClickListener { 
 $onButtonClick
 \t\t}""";
@@ -373,7 +385,7 @@ $onButtonClick
 
     var bytes = Uint8List.fromList(result.codeUnits);
     String path = await FileSaver.instance.saveFile(
-      name: "${_makeActivityName(screen)}.kt",
+      name: "${activityName}.kt",
       bytes: bytes,
     );
     debugPrint("code file path: $path");

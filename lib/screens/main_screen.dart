@@ -37,6 +37,7 @@ var codeBlocks = [
   CodeBlock("sendRequest()", CodeType.action, Colors.green),
   CodeBlock("updateWidget()", CodeType.action, Colors.green),
   OpenNextScreenBlock("openNextScreen()", CodeType.action, Colors.green),
+  BackToPreviousBlock("backToPrevious()", CodeType.action, Colors.green),
   CodeBlock("changeData()", CodeType.action, Colors.green),
   CodeBlock("callFunction()", CodeType.action, Colors.green),
 ];
@@ -139,7 +140,25 @@ class _MainPageState extends State<MainPage> {
                 child: Row(
                   children: [
                     FilledButton(
-                        onPressed: onGenerateProjectClick,
+                        onPressed: () {
+                          showDialog(
+                              context: context,
+                              builder: (context) {
+                                return AlertDialog(
+                                  title: const Text("Project Type:"),
+                                  content: makeMenuWidget({
+                                    "Android": "Android",
+                                    "Flutter": "Flutter",
+                                    "iOS": "iOS",
+                                    "Add New Project Type": "Add New Project Type",
+                                  }, context, (selected) {
+                                    if (selected == "Android") {
+                                      _onGenerateProjectClick();
+                                    }
+                                  }),
+                                );
+                              });
+                        },
                         child: const Text("Generate Code")),
                     Container(
                       width: 12,
@@ -204,7 +223,7 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  void onGenerateProjectClick() async {
+  _onGenerateProjectClick() async {
     var project = appFruits.selectedProject!;
     // FilePickerResult? result = await FilePicker.platform.pickFiles();
 
@@ -229,7 +248,7 @@ class _MainPageState extends State<MainPage> {
     // }
   }
 
-  void _runDemo() {
+  _runDemo() {
     var demoScreen = appFruits.selectedProject!.screenBundles.first;
     Get.to(() => DemoScreen(demoScreen));
     print("Demo Done!!!!");
@@ -745,6 +764,7 @@ class _MainPageState extends State<MainPage> {
                 "Selector": ViewType.Selector,
                 "Container": ViewType.Container,
                 "List": ViewType.List,
+                "ListItem": ViewType.ListItem,
               }, context, (selected) => {_onElementTypeChanged(selected)}));
         }).then((item) {
       setState(() {
