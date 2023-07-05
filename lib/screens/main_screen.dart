@@ -150,7 +150,8 @@ class _MainPageState extends State<MainPage> {
                                     "Android": "Android",
                                     "Flutter": "Flutter",
                                     "iOS": "iOS",
-                                    "Add New Project Type": "Add New Project Type",
+                                    "Add New Project Type":
+                                        "Add New Project Type",
                                   }, context, (selected) {
                                     if (selected == "Android") {
                                       _onGenerateProjectClick();
@@ -392,20 +393,22 @@ class _MainPageState extends State<MainPage> {
       }
     } else {
       var screenBundles = appFruits.selectedProject!.screenBundles;
-      if (codeBlock is OpenNextScreenBlock && screenBundles.isNotEmpty) {
-        var hoveredCodeBlockHolder = hoveredCodeBlock!;
-        selectScreen(screenBundles, codeBlock, hoveredCodeBlockHolder,
-            (selected) {
-          setState(() {
+      setState(() {
+        if (codeBlock is OpenNextScreenBlock && screenBundles.isNotEmpty) {
+          var hoveredCodeBlockHolder = hoveredCodeBlock!;
+          selectScreen(screenBundles, codeBlock, hoveredCodeBlockHolder,
+              (selected) {
             var copyStubWith = codeBlock.copyStubWith(selected);
             hoveredCodeBlockHolder.actions.add(copyStubWith);
           });
-        });
-      } else {
-        setState(() {
-          hoveredCodeBlock?.actions.add(codeBlock.copyStub());
-        });
-      }
+        } else if (codeBlock is BackToPreviousBlock && screenBundles.isNotEmpty) {
+          var copyStubWith = codeBlock.copyBackToPreviousBlock();
+          hoveredCodeBlock?.actions.add(copyStubWith);
+
+        } else {
+            hoveredCodeBlock?.actions.add(codeBlock.copyStub());
+        }
+      });
     }
   }
 

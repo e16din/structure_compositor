@@ -373,19 +373,13 @@ $onButtonClick
 
     result += "\n\t}";
 
-    result += """
-\n\n\tfun onBackClick() {
-\t\tonBackPressedDispatcher.onBackPressed()
-\t}
-""";
-
     result += "\n";
     result += addToEndCodeList;
     result += "\n}";
 
     var bytes = Uint8List.fromList(result.codeUnits);
     String path = await FileSaver.instance.saveFile(
-      name: "${activityName}.kt",
+      name: "$activityName.kt",
       bytes: bytes,
     );
     debugPrint("code file path: $path");

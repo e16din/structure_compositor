@@ -60,9 +60,7 @@ class _DemoPageState extends State<DemoPage> {
                 flex: 15,
                 child: Container(
                   color: Colors.green,
-                  child: Stack(children: [
-
-                  ]),
+                  child: Stack(children: []),
                 )),
             Container(
               width: SCREEN_IMAGE_WIDTH,
@@ -81,14 +79,7 @@ class _DemoPageState extends State<DemoPage> {
                 Container(
                   alignment: Alignment.topLeft,
                   child: BackButton(onPressed: () {
-                    screensHistory.removeLast();
-                    if (screensHistory.isNotEmpty) {
-                      setState(() {
-                        demoScreen = screensHistory.last;
-                      });
-                    } else {
-                      Get.back();
-                    }
+                    _onDemoBackPressed();
                   }),
                 ),
                 Container(
@@ -111,6 +102,17 @@ class _DemoPageState extends State<DemoPage> {
         ));
   }
 
+  void _onDemoBackPressed() {
+    screensHistory.removeLast();
+    if (screensHistory.isNotEmpty) {
+      setState(() {
+        demoScreen = screensHistory.last;
+      });
+    } else {
+      Get.back();
+    }
+  }
+
   void _onPointerUp(PointerEvent event) {
     setState(() {
       for (var element in demoScreen.elements) {
@@ -122,6 +124,8 @@ class _DemoPageState extends State<DemoPage> {
                   demoScreen = action.nextScreenBundle!;
                   screensHistory.add(demoScreen);
                 });
+              } else if (action is BackToPreviousBlock) {
+                _onDemoBackPressed();
               }
             }
           }

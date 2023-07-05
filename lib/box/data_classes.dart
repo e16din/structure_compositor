@@ -114,6 +114,10 @@ class OpenNextScreenBlock extends CodeBlock {
 
 class BackToPreviousBlock extends CodeBlock {
   BackToPreviousBlock(super.name, super.type, super.color);
+
+  BackToPreviousBlock copyBackToPreviousBlock() {
+    return BackToPreviousBlock(name, type, color);
+  }
 }
 
 class LifecycleEventBlock extends CodeBlock {
