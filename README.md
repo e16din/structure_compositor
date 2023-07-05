@@ -32,8 +32,9 @@
 
 ## Продвижение, распространение и сбор средств:
 
-- [Planeta.ru](https://planeta.ru/campaigns/structure_compositor)
 - [Национальная технологическая инициатива](https://xn--d1ach8g.xn--c1aenmdblfega.xn--p1ai/improject-47083/ideas/82471)
+- [Planeta.ru](https://planeta.ru/campaigns/structure_compositor)
+- [Boomstarter.ru](https://boomstarter.ru/projects/1119349/208729?token=58a2fd3f)
 
 ## Спасибо за вклад!
 
