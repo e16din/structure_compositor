@@ -473,18 +473,18 @@ class _MainPageState extends State<MainPage> {
     return layoutBundle;
   }
 
-  Widget _buildCodeActionsWidgets(LayoutElement screenElement) {
+  Widget _buildCodeActionsWidgets(LayoutElement layout) {
     List<Widget> listeners = [];
 
-    for (var listenerBlock in screenElement.listeners) {
-      var listenerBlockName = listenerBlock is LifecycleEventBlock
-          ? listenerBlock.selectedEvent
-          : listenerBlock.name;
-      List<Widget> actions = [
+    for (var listener in layout.listeners) {
+      var listenerBlockName = listener is LifecycleEventBlock
+          ? listener.selectedEvent
+          : listener.name;
+      List<Widget> actionWidgets = [
         TextFormField(decoration: InputDecoration(labelText: listenerBlockName))
       ];
-      for (var actionBlock in listenerBlock.actions) {
-        if (actionBlock is OpenNextScreenBlock) {
+      for (var action in listener.actions) {
+        if (action is OpenNextScreenBlock) {
           var actionContainer = Container(
               alignment: Alignment.topLeft,
               padding: const EdgeInsets.only(
@@ -492,27 +492,26 @@ class _MainPageState extends State<MainPage> {
               child: Column(
                 children: [
                   TextFormField(
-                      decoration: InputDecoration(labelText: actionBlock.name)),
-                  if (actionBlock.nextScreenBundle == null)
+                      decoration: InputDecoration(labelText: action.name)),
+                  if (action.nextScreenBundle == null)
                     IconButton(
                         icon: const Icon(Icons.add),
                         onPressed: () {
                           var layouts = appFruits.selectedProject!.layouts;
                           if (layouts.isNotEmpty) {
-                            selectLayout(actionBlock, listenerBlock,
-                                (selected) {
+                            selectLayout(action, listener, (selected) {
                               setState(() {
-                                actionBlock.nextScreenBundle = selected;
+                                action.nextScreenBundle = selected;
                               });
                             });
                           }
                         })
                 ],
               ));
-          actions.add(actionContainer);
+          actionWidgets.add(actionContainer);
 
-          if (actionBlock.nextScreenBundle != null) {
-            actions.add(Container(
+          if (action.nextScreenBundle != null) {
+            actionWidgets.add(Container(
                 alignment: Alignment.topLeft,
                 padding: const EdgeInsets.only(
                     left: 42 + 36, right: 16, top: 12, bottom: 8),
@@ -524,12 +523,12 @@ class _MainPageState extends State<MainPage> {
                         onPressed: () {
                           // do nothing
                         },
-                        child: Text(actionBlock.nextScreenBundle!.name)),
+                        child: Text(action.nextScreenBundle!.name)),
                     IconButton(
                         icon: const Icon(Icons.close),
                         onPressed: () {
                           setState(() {
-                            actionBlock.nextScreenBundle = null;
+                            action.nextScreenBundle = null;
                           });
                         })
                   ],
@@ -541,20 +540,20 @@ class _MainPageState extends State<MainPage> {
               padding: const EdgeInsets.only(
                   left: 42 + 36, right: 16, top: 12, bottom: 8),
               child: TextFormField(
-                  decoration: InputDecoration(labelText: actionBlock.name)));
-          actions.add(actionContainer);
+                  decoration: InputDecoration(labelText: action.name)));
+          actionWidgets.add(actionContainer);
         }
       }
 
-      var listenerContainer = InkWell(
+      var listenerContainerWidget = InkWell(
         onTap: () {
           // need to onHover
         },
         onHover: (hovered) {
           if (hovered) {
-            if (hoveredCodeBlock != listenerBlock) {
+            if (hoveredCodeBlock != listener) {
               setState(() {
-                hoveredCodeBlock = listenerBlock;
+                hoveredCodeBlock = listener;
               });
             }
           } else {
@@ -563,21 +562,35 @@ class _MainPageState extends State<MainPage> {
             });
           }
         },
-        child: Container(
-            decoration: BoxDecoration(
-                border: Border.all(
-                    color: hoveredCodeBlock == listenerBlock
-                        ? Colors.black
-                        : screenElement.color,
-                    width: 2)),
-            alignment: Alignment.topLeft,
-            padding:
-                const EdgeInsets.only(left: 42, right: 16, top: 12, bottom: 8),
-            child: Column(
-              children: actions,
-            )),
+        child: Stack(
+          children: [
+            Container(
+                decoration: BoxDecoration(
+                    border: Border.all(
+                        color: hoveredCodeBlock == listener
+                            ? Colors.black
+                            : layout.color,
+                        width: 2)),
+                // alignment: Alignment.topLeft,
+                padding: const EdgeInsets.only(
+                    left: 42, right: 16, top: 12, bottom: 8),
+                child: Column(
+                  children: actionWidgets,
+                )),
+            Align(
+              alignment: Alignment.topRight,
+              child: IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    setState(() {
+                      layout.listeners.remove(listener);
+                    });
+                  }),
+            )
+          ],
+        ),
       );
-      listeners.add(listenerContainer);
+      listeners.add(listenerContainerWidget);
     }
 
     return Column(children: listeners);
@@ -676,8 +689,11 @@ class _MainPageState extends State<MainPage> {
           }
           break;
         case ViewType.selector:
-          element.listeners
-              .add(ListenerCodeBlock(ListenerCodeType.onItemSelected));
+          if (!element.listeners.any((element) =>
+              element.listenerType == ListenerCodeType.onItemSelected)) {
+            element.listeners
+                .add(ListenerCodeBlock(ListenerCodeType.onItemSelected));
+          }
           break;
         case ViewType.list:
           getLayoutBundle()!
@@ -686,9 +702,11 @@ class _MainPageState extends State<MainPage> {
           var listItems =
               getLayoutBundle()!.listLinkListItemsMap[element] ??= [];
           for (var listItem in listItems) {
+            // todo: check it
             element.listeners
                 .add(ListenerCodeBlock(ListenerCodeType.onItemSelected));
           }
+
           break;
         default:
           // do nothing
