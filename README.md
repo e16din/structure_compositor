@@ -14,6 +14,10 @@
 
 ![Structure Compositor в деле](https://github.com/e16din/structure_compositor/blob/main/screen1.png)
 
+## Сборка
+
+Flutter Web сейчас работает наиболее полно, поэтому запускать лучше Web версию-проекта
+
 ## А ты, поддержал отечественный опенсорс?
 
 Хочешь вложиться в Open Source?
