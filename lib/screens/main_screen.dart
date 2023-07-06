@@ -420,10 +420,10 @@ class _MainPageState extends State<MainPage> {
 
   void selectLayout(OpenNextScreenBlock codeBlock,
       ListenerCodeBlock hoveredCodeBlock, Function(dynamic) onItemSelected) {
-    var layouts = appFruits.selectedProject!.layouts;
+    var screens = appFruits.selectedProject!.layouts.whereType<ScreenBundle>();
 
     Map<String, dynamic> itemsMap = {};
-    for (var screen in layouts) {
+    for (var screen in screens) {
       itemsMap.putIfAbsent(screen.name, () => screen);
     }
 
@@ -431,7 +431,7 @@ class _MainPageState extends State<MainPage> {
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: const Text("Select screen:"),
+            title: const Text("Select Screen:"),
             content: makeMenuWidget(itemsMap, context, onItemSelected),
           );
         }).then((value) {
@@ -462,10 +462,9 @@ class _MainPageState extends State<MainPage> {
           ),
           if (layout.layoutBytes != null)
             Container(
-              width: 84,
+                width: 84,
                 padding: const EdgeInsets.only(right: 36, top: 16),
-                child: Image.memory(layout.layoutBytes!,
-                    fit: BoxFit.scaleDown))
+                child: Image.memory(layout.layoutBytes!, fit: BoxFit.scaleDown))
           else
             const Icon(Icons.ad_units)
         ]),
@@ -606,7 +605,8 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
-  Future<LayoutBundle> _onExtendLayoutPressed(LayoutElement element, String? name) async {
+  Future<LayoutBundle> _onExtendLayoutPressed(
+      LayoutElement element, String? name) async {
     var layoutBytes = await _takeElementImage(element);
     var index = appFruits.selectedProject!.layouts.length;
 
@@ -831,8 +831,9 @@ class _MainPageState extends State<MainPage> {
           getLayoutBundle()!
               .listLinkListItemsMap
               .putIfAbsent(element, () => []);
-          for (var listItem
-              in getLayoutBundle()!.listLinkListItemsMap[element] ??= []) {
+          var listItems =
+              getLayoutBundle()!.listLinkListItemsMap[element] ??= [];
+          for (var listItem in listItems) {
             element.listeners
                 .add(ListenerCodeBlock(ListenerCodeType.onItemSelected));
           }
@@ -849,6 +850,13 @@ class _MainPageState extends State<MainPage> {
 
   void _onAddListItemClick(LayoutElement listElement) {
     _listWaitedForListItem = listElement;
+    showDialog(
+        context: context,
+        builder: (contxt) {
+          return const AlertDialog(
+              title: Text("Next Step:"),
+              content: Text("Draw an area of List Item on the layout"));
+        });
   }
 
   void _onElementNameChanged(String value, LayoutElement element) {
@@ -886,13 +894,14 @@ class _MainPageState extends State<MainPage> {
     List<Widget> buttons = [];
     for (var listElement in getLayoutBundle()!.listLinkListItemsMap.keys) {
       buttons.add(Positioned(
-          right: listElement.functionalArea.right,
+          left: listElement.functionalArea.left,
           top: listElement.functionalArea.top,
-          child: IconButton(
+          child: FloatingActionButton.small(
+              backgroundColor: Colors.green,
               onPressed: () {
                 _onAddListItemClick(listElement);
               },
-              icon: const Icon(Icons.add))));
+              child: const Icon(Icons.add_box_rounded))));
     }
     return Stack(children: buttons);
   }
@@ -906,7 +915,8 @@ class _MainPageState extends State<MainPage> {
       }
 
       var listItems = listLinkListItemsMap[_listWaitedForListItem!] ??= [];
-      var layout = await _onExtendLayoutPressed(element, "item_${listItems.length + 1}");
+      var layout =
+          await _onExtendLayoutPressed(element, "item_${listItems.length + 1}");
 
       element.refToExtendedLayout = layout;
       listItems.add(element);

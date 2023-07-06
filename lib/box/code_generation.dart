@@ -16,8 +16,7 @@ class CodeGenerator {
     // Android project
     _generateManifestXml(project, folder);
     _generateAppClass(project, folder);
-    for (var layout in project.layouts.map((l) => l is ScreenBundle)) {
-      var screen = layout as ScreenBundle;
+    for (var screen in project.layouts.whereType<ScreenBundle>()) {
       _generateScreenLayoutFile(screen, folder);
       _generateScreenClassFile(screen, folder);
     }
@@ -538,20 +537,20 @@ class ${name}DataSource {
       Project project, Directory folder) async {
     var activities = "";
 
-    for (var layout in project.layouts.map((l) => l is ScreenBundle)) {
-      var screenBundle = (layout as ScreenBundle);
-      if (screenBundle.isLauncher) {
+    for (var screen in project.layouts.whereType<ScreenBundle>()) {
+      if (screen.isLauncher) {
         continue;
       }
 
       activities += """
-        <activity android:name=".screens.${_makeActivityName(screenBundle)}"
+        <activity android:name=".screens.${_makeActivityName(screen)}"
             android:exported="false"
             android:screenOrientation="fullSensor"/>
       """;
     }
 
-    var launcherScreen = project.layouts.firstWhere((screen) => screen is ScreenBundle && screen.isLauncher);
+    var launcherScreen = project.layouts
+        .firstWhere((screen) => screen is ScreenBundle && screen.isLauncher);
     var result = """
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
