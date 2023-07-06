@@ -7,8 +7,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:hive/hive.dart';
-import 'package:hive_flutter/adapters.dart';
 
 // import 'package:shared_preferences/shared_preferences.dart';
 // import 'dart:developer' as developer;
@@ -33,7 +31,6 @@ class StartScreen extends StatelessWidget {
   }
 }
 
-// todo: добавить вкладки для нескольких макетов
 // todo: сохранять последние открытые вкладки/ восстанавливать их при загрузке
 class StartPage extends StatefulWidget {
   const StartPage({Key? key, required this.title}) : super(key: key);
@@ -124,14 +121,24 @@ class _StartPageState extends State<StartPage> {
     return InkWell(
         child: Container(
           color: Colors.deepPurpleAccent,
-          padding:
-              const EdgeInsets.only(top: 16, left: 16, bottom: 16, right: 16),
-          width: 280,
-          child: TextFormField(
-            initialValue: project.name,
-            onChanged: (text) {
-              project.name = text;
-            },
+          child: Container(
+            padding:
+            const EdgeInsets.only(top: 16, left: 16, bottom: 16, right: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    initialValue: project.name,
+                    onChanged: (text) {
+                      project.name = text;
+                    },
+                  ),
+                ),
+                Container(padding:
+                    const EdgeInsets.only(top: 24, left: 24, bottom: 24, right: 24),
+                    child: const Icon(Icons.navigate_next))
+              ],
+            ),
           ),
         ),
         onTap: () {

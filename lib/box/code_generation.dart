@@ -16,7 +16,8 @@ class CodeGenerator {
     // Android project
     _generateManifestXml(project, folder);
     _generateAppClass(project, folder);
-    for (var screen in project.screenBundles) {
+    for (var layout in project.layouts.map((l) => l is ScreenBundle)) {
+      var screen = layout as ScreenBundle;
       _generateScreenLayoutFile(screen, folder);
       _generateScreenClassFile(screen, folder);
     }
@@ -24,7 +25,7 @@ class CodeGenerator {
 
   static void _generateProjectXml(Project project, Directory folder) async {
     var resultXml = "<project name=\"${project.name}\">";
-    for (var screen in project.screenBundles) {
+    for (var screen in project.layouts) {
       resultXml += "\n  <screen name=\"${screen.name}\""
           "\n     layout_path=\"${screen.layoutPath}\" >";
       for (var element in screen.elements) {
@@ -71,7 +72,7 @@ class CodeGenerator {
   static void _generateAppClass(Project project, Directory folder) async {
     var dataSources = """
     """;
-    for (var screen in project.screenBundles) {
+    for (var screen in project.layouts) {
       for (var element in screen.elements) {
         if (element.hasDataSource()) {
           _generateDataSourceClass(element.name.capitalizeFirst!);
@@ -177,7 +178,7 @@ class App: Application() {
               android:checked="${e.value}" />
     """;
           break;
-        case ViewType.container:
+        case ViewType.column:
           resultXml += """
          <LinearLayout 
               android:id="$viewId"
@@ -190,6 +191,31 @@ class App: Application() {
          </LinearLayout>
     """;
           break;
+        case ViewType.row:
+          resultXml += """
+         <LinearLayout 
+              android:id="$viewId"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:orientation="horizontal"
+              >
+          <!-- Value: ${e.value} -->
+          
+         </LinearLayout>
+    """;
+          break;
+        case ViewType.stack:
+          resultXml += """
+         <FrameLayout 
+              android:id="$viewId"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              >
+          <!-- Value: ${e.value} -->
+          
+         </FrameLayout>
+    """;
+          break;
         case ViewType.list:
           resultXml += """
          <androidx.recyclerview.widget.RecyclerView 
@@ -199,9 +225,6 @@ class App: Application() {
               />
          <!-- Value: ${e.value} -->
     """;
-          break;
-        case ViewType.listItem:
-          // TODO: Handle this case.
           break;
       }
     }
@@ -289,7 +312,13 @@ $actionCode
 \t\t\tTODO("Not yet implemented")
 \t\t}""";
           break;
-        case ViewType.container:
+        case ViewType.column:
+          // do nothing
+          break;
+        case ViewType.row:
+          // do nothing
+          break;
+        case ViewType.stack:
           // do nothing
           break;
         case ViewType.list:
@@ -366,9 +395,6 @@ $actionCode
 \t}
 """;
           break;
-        case ViewType.listItem:
-          // TODO: Handle this case.
-          break;
       }
     }
 
@@ -386,11 +412,12 @@ $actionCode
     debugPrint("code file path: $path");
   }
 
-  static String _getActionCode(ScreenElement e) {
+  static String _getActionCode(LayoutElement e) {
     var onButtonClick = """\t\t\tTODO("Not yet implemented")""";
 
     var openNextScreenBlock = e.listeners.firstWhereOrNull((listener) =>
-        listener.actions.any((action) => action.actionType == ActionCodeType.openNextScreen));
+        listener.actions.any(
+            (action) => action.actionType == ActionCodeType.openNextScreen));
     if (openNextScreenBlock != null) {
       var action = openNextScreenBlock.actions
               .firstWhereOrNull((action) => action is OpenNextScreenBlock)
@@ -401,8 +428,9 @@ $actionCode
     \t\t\t)""";
     } // else {
 
-    var backToPrevBlock = e.listeners.firstWhereOrNull((listener) =>
-        listener.actions.any((action) => action.actionType == ActionCodeType.backToPrevious));
+    var backToPrevBlock = e.listeners.firstWhereOrNull((listener) => listener
+        .actions
+        .any((action) => action.actionType == ActionCodeType.backToPrevious));
     if (backToPrevBlock != null) {
       onButtonClick = "\t\t\tonBackPressedDispatcher.onBackPressed()";
     }
@@ -452,7 +480,7 @@ class ${name}DataSource {
     );
   }
 
-  static String _makeViewId(ScreenElement e) {
+  static String _makeViewId(LayoutElement e) {
     return "${e.name}${e.viewType.name}";
   }
 
@@ -469,7 +497,7 @@ class ${name}DataSource {
     return "activity_${screen.name.toLowerCase().replaceAll(" ", "_")}";
   }
 
-  static String _makeViewClassName(ScreenElement e) {
+  static String _makeViewClassName(LayoutElement e) {
     var result = "";
     switch (e.viewType) {
       case ViewType.unknown:
@@ -490,8 +518,14 @@ class ${name}DataSource {
       case ViewType.selector:
         result = "Switch";
         break;
-      case ViewType.container:
+      case ViewType.column:
         result = "LinearLayout";
+        break;
+      case ViewType.row:
+        result = "LinearLayout";
+        break;
+      case ViewType.stack:
+        result = "FrameLayout";
         break;
       case ViewType.list:
         result = "RecyclerView";
@@ -504,18 +538,20 @@ class ${name}DataSource {
       Project project, Directory folder) async {
     var activities = "";
 
-    for (var screen in project.screenBundles) {
-      if (screen.isLauncher) {
+    for (var layout in project.layouts.map((l) => l is ScreenBundle)) {
+      var screenBundle = (layout as ScreenBundle);
+      if (screenBundle.isLauncher) {
         continue;
       }
 
       activities += """
-        <activity android:name=".screens.${_makeActivityName(screen)}"
+        <activity android:name=".screens.${_makeActivityName(screenBundle)}"
             android:exported="false"
             android:screenOrientation="fullSensor"/>
       """;
     }
 
+    var launcherScreen = project.layouts.firstWhere((screen) => screen is ScreenBundle && screen.isLauncher);
     var result = """
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
@@ -533,7 +569,7 @@ class ${name}DataSource {
         android:theme="@style/Theme.MyApplication"
         tools:targetApi="31">
         <activity
-            android:name=".screens.${_makeActivityName(project.screenBundles.firstWhere((screen) => screen.isLauncher))}"
+            android:name=".screens.${_makeActivityName(launcherScreen as ScreenBundle)}"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

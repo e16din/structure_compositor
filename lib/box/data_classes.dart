@@ -1,14 +1,10 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
 
-@HiveType(typeId: 0)
 class AppDataFruits {
-  @HiveField(0)
   List<Project> projects = [];
 
-  @HiveField(1)
   Project? selectedProject;
 
   AppDataFruits();
@@ -17,32 +13,36 @@ class AppDataFruits {
 class Project {
   String name = "";
 
-  List<ScreenBundle> screenBundles = [];
+  List<LayoutBundle> layouts = [];
 
-  ScreenBundle? selectedScreenBundle;
+  LayoutBundle? selectedLayout;
 
   Project({required this.name});
 }
 
-@HiveType(typeId: 2)
-class ScreenBundle {
-  @HiveField(0)
+class LayoutBundle {
   String name;
 
-  @HiveField(1)
   String? layoutPath;
 
   Uint8List? layoutBytes;
 
-  @HiveField(2)
-  List<ScreenElement> elements = <ScreenElement>[];
+  List<LayoutElement> elements = <LayoutElement>[];
+
+  Map<LayoutElement, List<LayoutElement>> listLinkListItemsMap = {}; // todo: move it
+
+
+  LayoutBundle(this.name);
+}
+
+class ScreenBundle extends LayoutBundle {
 
   var isLauncher = false;
 
-  ScreenBundle(this.name);
+  ScreenBundle(super.name);
+
 }
 
-// enum FunctionType { LookAt, ClickOn, SelectFrom, TypeIn }
 enum ViewType {
   unknown,
   label,
@@ -50,12 +50,13 @@ enum ViewType {
   button,
   image,
   selector,
-  container,
-  list,
-  listItem,
+  column, // vertical
+  row, // horizontal
+  stack, // frame
+  list
 }
 
-class ScreenElement {
+class LayoutElement {
   late Rect functionalArea;
 
   late Color color;
@@ -70,13 +71,23 @@ class ScreenElement {
 
   List<ListenerCodeBlock> listeners = [];
 
-  bool inEdit = false;
+  bool isInEdit = false;
 
-  ScreenElement(this.functionalArea, this.color, this.inEdit);
+  LayoutBundle? refToExtendedLayout;
+
+  LayoutElement(this.functionalArea, this.color, this.isInEdit);
 
   bool hasDataSource() {
     return viewType == ViewType.list; // todo: add data sources feature
   }
+}
+
+class ContainerScreenElement extends LayoutElement {
+
+  List<LayoutElement> content = [];
+
+  ContainerScreenElement(super.functionalArea, super.color, super.isInEdit);
+
 }
 
 enum CodeType { action, listener }

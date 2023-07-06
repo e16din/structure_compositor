@@ -35,7 +35,7 @@ Widget makeMenuWidget(Map<String, dynamic> itemsMap, BuildContext context,
 }
 
 class ElementPainter extends CustomPainter {
-  List<ScreenElement> elements = [];
+  List<LayoutElement> elements = [];
 
   ElementPainter(this.elements);
 
@@ -43,8 +43,8 @@ class ElementPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) async {
     var paint = Paint()..style = PaintingStyle.stroke;
     for (var element in elements) {
-      paint.strokeWidth = element.inEdit ? 2 : 5;
-      paint.color = element.inEdit ? Colors.black : element.color;
+      paint.strokeWidth = element.isInEdit ? 2 : 5;
+      paint.color = element.isInEdit ? Colors.black : element.color;
       canvas.drawRect(element.functionalArea, paint);
     }
   }

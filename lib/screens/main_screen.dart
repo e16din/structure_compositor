@@ -52,7 +52,7 @@ class _MainPageState extends State<MainPage> {
   Rect? _lastRect;
   String _title = 'Structure Compositor';
 
-  ScreenElement? hoveredElement;
+  LayoutElement? hoveredElement;
   ListenerCodeBlock? hoveredCodeBlock;
 
   @override
@@ -74,7 +74,7 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     developer.log("build", name: 'debug');
 
-    var screenBundle = getScreenBundle();
+    var screenBundle = getLayoutBundle();
     return Scaffold(
       appBar: AppBar(
         title: Text(_title),
@@ -94,17 +94,16 @@ class _MainPageState extends State<MainPage> {
                 ),
                 scrollDirection: Axis.vertical,
                 itemCount: (appFruits.selectedProject != null
-                    ? appFruits.selectedProject?.screenBundles.length
+                    ? appFruits.selectedProject?.layouts.length
                     : 0)!,
                 itemBuilder: (BuildContext context, int index) {
-                  var screenBundle =
-                      appFruits.selectedProject!.screenBundles[index];
+                  var screenBundle = appFruits.selectedProject!.layouts[index];
                   return InkWell(
-                    child: _buildScreenBundleRow(index, screenBundle),
+                    child: _buildLayoutRow(index, screenBundle),
                     onTap: () {
                       setState(
                         () {
-                          appFruits.selectedProject!.selectedScreenBundle =
+                          appFruits.selectedProject!.selectedLayout =
                               screenBundle;
                         },
                       );
@@ -228,10 +227,11 @@ class _MainPageState extends State<MainPage> {
     // }
   }
 
-  _runDemo() {
-    var demoScreen = appFruits.selectedProject!.screenBundles.first;
+  void _runDemo() {
+    var demoScreen = appFruits.selectedProject!.layouts.firstWhere(
+            (element) => element is ScreenBundle && element.isLauncher)
+        as ScreenBundle;
     Get.to(() => DemoScreen(demoScreen));
-    print("Demo Done!!!!");
   }
 
   List<Widget> _buildDraggableActionsList() {
@@ -261,11 +261,12 @@ class _MainPageState extends State<MainPage> {
     for (var codeBlock in codeBlocks) {
       widgets.add(_buildActionWidget(codeBlock));
     }
+
     return widgets;
   }
 
   Widget _buildEditedLayoutWidget() {
-    var selectedScreenBundle = appFruits.selectedProject!.selectedScreenBundle;
+    var selectedScreenBundle = appFruits.selectedProject!.selectedLayout;
     if (selectedScreenBundle?.layoutBytes != null) {
       return Container(
           width: SCREEN_IMAGE_WIDTH,
@@ -284,7 +285,7 @@ class _MainPageState extends State<MainPage> {
                   child: MouseRegion(
                       cursor: SystemMouseCursors.precise,
                       child: CustomPaint(
-                        painter: ElementPainter(getScreenBundle()!.elements),
+                        painter: ElementPainter(getLayoutBundle()!.elements),
                       ))),
               _getAddItemButtons()
             ],
@@ -313,8 +314,8 @@ class _MainPageState extends State<MainPage> {
       for (var f in result.files) {
         var layoutBytes = f.bytes;
 
-        int index = appFruits.selectedProject!.screenBundles.length +
-            resultScreens.length;
+        int index =
+            appFruits.selectedProject!.layouts.length + resultScreens.length;
         ScreenBundle screenBundle = ScreenBundle("New Screen ${index + 1}")
           ..isLauncher = index == 0;
 
@@ -327,8 +328,8 @@ class _MainPageState extends State<MainPage> {
         resultScreens.add(screenBundle);
       }
       setState(() {
-        appFruits.selectedProject!.screenBundles.addAll(resultScreens);
-        appFruits.selectedProject!.selectedScreenBundle = resultScreens.first;
+        appFruits.selectedProject!.layouts.addAll(resultScreens);
+        appFruits.selectedProject!.selectedLayout = resultScreens.first;
       });
     }
   }
@@ -369,7 +370,7 @@ class _MainPageState extends State<MainPage> {
   }
 
   void _onActionButtonMovingEnd(
-      details, CodeBlock codeBlock, ScreenElement? element) {
+      details, CodeBlock codeBlock, LayoutElement? element) {
     if (hoveredCodeBlock == null) {
       if (codeBlock is LifecycleEventBlock) {
         var itemsMap = <String, String>{};
@@ -394,14 +395,15 @@ class _MainPageState extends State<MainPage> {
         });
       }
     } else {
-      var screenBundles = appFruits.selectedProject!.screenBundles;
+      var screenBundles = appFruits.selectedProject!.layouts;
       setState(() {
         if (codeBlock is ActionCodeBlock) {
           if (codeBlock.actionType == ActionCodeType.openNextScreen &&
               screenBundles.isNotEmpty) {
             var hoveredCodeBlockHolder = hoveredCodeBlock!;
-            selectScreen(screenBundles, codeBlock as OpenNextScreenBlock,
-                hoveredCodeBlockHolder, (selected) {
+            selectLayout(
+                codeBlock as OpenNextScreenBlock, hoveredCodeBlockHolder,
+                (selected) {
               var copyStubWith = codeBlock.copyStubWith(selected);
               hoveredCodeBlockHolder.actions.add(copyStubWith);
             });
@@ -416,13 +418,12 @@ class _MainPageState extends State<MainPage> {
     }
   }
 
-  void selectScreen(
-      List<ScreenBundle> screenBundles,
-      OpenNextScreenBlock codeBlock,
-      ListenerCodeBlock hoveredCodeBlock,
-      Function(dynamic) onItemSelected) {
+  void selectLayout(OpenNextScreenBlock codeBlock,
+      ListenerCodeBlock hoveredCodeBlock, Function(dynamic) onItemSelected) {
+    var layouts = appFruits.selectedProject!.layouts;
+
     Map<String, dynamic> itemsMap = {};
-    for (var screen in screenBundles) {
+    for (var screen in layouts) {
       itemsMap.putIfAbsent(screen.name, () => screen);
     }
 
@@ -438,9 +439,9 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
-  Widget _buildScreenBundleRow(int index, ScreenBundle screenBundle) {
+  Widget _buildLayoutRow(int index, LayoutBundle layout) {
     var selectedProject = appFruits.selectedProject;
-    bool isSelected = selectedProject!.selectedScreenBundle == screenBundle;
+    bool isSelected = selectedProject!.selectedLayout == layout;
     return Container(
       height: 108,
       color: isSelected ? Colors.deepOrangeAccent : Colors.transparent,
@@ -449,21 +450,22 @@ class _MainPageState extends State<MainPage> {
         Row(children: [
           Expanded(
             child: TextFormField(
-              initialValue: screenBundle.name,
+              initialValue: layout.name,
               decoration: const InputDecoration(labelText: "Screen Name:"),
               onChanged: (text) {
-                screenBundle.name = text;
+                layout.name = text;
               },
             ),
           ),
           Container(
             width: 16,
           ),
-          if (screenBundle.layoutBytes != null)
+          if (layout.layoutBytes != null)
             Container(
+              width: 84,
                 padding: const EdgeInsets.only(right: 36, top: 16),
-                child: Image.memory(screenBundle.layoutBytes!,
-                    fit: BoxFit.contain))
+                child: Image.memory(layout.layoutBytes!,
+                    fit: BoxFit.scaleDown))
           else
             const Icon(Icons.ad_units)
         ]),
@@ -473,11 +475,11 @@ class _MainPageState extends State<MainPage> {
               color: Colors.white30,
               onPressed: () {
                 setState(() {
-                  selectedProject.screenBundles.remove(screenBundle);
-                  if (screenBundle == selectedProject.selectedScreenBundle) {
-                    selectedProject.selectedScreenBundle =
-                        selectedProject.screenBundles.isNotEmpty
-                            ? selectedProject.screenBundles.first
+                  selectedProject.layouts.remove(layout);
+                  if (layout == selectedProject.selectedLayout) {
+                    selectedProject.selectedLayout =
+                        selectedProject.layouts.isNotEmpty
+                            ? selectedProject.layouts.first
                             : null;
                   }
                 });
@@ -488,9 +490,9 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  ScreenElement? _activeElement;
+  LayoutElement? _activeElement;
 
-  Widget _buildElementRow(ScreenElement element, int index) {
+  Widget _buildElementRow(LayoutElement element, int index) {
     return Container(
       padding: const EdgeInsets.only(left: 8, top: 12, right: 8, bottom: 12),
       decoration: BoxDecoration(
@@ -555,7 +557,7 @@ class _MainPageState extends State<MainPage> {
                             if (_nextColorPosition > 0) {
                               _nextColorPosition -= 1;
                             }
-                            getScreenBundle()!.elements.remove(element);
+                            getLayoutBundle()!.elements.remove(element);
                           });
                         }),
                     IconButton(
@@ -565,7 +567,7 @@ class _MainPageState extends State<MainPage> {
                           color: Colors.white,
                         ),
                         onPressed: () {
-                          _onExtendScreenPressed(element);
+                          _onExtendLayoutPressed(element, null);
                         }),
                   ],
                 )
@@ -604,19 +606,22 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
-  Future<void> _onExtendScreenPressed(ScreenElement screenElement) async {
-    var layoutBytes = await _takeElementImage(screenElement);
-    int index = appFruits.selectedProject!.screenBundles.length;
-    ScreenBundle screenBundle = ScreenBundle("New Screen ${index + 1}");
-    screenBundle.layoutBytes = layoutBytes;
+  Future<LayoutBundle> _onExtendLayoutPressed(LayoutElement element, String? name) async {
+    var layoutBytes = await _takeElementImage(element);
+    var index = appFruits.selectedProject!.layouts.length;
+
+    LayoutBundle layoutBundle = LayoutBundle(name ??= "new_layout${index + 1}");
+    layoutBundle.layoutBytes = layoutBytes;
 
     setState(() {
-      appFruits.selectedProject!.selectedScreenBundle = screenBundle;
-      appFruits.selectedProject!.screenBundles.add(screenBundle);
+      appFruits.selectedProject!.selectedLayout = layoutBundle;
+      appFruits.selectedProject!.layouts.add(layoutBundle);
     });
+
+    return layoutBundle;
   }
 
-  Widget _buildCodeActionsWidgets(ScreenElement screenElement) {
+  Widget _buildCodeActionsWidgets(LayoutElement screenElement) {
     List<Widget> listeners = [];
 
     for (var listenerBlock in screenElement.listeners) {
@@ -640,11 +645,9 @@ class _MainPageState extends State<MainPage> {
                     IconButton(
                         icon: const Icon(Icons.add),
                         onPressed: () {
-                          var screenBundles =
-                              appFruits.selectedProject!.screenBundles;
-                          if (screenBundles.isNotEmpty) {
-                            selectScreen(
-                                screenBundles, actionBlock, listenerBlock,
+                          var layouts = appFruits.selectedProject!.layouts;
+                          if (layouts.isNotEmpty) {
+                            selectLayout(actionBlock, listenerBlock,
                                 (selected) {
                               setState(() {
                                 actionBlock.nextScreenBundle = selected;
@@ -731,27 +734,27 @@ class _MainPageState extends State<MainPage> {
   void _onPointerDown(PointerDownEvent event) {
     setState(() {
       _lastRect = Rect.fromPoints(event.localPosition, event.localPosition);
-      _activeElement = ScreenElement(_lastRect!, getNextColor(), true)
-        ..name = 'element${getScreenBundle()!.elements.length + 1}';
+      _activeElement = LayoutElement(_lastRect!, getNextColor(), true)
+        ..name = 'element${getLayoutBundle()!.elements.length + 1}';
 
-      getScreenBundle()!.elements.add(_activeElement!);
+      getLayoutBundle()!.elements.add(_activeElement!);
     });
   }
 
   void _onPointerMove(PointerMoveEvent event) {
     setState(() {
-      getScreenBundle()!.elements.last.functionalArea =
+      getLayoutBundle()!.elements.last.functionalArea =
           Rect.fromPoints(_lastRect!.topLeft, event.localPosition);
     });
   }
 
   void _onPointerUp(PointerUpEvent event) {
-    var area = getScreenBundle()!.elements.last.functionalArea;
+    var area = getLayoutBundle()!.elements.last.functionalArea;
     if (area.left.floor() == area.right.floor() &&
         area.top.floor() == area.bottom.floor()) {
       setState(() {
         _listWaitedForListItem = null;
-        getScreenBundle()!.elements.removeLast();
+        getLayoutBundle()!.elements.removeLast();
       });
     } else {
 // todo: save data to db
@@ -762,43 +765,24 @@ class _MainPageState extends State<MainPage> {
     }
 
     var element = _activeElement!;
+    showDialog(
+        context: context,
+        builder: (context) {
+          Map<String, ViewType> viewTypesMap = {};
+          for (var viewType in ViewType.values) {
+            viewTypesMap[viewType.name.capitalizeFirst!] = viewType;
+          }
 
-    if (_listWaitedForListItem != null) {
-        Map<String, ScreenElement> itemsMap = {};
-        for (var listElement in _listLinkListItemsMap.keys) {
-          itemsMap[listElement.name] = listElement;
-        }
-
-        var listItems = _listLinkListItemsMap[_listWaitedForListItem!] ??= [];
-        listItems.add(element);
-        _listLinkListItemsMap[_listWaitedForListItem!] = listItems;
-
-        _listWaitedForListItem = null;
-        _onElementTypeChanged(ViewType.listItem, element);
-
-    } else {
-      showDialog(
-          context: context,
-          builder: (context) {
-            return AlertDialog(
-                title: const Text("Select view type:"),
-                content: makeMenuWidget({
-                  "Label": ViewType.label,
-                  "Field": ViewType.field,
-                  "Button": ViewType.button,
-                  "Image": ViewType.image,
-                  "Selector": ViewType.selector,
-                  "Container": ViewType.container,
-                  "List": ViewType.list,
-                  "ListItem": ViewType.listItem,
-                }, context,
-                    (selected) => {_onElementTypeChanged(selected, element)}));
-          }).then((item) {
-        setState(() {
-          getScreenBundle()!.elements.last.inEdit = false;
-        });
+          return AlertDialog(
+              title: const Text("Select view type:"),
+              content: makeMenuWidget(viewTypesMap, context, (selected) {
+                _onViewTypeSelected(selected, element);
+              }));
+        }).then((item) {
+      setState(() {
+        _activeElement!.isInEdit = false;
       });
-    }
+    });
   }
 
   final List<MaterialColor> _rainbowColors = <MaterialColor>[
@@ -823,9 +807,7 @@ class _MainPageState extends State<MainPage> {
     return _rainbowColors[nextColorPosition].shade400;
   }
 
-  Map<ScreenElement, List<ScreenElement>> _listLinkListItemsMap = {};
-
-  void _onElementTypeChanged(ViewType? viewType, ScreenElement element) {
+  void _onElementTypeChanged(ViewType? viewType, LayoutElement element) {
     setState(() {
       switch (viewType) {
         case ViewType.field:
@@ -846,11 +828,14 @@ class _MainPageState extends State<MainPage> {
               .add(ListenerCodeBlock(ListenerCodeType.onItemSelected));
           break;
         case ViewType.list:
-          _listLinkListItemsMap[element] = [];
-          break;
-        case ViewType.listItem:
-          element.listeners
-              .add(ListenerCodeBlock(ListenerCodeType.onItemSelected));
+          getLayoutBundle()!
+              .listLinkListItemsMap
+              .putIfAbsent(element, () => []);
+          for (var listItem
+              in getLayoutBundle()!.listLinkListItemsMap[element] ??= []) {
+            element.listeners
+                .add(ListenerCodeBlock(ListenerCodeType.onItemSelected));
+          }
           break;
         default:
           // do nothing
@@ -860,19 +845,19 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
-  ScreenElement? _listWaitedForListItem;
+  LayoutElement? _listWaitedForListItem;
 
-  void _onAddListItemClick(ScreenElement listElement) {
+  void _onAddListItemClick(LayoutElement listElement) {
     _listWaitedForListItem = listElement;
   }
 
-  void _onElementNameChanged(String value, ScreenElement element) {
+  void _onElementNameChanged(String value, LayoutElement element) {
     element.name = value;
   }
 
   GlobalKey screenImageKey = GlobalKey();
 
-  Future<Uint8List> _takeElementImage(ScreenElement screenElement) async {
+  Future<Uint8List> _takeElementImage(LayoutElement screenElement) async {
     RenderRepaintBoundary screenImageWidget = screenImageKey.currentContext!
         .findRenderObject() as RenderRepaintBoundary;
     var image = await screenImageWidget.toImage();
@@ -899,7 +884,7 @@ class _MainPageState extends State<MainPage> {
 
   Widget _getAddItemButtons() {
     List<Widget> buttons = [];
-    for (var listElement in _listLinkListItemsMap.keys) {
+    for (var listElement in getLayoutBundle()!.listLinkListItemsMap.keys) {
       buttons.add(Positioned(
           right: listElement.functionalArea.right,
           top: listElement.functionalArea.top,
@@ -910,6 +895,27 @@ class _MainPageState extends State<MainPage> {
               icon: const Icon(Icons.add))));
     }
     return Stack(children: buttons);
+  }
+
+  void _onViewTypeSelected(ViewType? selected, LayoutElement element) async {
+    if (_listWaitedForListItem != null) {
+      var listLinkListItemsMap = getLayoutBundle()!.listLinkListItemsMap;
+      Map<String, LayoutElement> itemsMap = {};
+      for (var listElement in listLinkListItemsMap.keys) {
+        itemsMap[listElement.name] = listElement;
+      }
+
+      var listItems = listLinkListItemsMap[_listWaitedForListItem!] ??= [];
+      var layout = await _onExtendLayoutPressed(element, "item_${listItems.length + 1}");
+
+      element.refToExtendedLayout = layout;
+      listItems.add(element);
+      listLinkListItemsMap[_listWaitedForListItem!] = listItems;
+
+      _listWaitedForListItem = null;
+    }
+
+    _onElementTypeChanged(selected, element);
   }
 }
 

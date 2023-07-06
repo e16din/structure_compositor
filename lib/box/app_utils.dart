@@ -3,8 +3,8 @@ import 'data_classes.dart';
 
 AppDataFruits appFruits = AppDataFruits();
 
-ScreenBundle? getScreenBundle() =>
-    appFruits.selectedProject?.selectedScreenBundle;
+LayoutBundle? getLayoutBundle() =>
+    appFruits.selectedProject?.selectedLayout;
 
 Uint8List convertToUint8List(String layoutBytes) {
   Uint8List result = Uint8List.fromList(layoutBytes.codeUnits);
