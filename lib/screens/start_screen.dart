@@ -12,7 +12,7 @@ import 'package:get/get.dart';
 // import 'dart:developer' as developer;
 // import 'package:file_picker/file_picker.dart';
 import '../box/app_utils.dart';
-import '../screens/main_screen.dart';
+import 'main/main_screen.dart';
 import '../box/data_classes.dart';
 
 class StartScreen extends StatelessWidget {
