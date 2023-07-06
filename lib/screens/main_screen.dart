@@ -237,7 +237,7 @@ class _MainPageState extends State<MainPage> {
   List<Widget> _buildDraggableActionsList() {
     List<CodeBlock> codeBlocks = [];
     for (var listenerType in ListenerCodeType.values) {
-      switch(listenerType) {
+      switch (listenerType) {
         case ListenerCodeType.onLifecycleEvent:
           codeBlocks.add(LifecycleEventBlock());
           break;
@@ -247,7 +247,7 @@ class _MainPageState extends State<MainPage> {
       }
     }
     for (var actionType in ActionCodeType.values) {
-      switch(actionType) {
+      switch (actionType) {
         case ActionCodeType.openNextScreen:
           codeBlocks.add(OpenNextScreenBlock());
           break;
@@ -285,7 +285,8 @@ class _MainPageState extends State<MainPage> {
                       cursor: SystemMouseCursors.precise,
                       child: CustomPaint(
                         painter: ElementPainter(getScreenBundle()!.elements),
-                      )))
+                      ))),
+              _getAddItemButtons()
             ],
           ));
     } else {
@@ -396,14 +397,14 @@ class _MainPageState extends State<MainPage> {
       var screenBundles = appFruits.selectedProject!.screenBundles;
       setState(() {
         if (codeBlock is ActionCodeBlock) {
-          if (codeBlock.actionType == ActionCodeType.openNextScreen && screenBundles.isNotEmpty) {
+          if (codeBlock.actionType == ActionCodeType.openNextScreen &&
+              screenBundles.isNotEmpty) {
             var hoveredCodeBlockHolder = hoveredCodeBlock!;
-            selectScreen(screenBundles, codeBlock as OpenNextScreenBlock, hoveredCodeBlockHolder,
-                (selected) {
+            selectScreen(screenBundles, codeBlock as OpenNextScreenBlock,
+                hoveredCodeBlockHolder, (selected) {
               var copyStubWith = codeBlock.copyStubWith(selected);
               hoveredCodeBlockHolder.actions.add(copyStubWith);
             });
-
           } else if (codeBlock.actionType == ActionCodeType.backToPrevious &&
               screenBundles.isNotEmpty) {
             hoveredCodeBlock?.actions.add(codeBlock.copyBlock());
@@ -541,7 +542,9 @@ class _MainPageState extends State<MainPage> {
                     onTap: () {
                       _activeElement = element;
                     },
-                    onChanged: _onElementTypeChanged),
+                    onChanged: (ViewType? viewType) {
+                      _onElementTypeChanged(viewType, element);
+                    }),
                 Column(
                   children: [
                     IconButton(
@@ -747,6 +750,7 @@ class _MainPageState extends State<MainPage> {
     if (area.left.floor() == area.right.floor() &&
         area.top.floor() == area.bottom.floor()) {
       setState(() {
+        _listWaitedForListItem = null;
         getScreenBundle()!.elements.removeLast();
       });
     } else {
@@ -757,26 +761,44 @@ class _MainPageState extends State<MainPage> {
       });
     }
 
-    showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-              title: const Text("Select view type:"),
-              content: makeMenuWidget({
-                "Label": ViewType.label,
-                "Field": ViewType.field,
-                "Button": ViewType.button,
-                "Image": ViewType.image,
-                "Selector": ViewType.selector,
-                "Container": ViewType.container,
-                "List": ViewType.list,
-                "ListItem": ViewType.listItem,
-              }, context, (selected) => {_onElementTypeChanged(selected)}));
-        }).then((item) {
-      setState(() {
-        getScreenBundle()!.elements.last.inEdit = false;
+    var element = _activeElement!;
+
+    if (_listWaitedForListItem != null) {
+        Map<String, ScreenElement> itemsMap = {};
+        for (var listElement in _listLinkListItemsMap.keys) {
+          itemsMap[listElement.name] = listElement;
+        }
+
+        var listItems = _listLinkListItemsMap[_listWaitedForListItem!] ??= [];
+        listItems.add(element);
+        _listLinkListItemsMap[_listWaitedForListItem!] = listItems;
+
+        _listWaitedForListItem = null;
+        _onElementTypeChanged(ViewType.listItem, element);
+
+    } else {
+      showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+                title: const Text("Select view type:"),
+                content: makeMenuWidget({
+                  "Label": ViewType.label,
+                  "Field": ViewType.field,
+                  "Button": ViewType.button,
+                  "Image": ViewType.image,
+                  "Selector": ViewType.selector,
+                  "Container": ViewType.container,
+                  "List": ViewType.list,
+                  "ListItem": ViewType.listItem,
+                }, context,
+                    (selected) => {_onElementTypeChanged(selected, element)}));
+          }).then((item) {
+        setState(() {
+          getScreenBundle()!.elements.last.inEdit = false;
+        });
       });
-    });
+    }
   }
 
   final List<MaterialColor> _rainbowColors = <MaterialColor>[
@@ -801,40 +823,47 @@ class _MainPageState extends State<MainPage> {
     return _rainbowColors[nextColorPosition].shade400;
   }
 
-  void _onElementTypeChanged(ViewType? value) {
+  Map<ScreenElement, List<ScreenElement>> _listLinkListItemsMap = {};
+
+  void _onElementTypeChanged(ViewType? viewType, ScreenElement element) {
     setState(() {
-      switch (value) {
+      switch (viewType) {
         case ViewType.field:
-          if (_activeElement != null &&
-              !_activeElement!.listeners.any((element) =>
-                  element.listenerType == ListenerCodeType.onTextChanged)) {
-            _activeElement!.listeners
+          if (!element.listeners.any((element) =>
+              element.listenerType == ListenerCodeType.onTextChanged)) {
+            element.listeners
                 .add(ListenerCodeBlock(ListenerCodeType.onTextChanged));
           }
           break;
         case ViewType.button:
-          if (_activeElement != null &&
-              !_activeElement!.listeners.any((element) =>
-                  element.listenerType == ListenerCodeType.onClick)) {
-            _activeElement!.listeners
-                .add(ListenerCodeBlock(ListenerCodeType.onClick));
+          if (!element.listeners.any(
+              (element) => element.listenerType == ListenerCodeType.onClick)) {
+            element.listeners.add(ListenerCodeBlock(ListenerCodeType.onClick));
           }
           break;
         case ViewType.selector:
+          element.listeners
+              .add(ListenerCodeBlock(ListenerCodeType.onItemSelected));
+          break;
         case ViewType.list:
-          if (_activeElement != null &&
-              !_activeElement!.listeners.any((element) =>
-                  element.listenerType == ListenerCodeType.onItemSelected)) {
-            _activeElement!.listeners
-                .add(ListenerCodeBlock((ListenerCodeType.onItemSelected)));
-          }
+          _listLinkListItemsMap[element] = [];
+          break;
+        case ViewType.listItem:
+          element.listeners
+              .add(ListenerCodeBlock(ListenerCodeType.onItemSelected));
           break;
         default:
           // do nothing
           break;
       }
-      _activeElement?.viewType = value!;
+      element.viewType = viewType!;
     });
+  }
+
+  ScreenElement? _listWaitedForListItem;
+
+  void _onAddListItemClick(ScreenElement listElement) {
+    _listWaitedForListItem = listElement;
   }
 
   void _onElementNameChanged(String value, ScreenElement element) {
@@ -866,6 +895,21 @@ class _MainPageState extends State<MainPage> {
     var resultList = byteDataN!.buffer.asUint8List();
 
     return resultList;
+  }
+
+  Widget _getAddItemButtons() {
+    List<Widget> buttons = [];
+    for (var listElement in _listLinkListItemsMap.keys) {
+      buttons.add(Positioned(
+          right: listElement.functionalArea.right,
+          top: listElement.functionalArea.top,
+          child: IconButton(
+              onPressed: () {
+                _onAddListItemClick(listElement);
+              },
+              icon: const Icon(Icons.add))));
+    }
+    return Stack(children: buttons);
   }
 }
 

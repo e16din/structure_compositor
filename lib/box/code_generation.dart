@@ -200,6 +200,9 @@ class App: Application() {
          <!-- Value: ${e.value} -->
     """;
           break;
+        case ViewType.listItem:
+          // TODO: Handle this case.
+          break;
       }
     }
 
@@ -272,28 +275,9 @@ class ${activityName} : AppCompatActivity() {
 
           break;
         case ViewType.button:
-          var onButtonClick = """\t\t\tTODO("Not yet implemented")""";
-          
-          var openNextScreenBlock = e.listeners.firstWhereOrNull((listener) =>
-              listener.actions.any((action) => action.actionType == ActionCodeType.openNextScreen));
-          if (openNextScreenBlock != null) {
-            var action = openNextScreenBlock.actions
-                    .firstWhereOrNull((action) => action is OpenNextScreenBlock)
-                as OpenNextScreenBlock?;
-            onButtonClick = """
-\t\t\tstartActivity(
-\t\t\t\tIntent(this, ${_makeActivityName(action!.nextScreenBundle!)}::class.java)
-\t\t\t)""";
-          } // else {
-
-          var backToPrevBlock = e.listeners.firstWhereOrNull((listener) =>
-              listener.actions.any((action) => action.actionType == ActionCodeType.backToPrevious));
-          if (backToPrevBlock != null) {
-            onButtonClick = "\t\t\tonBackPressedDispatcher.onBackPressed()";
-          }
-
+          var actionCode = _getActionCode(e);
           result += """\n\t\t$valName.setOnClickListener { 
-$onButtonClick
+$actionCode
 \t\t}""";
           break;
         case ViewType.image:
@@ -312,7 +296,7 @@ $onButtonClick
           var itemLayoutName = "item_${e.name.toLowerCase()}";
           await _generateListItemXml(itemLayoutName);
 
-          var onItemClick = """\t\t\t\tTODO("Not yet implemented")""";
+          var actionCode = _getActionCode(e);
 
           result += """\n
 \t\tval layoutManager = LinearLayoutManager(this)
@@ -323,8 +307,8 @@ $onButtonClick
 \t\t// $valName.addItemDecoration(DividerItemDecoration(dividerDrawable))
 \t\tval adapter = ${e.name.capitalizeFirst}Adapter(
 \t\t\titems = AppDataState.${e.name}DataSource.get(), 
-\t\t\tonItemClickListener = {""";
-          result += "\n$onItemClick\n";
+\t\t\tonItemClickListener = { position, viewType ->""";
+          result += "\n$actionCode\n";
           result += """\t\t\t}
 \t\t)
           
@@ -339,14 +323,25 @@ $onButtonClick
           addToEndCodeList += """
 \tclass ${e.name.capitalizeFirst}Adapter(
 \t\tvar items: List<${e.name.capitalizeFirst}DataSource.Data>,
-\t\tvar onItemClickListener: () -> Unit
+\t\tvar onItemClickListener: (position: Int, viewType: Int) -> Unit
 \t) : RecyclerView.Adapter<${e.name.capitalizeFirst}Adapter.${e.name.capitalizeFirst}ViewHolder>() {
+
+\t\tenum class ViewType {
+\t\t\tDefault,
+\t\t}
 
 \t\tinner class ${e.name.capitalizeFirst}ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
 \t\t\tinit {
 \t\t\t\tview.setOnClickListener {
-\t\t\t\t\tonItemClickListener.invoke()
+\t\t\t\t\tval position = adapterPosition
+\t\t\t\t\tonItemClickListener.invoke(position, getItemViewType(position))
 \t\t\t\t}
+\t\t\t}
+\t\t}
+
+\t\toverride fun getItemViewType(position: Int): Int {
+\t\t\treturn when (items[position]) {
+\t\t\t\telse -> ViewType.Default.ordinal
 \t\t\t}
 \t\t}
 
@@ -371,6 +366,9 @@ $onButtonClick
 \t}
 """;
           break;
+        case ViewType.listItem:
+          // TODO: Handle this case.
+          break;
       }
     }
 
@@ -386,6 +384,29 @@ $onButtonClick
       bytes: bytes,
     );
     debugPrint("code file path: $path");
+  }
+
+  static String _getActionCode(ScreenElement e) {
+    var onButtonClick = """\t\t\tTODO("Not yet implemented")""";
+
+    var openNextScreenBlock = e.listeners.firstWhereOrNull((listener) =>
+        listener.actions.any((action) => action.actionType == ActionCodeType.openNextScreen));
+    if (openNextScreenBlock != null) {
+      var action = openNextScreenBlock.actions
+              .firstWhereOrNull((action) => action is OpenNextScreenBlock)
+          as OpenNextScreenBlock?;
+      onButtonClick = """
+    \t\t\tstartActivity(
+    \t\t\t\tIntent(this, ${_makeActivityName(action!.nextScreenBundle!)}::class.java)
+    \t\t\t)""";
+    } // else {
+
+    var backToPrevBlock = e.listeners.firstWhereOrNull((listener) =>
+        listener.actions.any((action) => action.actionType == ActionCodeType.backToPrevious));
+    if (backToPrevBlock != null) {
+      onButtonClick = "\t\t\tonBackPressedDispatcher.onBackPressed()";
+    }
+    return onButtonClick;
   }
 
   static Future<void> _generateListItemXml(String itemLayoutName) async {
