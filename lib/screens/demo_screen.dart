@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:structure_compositor/box/data_classes.dart';
-import 'package:structure_compositor/screens/main_screen.dart';
 
 import '../box/app_utils.dart';
 import '../box/widget_utils.dart';
@@ -11,7 +10,7 @@ import '../box/widget_utils.dart';
 class DemoScreen extends StatelessWidget {
   final ScreenBundle demoScreen;
 
-  DemoScreen(this.demoScreen, {super.key});
+  const DemoScreen(this.demoScreen, {super.key});
 
 // This widget is the root of your application.
   @override
@@ -28,7 +27,7 @@ class DemoScreen extends StatelessWidget {
 class DemoPage extends StatefulWidget {
   final ScreenBundle demoScreen;
 
-  DemoPage(this.demoScreen, {Key? key}) : super(key: key);
+  const DemoPage(this.demoScreen, {Key? key}) : super(key: key);
 
   @override
   State<DemoPage> createState() => _DemoPageState(demoScreen);
@@ -119,13 +118,37 @@ class _DemoPageState extends State<DemoPage> {
         if (element.functionalArea.contains(event.localPosition)) {
           for (var listener in element.listeners) {
             for (var action in listener.actions) {
-              if (action is OpenNextScreenBlock) {
-                setState(() {
-                  demoScreen = action.nextScreenBundle!;
-                  screensHistory.add(demoScreen);
-                });
-              } else if (action is BackToPreviousBlock) {
-                _onDemoBackPressed();
+              switch(action.actionType) {
+                case ActionCodeType.sendRequest:
+                  // TODO: Handle this case.
+                  break;
+                case ActionCodeType.updateWidget:
+                  // TODO: Handle this case.
+                  break;
+                case ActionCodeType.openNextScreen:
+                  setState(() {
+                    demoScreen = (action as OpenNextScreenBlock).nextScreenBundle!;
+                    screensHistory.add(demoScreen);
+                  });
+                  break;
+                case ActionCodeType.backToPrevious:
+                  _onDemoBackPressed();
+                  break;
+                case ActionCodeType.changeData:
+                  // TODO: Handle this case.
+                  break;
+                case ActionCodeType.callFunction:
+                  // TODO: Handle this case.
+                  break;
+                case ActionCodeType.showAlertDialog:
+                  // TODO: Handle this case.
+                  break;
+                case ActionCodeType.showSnackBar:
+                  // TODO: Handle this case.
+                  break;
+                case ActionCodeType.comment:
+                  // TODO: Handle this case.
+                  break;
               }
             }
           }

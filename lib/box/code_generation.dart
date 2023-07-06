@@ -36,13 +36,13 @@ class CodeGenerator {
 
         for (var listener in element.listeners) {
           resultXml += "\n        <listener name=\"${listener.name}\">";
-          resultXml += "\n          type=\"${listener.type}\"";
+          resultXml += "\n          type=\"${listener.listenerType}\"";
           resultXml += "\n          description=\"${listener.description}\"";
           resultXml += "\n          color=\"${listener.color}\" >";
 
           for (var action in listener.actions) {
             resultXml += "\n          <action name=\"${action.name}\">";
-            resultXml += "\n            type=\"${action.type}\"";
+            resultXml += "\n            type=\"${action.actionType}\"";
             resultXml += "\n            description=\"${action.description}\"";
             resultXml += "\n            color=\"${action.color}\" >";
             resultXml += "\n          </action>";
@@ -123,7 +123,7 @@ class App: Application() {
       resultXml += """\n\n\t<!-- Description: ${e.description} -->\n\n""";
       var viewId = "@+id/${_makeViewId(e)}";
       switch (e.viewType) {
-        case ViewType.Unknown:
+        case ViewType.unknown:
           resultXml += """
           <Unknown
               android:id="$viewId"
@@ -132,7 +132,7 @@ class App: Application() {
               android:text="${e.value}" />
     """;
           break;
-        case ViewType.Label:
+        case ViewType.label:
           resultXml += """
           <TextView
               android:id="$viewId"
@@ -141,7 +141,7 @@ class App: Application() {
               android:text="${e.value}" />
     """;
           break;
-        case ViewType.Field:
+        case ViewType.field:
           resultXml += """
           <EditText
               android:id="$viewId"
@@ -150,7 +150,7 @@ class App: Application() {
               android:hint="${e.value}" />
     """;
           break;
-        case ViewType.Button:
+        case ViewType.button:
           resultXml += """
           <Button
               android:id="$viewId"
@@ -159,7 +159,7 @@ class App: Application() {
               android:text="${e.value}" />
     """;
           break;
-        case ViewType.Image:
+        case ViewType.image:
           resultXml += """
           <ImageView
               android:id="$viewId"
@@ -168,7 +168,7 @@ class App: Application() {
               app:compatSrc="${e.value}" />
     """;
           break;
-        case ViewType.Selector:
+        case ViewType.selector:
           resultXml += """
           <Switch
               android:id="$viewId"
@@ -177,7 +177,7 @@ class App: Application() {
               android:checked="${e.value}" />
     """;
           break;
-        case ViewType.Container:
+        case ViewType.container:
           resultXml += """
          <LinearLayout 
               android:id="$viewId"
@@ -190,7 +190,7 @@ class App: Application() {
          </LinearLayout>
     """;
           break;
-        case ViewType.List:
+        case ViewType.list:
           resultXml += """
          <androidx.recyclerview.widget.RecyclerView 
               android:id="$viewId"
@@ -259,22 +259,23 @@ class ${activityName} : AppCompatActivity() {
       result +=
           "\n\t\tval $valName = findViewById<${_makeViewClassName(e)}>(R.id.$valName)";
       switch (e.viewType) {
-        case ViewType.Unknown:
+        case ViewType.unknown:
           // do nothing
           break;
-        case ViewType.Label:
+        case ViewType.label:
           // do nothing
           break;
-        case ViewType.Field:
+        case ViewType.field:
           result += """\n\t\t$valName.doAfterTextChanged { text ->
 \t\t\tTODO("Not yet implemented")
 \t\t}""";
 
           break;
-        case ViewType.Button:
+        case ViewType.button:
           var onButtonClick = """\t\t\tTODO("Not yet implemented")""";
+          
           var openNextScreenBlock = e.listeners.firstWhereOrNull((listener) =>
-              listener.actions.any((action) => action is OpenNextScreenBlock));
+              listener.actions.any((action) => action.actionType == ActionCodeType.openNextScreen));
           if (openNextScreenBlock != null) {
             var action = openNextScreenBlock.actions
                     .firstWhereOrNull((action) => action is OpenNextScreenBlock)
@@ -286,7 +287,7 @@ class ${activityName} : AppCompatActivity() {
           } // else {
 
           var backToPrevBlock = e.listeners.firstWhereOrNull((listener) =>
-              listener.actions.any((action) => action is BackToPreviousBlock));
+              listener.actions.any((action) => action.actionType == ActionCodeType.backToPrevious));
           if (backToPrevBlock != null) {
             onButtonClick = "\t\t\tonBackPressedDispatcher.onBackPressed()";
           }
@@ -295,21 +296,23 @@ class ${activityName} : AppCompatActivity() {
 $onButtonClick
 \t\t}""";
           break;
-        case ViewType.Image:
+        case ViewType.image:
           // do nothing
           break;
-        case ViewType.Selector:
+        case ViewType.selector:
           result +=
               """\n\t\t$valName.setOnCheckedChangeListener { v, isChecked -> 
 \t\t\tTODO("Not yet implemented")
 \t\t}""";
           break;
-        case ViewType.Container:
+        case ViewType.container:
           // do nothing
           break;
-        case ViewType.List:
+        case ViewType.list:
           var itemLayoutName = "item_${e.name.toLowerCase()}";
           await _generateListItemXml(itemLayoutName);
+
+          var onItemClick = """\t\t\t\tTODO("Not yet implemented")""";
 
           result += """\n
 \t\tval layoutManager = LinearLayoutManager(this)
@@ -320,9 +323,9 @@ $onButtonClick
 \t\t// $valName.addItemDecoration(DividerItemDecoration(dividerDrawable))
 \t\tval adapter = ${e.name.capitalizeFirst}Adapter(
 \t\t\titems = AppDataState.${e.name}DataSource.get(), 
-\t\t\tonItemClickListener = {
-\t\t\t\tTODO("Not yet implemented")
-\t\t\t}
+\t\t\tonItemClickListener = {""";
+          result += "\n$onItemClick\n";
+          result += """\t\t\t}
 \t\t)
           
 \t\t$valName.adapter = adapter
@@ -448,28 +451,28 @@ class ${name}DataSource {
   static String _makeViewClassName(ScreenElement e) {
     var result = "";
     switch (e.viewType) {
-      case ViewType.Unknown:
+      case ViewType.unknown:
         result = "View";
         break;
-      case ViewType.Label:
+      case ViewType.label:
         result = "TextView";
         break;
-      case ViewType.Field:
+      case ViewType.field:
         result = "EditText";
         break;
-      case ViewType.Button:
+      case ViewType.button:
         result = "Button";
         break;
-      case ViewType.Image:
+      case ViewType.image:
         result = "ImageView";
         break;
-      case ViewType.Selector:
+      case ViewType.selector:
         result = "Switch";
         break;
-      case ViewType.Container:
+      case ViewType.container:
         result = "LinearLayout";
         break;
-      case ViewType.List:
+      case ViewType.list:
         result = "RecyclerView";
         break;
     }

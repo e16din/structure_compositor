@@ -21,27 +21,6 @@ import '../box/widget_utils.dart';
 
 int _nextColorPosition = 0;
 
-var codeBlocks = [
-  // Lifecycle Listeners
-  LifecycleEventBlock("onLifecycleEvent() { }", CodeType.listener,
-      Colors.purple.withOpacity(0.7)),
-  // Listeners:
-  CodeBlock("onClick() { }", CodeType.listener, Colors.purple),
-  CodeBlock("onTextChanged() { }", CodeType.listener, Colors.purple),
-  CodeBlock("onItemSelected() { }", CodeType.listener, Colors.purple),
-  CodeBlock("onTimerTick() { }", CodeType.listener, Colors.purple),
-  CodeBlock("onResponse() { }", CodeType.listener, Colors.purple),
-  CodeBlock("onDataChanged() { }", CodeType.listener, Colors.purple),
-
-  // Actions:
-  CodeBlock("sendRequest()", CodeType.action, Colors.green),
-  CodeBlock("updateWidget()", CodeType.action, Colors.green),
-  OpenNextScreenBlock("openNextScreen()", CodeType.action, Colors.green),
-  BackToPreviousBlock("backToPrevious()", CodeType.action, Colors.green),
-  CodeBlock("changeData()", CodeType.action, Colors.green),
-  CodeBlock("callFunction()", CodeType.action, Colors.green),
-];
-
 class MainScreen extends StatelessWidget {
   const MainScreen({Key? key}) : super(key: key);
 
@@ -74,7 +53,7 @@ class _MainPageState extends State<MainPage> {
   String _title = 'Structure Compositor';
 
   ScreenElement? hoveredElement;
-  CodeBlock? hoveredCodeBlock;
+  ListenerCodeBlock? hoveredCodeBlock;
 
   @override
   void initState() {
@@ -256,6 +235,28 @@ class _MainPageState extends State<MainPage> {
   }
 
   List<Widget> _buildDraggableActionsList() {
+    List<CodeBlock> codeBlocks = [];
+    for (var listenerType in ListenerCodeType.values) {
+      switch(listenerType) {
+        case ListenerCodeType.onLifecycleEvent:
+          codeBlocks.add(LifecycleEventBlock());
+          break;
+
+        default:
+          codeBlocks.add(ListenerCodeBlock(listenerType));
+      }
+    }
+    for (var actionType in ActionCodeType.values) {
+      switch(actionType) {
+        case ActionCodeType.openNextScreen:
+          codeBlocks.add(OpenNextScreenBlock());
+          break;
+
+        default:
+          codeBlocks.add(ActionCodeBlock(actionType));
+      }
+    }
+
     List<Widget> widgets = [];
     for (var codeBlock in codeBlocks) {
       widgets.add(_buildActionWidget(codeBlock));
@@ -388,25 +389,27 @@ class _MainPageState extends State<MainPage> {
             });
       } else {
         setState(() {
-          element?.listeners.add(codeBlock.copyStub());
+          element?.listeners.add(codeBlock.copyBlock() as ListenerCodeBlock);
         });
       }
     } else {
       var screenBundles = appFruits.selectedProject!.screenBundles;
       setState(() {
-        if (codeBlock is OpenNextScreenBlock && screenBundles.isNotEmpty) {
-          var hoveredCodeBlockHolder = hoveredCodeBlock!;
-          selectScreen(screenBundles, codeBlock, hoveredCodeBlockHolder,
-              (selected) {
-            var copyStubWith = codeBlock.copyStubWith(selected);
-            hoveredCodeBlockHolder.actions.add(copyStubWith);
-          });
-        } else if (codeBlock is BackToPreviousBlock && screenBundles.isNotEmpty) {
-          var copyStubWith = codeBlock.copyBackToPreviousBlock();
-          hoveredCodeBlock?.actions.add(copyStubWith);
+        if (codeBlock is ActionCodeBlock) {
+          if (codeBlock.actionType == ActionCodeType.openNextScreen && screenBundles.isNotEmpty) {
+            var hoveredCodeBlockHolder = hoveredCodeBlock!;
+            selectScreen(screenBundles, codeBlock as OpenNextScreenBlock, hoveredCodeBlockHolder,
+                (selected) {
+              var copyStubWith = codeBlock.copyStubWith(selected);
+              hoveredCodeBlockHolder.actions.add(copyStubWith);
+            });
 
-        } else {
-            hoveredCodeBlock?.actions.add(codeBlock.copyStub());
+          } else if (codeBlock.actionType == ActionCodeType.backToPrevious &&
+              screenBundles.isNotEmpty) {
+            hoveredCodeBlock?.actions.add(codeBlock.copyBlock());
+          } else {
+            hoveredCodeBlock?.actions.add(codeBlock.copyBlock());
+          }
         }
       });
     }
@@ -415,7 +418,7 @@ class _MainPageState extends State<MainPage> {
   void selectScreen(
       List<ScreenBundle> screenBundles,
       OpenNextScreenBlock codeBlock,
-      CodeBlock hoveredCodeBlock,
+      ListenerCodeBlock hoveredCodeBlock,
       Function(dynamic) onItemSelected) {
     Map<String, dynamic> itemsMap = {};
     for (var screen in screenBundles) {
@@ -760,14 +763,14 @@ class _MainPageState extends State<MainPage> {
           return AlertDialog(
               title: const Text("Select view type:"),
               content: makeMenuWidget({
-                "Label": ViewType.Label,
-                "Field": ViewType.Field,
-                "Button": ViewType.Button,
-                "Image": ViewType.Image,
-                "Selector": ViewType.Selector,
-                "Container": ViewType.Container,
-                "List": ViewType.List,
-                "ListItem": ViewType.ListItem,
+                "Label": ViewType.label,
+                "Field": ViewType.field,
+                "Button": ViewType.button,
+                "Image": ViewType.image,
+                "Selector": ViewType.selector,
+                "Container": ViewType.container,
+                "List": ViewType.list,
+                "ListItem": ViewType.listItem,
               }, context, (selected) => {_onElementTypeChanged(selected)}));
         }).then((item) {
       setState(() {
@@ -801,26 +804,29 @@ class _MainPageState extends State<MainPage> {
   void _onElementTypeChanged(ViewType? value) {
     setState(() {
       switch (value) {
-        case ViewType.Field:
+        case ViewType.field:
           if (_activeElement != null &&
-              !_activeElement!.listeners
-                  .any((element) => element.type == CodeType.listener)) {
-            _activeElement!.listeners.add(codeBlocks[2].copyStub());
+              !_activeElement!.listeners.any((element) =>
+                  element.listenerType == ListenerCodeType.onTextChanged)) {
+            _activeElement!.listeners
+                .add(ListenerCodeBlock(ListenerCodeType.onTextChanged));
           }
           break;
-        case ViewType.Button:
+        case ViewType.button:
           if (_activeElement != null &&
-              !_activeElement!.listeners
-                  .any((element) => element.type == CodeType.listener)) {
-            _activeElement!.listeners.add(codeBlocks[1].copyStub());
+              !_activeElement!.listeners.any((element) =>
+                  element.listenerType == ListenerCodeType.onClick)) {
+            _activeElement!.listeners
+                .add(ListenerCodeBlock(ListenerCodeType.onClick));
           }
           break;
-        case ViewType.Selector:
-        case ViewType.List:
+        case ViewType.selector:
+        case ViewType.list:
           if (_activeElement != null &&
-              !_activeElement!.listeners
-                  .any((element) => element.type == CodeType.listener)) {
-            _activeElement!.listeners.add(codeBlocks[3].copyStub());
+              !_activeElement!.listeners.any((element) =>
+                  element.listenerType == ListenerCodeType.onItemSelected)) {
+            _activeElement!.listeners
+                .add(ListenerCodeBlock((ListenerCodeType.onItemSelected)));
           }
           break;
         default:

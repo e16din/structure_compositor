@@ -1,6 +1,6 @@
 import 'dart:typed_data';
-import 'dart:ui';
 
+import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
 @HiveType(typeId: 0)
@@ -44,15 +44,15 @@ class ScreenBundle {
 
 // enum FunctionType { LookAt, ClickOn, SelectFrom, TypeIn }
 enum ViewType {
-  Unknown,
-  Label,
-  Field,
-  Button,
-  Image,
-  Selector,
-  Container,
-  List,
-  ListItem,
+  unknown,
+  label,
+  field,
+  button,
+  image,
+  selector,
+  container,
+  list,
+  listItem,
 }
 
 class ScreenElement {
@@ -60,7 +60,7 @@ class ScreenElement {
 
   late Color color;
 
-  ViewType viewType = ViewType.Unknown;
+  ViewType viewType = ViewType.unknown;
 
   String name = "";
 
@@ -68,59 +68,92 @@ class ScreenElement {
 
   String description = "";
 
-  List<CodeBlock> listeners = [];
+  List<ListenerCodeBlock> listeners = [];
 
   bool inEdit = false;
 
   ScreenElement(this.functionalArea, this.color, this.inEdit);
 
   bool hasDataSource() {
-    return viewType == ViewType.List; // todo: add data sources feature
+    return viewType == ViewType.list; // todo: add data sources feature
   }
 }
 
 enum CodeType { action, listener }
 
-@HiveType(typeId: 3)
-class CodeBlock {
-  CodeType type;
-  String name;
-  Color color;
+enum ActionCodeType {
+  sendRequest,
+  updateWidget,
+  openNextScreen,
+  backToPrevious,
+  changeData,
+  callFunction,
+  showAlertDialog,
+  showSnackBar,
+  comment
+}
 
-  List<CodeBlock> actions = [];
+enum ListenerCodeType {
+  onLifecycleEvent,
+  onClick,
+  onTextChanged,
+  onItemSelected,
+  onTimerTick,
+  onResponse,
+  onDataChanged
+}
+
+abstract class CodeBlock {
+  String name = "empty";
+  Color color = Colors.white;
   String description = "";
 
-  CodeBlock(this.name, this.type, this.color);
+  CodeBlock copyBlock();
+}
 
-  CodeBlock copyStub() {
-    return CodeBlock(name, type, color)
-      ..actions = []
-      ..description = "";
+class ListenerCodeBlock extends CodeBlock {
+  ListenerCodeType listenerType;
+  List<ActionCodeBlock> actions = [];
+
+  ListenerCodeBlock(this.listenerType){
+    name = "${listenerType.name}() { }";
+    color = Colors.purple;
+  }
+
+  @override
+  ListenerCodeBlock copyBlock() {
+    return ListenerCodeBlock(listenerType);
   }
 }
 
-class OpenNextScreenBlock extends CodeBlock {
+class ActionCodeBlock extends CodeBlock {
+  ActionCodeType actionType;
+  List<ListenerCodeBlock> listeners =
+      []; // NOTE: for actions with result (async actions, callbacks)
+
+  ActionCodeBlock(this.actionType){
+    name = "${actionType.name}()";
+    color = Colors.green;
+  }
+
+  @override
+  ActionCodeBlock copyBlock() {
+    return ActionCodeBlock(actionType);
+  }
+}
+
+class OpenNextScreenBlock extends ActionCodeBlock {
   ScreenBundle? nextScreenBundle;
 
-  OpenNextScreenBlock(super.name, super.type, super.color);
+  OpenNextScreenBlock(): super(ActionCodeType.openNextScreen);
 
   OpenNextScreenBlock copyStubWith(ScreenBundle nextScreenBundle) {
-    return OpenNextScreenBlock(name, type, color)
-      ..nextScreenBundle = nextScreenBundle
-      ..actions = []
-      ..description = "";
+    return OpenNextScreenBlock()
+      ..nextScreenBundle = nextScreenBundle;
   }
 }
 
-class BackToPreviousBlock extends CodeBlock {
-  BackToPreviousBlock(super.name, super.type, super.color);
-
-  BackToPreviousBlock copyBackToPreviousBlock() {
-    return BackToPreviousBlock(name, type, color);
-  }
-}
-
-class LifecycleEventBlock extends CodeBlock {
+class LifecycleEventBlock extends ListenerCodeBlock {
   var events = [
     "onCreate() { }",
     "onStart() { }",
@@ -131,10 +164,12 @@ class LifecycleEventBlock extends CodeBlock {
 
   late String selectedEvent;
 
-  LifecycleEventBlock(super.name, super.type, super.color);
+  LifecycleEventBlock(): super(ListenerCodeType.onLifecycleEvent) {
+    color = Colors.purple.withOpacity(0.7);
+  }
 
   LifecycleEventBlock copyStubWith(String selectedEvent) {
-    return LifecycleEventBlock(name, type, color)
+    return LifecycleEventBlock()
       ..selectedEvent = selectedEvent;
   }
 }
