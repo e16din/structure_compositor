@@ -484,35 +484,49 @@ class _MainPageState extends State<MainPage> {
         TextFormField(decoration: InputDecoration(labelText: listenerBlockName))
       ];
       for (var action in listener.actions) {
+        var removeActionWidget = Align(
+          alignment: Alignment.topRight,
+          child: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () {
+                setState(() {
+                  listener.actions.remove(action);
+                });
+              }),
+        );
         if (action is OpenNextScreenBlock) {
-          var actionContainer = Container(
-              alignment: Alignment.topLeft,
-              padding: const EdgeInsets.only(
-                  left: 42 + 36, right: 16, top: 12, bottom: 8),
-              child: Column(
-                children: [
-                  TextFormField(
-                      decoration: InputDecoration(labelText: action.name)),
-                  if (action.nextScreenBundle == null)
-                    IconButton(
-                        icon: const Icon(Icons.add),
-                        onPressed: () {
-                          var layouts = appFruits.selectedProject!.layouts;
-                          if (layouts.isNotEmpty) {
-                            selectLayout(action, listener, (selected) {
-                              setState(() {
-                                action.nextScreenBundle = selected;
-                              });
-                            });
-                          }
-                        })
-                ],
-              ));
+          var actionContainer = Stack(
+            children: [
+              Container(
+                  alignment: Alignment.topLeft,
+                  padding: const EdgeInsets.only(
+                      left: 42 + 36, right: 16, top: 12, bottom: 8),
+                  child: Column(
+                    children: [
+                      TextFormField(
+                          decoration: InputDecoration(labelText: action.name)),
+                      if (action.nextScreenBundle == null)
+                        IconButton(
+                            icon: const Icon(Icons.add),
+                            onPressed: () {
+                              var layouts = appFruits.selectedProject!.layouts;
+                              if (layouts.isNotEmpty) {
+                                selectLayout(action, listener, (selected) {
+                                  setState(() {
+                                    action.nextScreenBundle = selected;
+                                  });
+                                });
+                              }
+                            })
+                    ],
+                  )),
+              removeActionWidget
+            ],
+          );
           actionWidgets.add(actionContainer);
 
           if (action.nextScreenBundle != null) {
             actionWidgets.add(Container(
-                alignment: Alignment.topLeft,
                 padding: const EdgeInsets.only(
                     left: 42 + 36, right: 16, top: 12, bottom: 8),
                 child: Row(
@@ -535,12 +549,17 @@ class _MainPageState extends State<MainPage> {
                 )));
           }
         } else {
-          var actionContainer = Container(
-              alignment: Alignment.topLeft,
-              padding: const EdgeInsets.only(
-                  left: 42 + 36, right: 16, top: 12, bottom: 8),
-              child: TextFormField(
-                  decoration: InputDecoration(labelText: action.name)));
+          var actionContainer = Stack(
+            children: [
+              Container(
+                  alignment: Alignment.topLeft,
+                  padding: const EdgeInsets.only(
+                      left: 42 + 36, right: 16, top: 12, bottom: 8),
+                  child: TextFormField(
+                      decoration: InputDecoration(labelText: action.name))),
+              removeActionWidget
+            ],
+          );
           actionWidgets.add(actionContainer);
         }
       }
