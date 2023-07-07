@@ -44,16 +44,20 @@ class ScreenBundle extends LayoutBundle {
 }
 
 enum ViewType {
-  unknown,
-  label,
-  field,
-  button,
-  image,
-  selector,
-  column, // vertical
-  row, // horizontal
-  stack, // frame
-  list
+  unknown("Unknown"),
+  label("Label"),
+  field("Field"),
+  button("Button"),
+  image("Image"),
+  selector("Selector"),
+  columnContainer("Column Container"), // vertical
+  rowContainer("Row Container"), // horizontal
+  stackContainer("Stack Container"), // frame
+  listContainer("List Container");
+
+  final String viewName;
+
+  const ViewType(this.viewName);
 }
 
 class LayoutElement {
@@ -78,7 +82,7 @@ class LayoutElement {
   LayoutElement(this.functionalArea, this.color, this.isInEdit);
 
   bool hasDataSource() {
-    return viewType == ViewType.list; // todo: add data sources feature
+    return viewType == ViewType.listContainer; // todo: add data sources feature
   }
 }
 

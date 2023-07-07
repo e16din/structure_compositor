@@ -110,7 +110,7 @@ class LayoutsListState extends State<LayoutsListWidget> {
           Expanded(
             child: TextFormField(
               initialValue: layout.name,
-              decoration: const InputDecoration(labelText: "Screen Name:"),
+              decoration: const InputDecoration(labelText: "Layout Name:"),
               onChanged: (text) {
                 layout.name = text;
               },

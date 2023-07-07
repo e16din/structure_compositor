@@ -59,39 +59,55 @@ class _DemoPageState extends State<DemoPage> {
                 flex: 15,
                 child: Container(
                   color: Colors.green,
-                  child: Stack(children: []),
+                  child: const Stack(children: []),
                 )),
             Container(
-              width: SCREEN_IMAGE_WIDTH,
-              child: Stack(fit: StackFit.expand, children: [
-                Image.memory(demoScreen.layoutBytes!, fit: BoxFit.contain),
-                Listener(
-                  // onPointerDown: _onPointerUp,
-                  onPointerUp: _onPointerUp,
-                  // onPointerMove: _onPointerUp,
-                  child: MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: CustomPaint(
-                        painter: ElementPainter(demoScreen.elements),
-                      )),
-                ),
-                Container(
-                  alignment: Alignment.topLeft,
-                  child: BackButton(onPressed: () {
-                    _onDemoBackPressed();
-                  }),
-                ),
-                Container(
-                    alignment: Alignment.topRight,
-                    child: IconButton.filled(
-                        onPressed: () {
-                          Get.back();
-                        },
-                        icon: Transform.rotate(
-                            angle: -90 * pi / 180,
-                            child: const Icon(Icons.exit_to_app))))
-              ]),
-            ),
+                width: SCREEN_IMAGE_WIDTH,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Container(
+                        padding: const EdgeInsets.only(top: 42, bottom: 42),
+                        child: Image.memory(demoScreen.layoutBytes!, fit: BoxFit.contain)),
+                    Container(
+                      padding: const EdgeInsets.only(top: 42, bottom: 42),
+                      child: Listener(
+                        // onPointerDown: _onPointerUp,
+                        onPointerUp: _onPointerUp,
+                        // onPointerMove: _onPointerUp,
+                        child: MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: CustomPaint(
+                              painter: ElementPainter(demoScreen.elements),
+                            )),
+                      ),
+                    ),
+                    Container(
+                      alignment: Alignment.topLeft,
+                      child: BackButton(onPressed: () {
+                        _onDemoBackPressed();
+                      }),
+                    ),
+                    Expanded(
+                      child: Container(
+                          alignment: Alignment.topCenter,
+                          height: 42,
+                          child: Text(
+                            demoScreen.name,
+                            style: const TextStyle(fontSize: 18),
+                          )),
+                    ),
+                    Container(
+                        alignment: Alignment.topRight,
+                        child: IconButton.filled(
+                            onPressed: () {
+                              Get.back();
+                            },
+                            icon: Transform.rotate(
+                                angle: -90 * pi / 180,
+                                child: const Icon(Icons.exit_to_app)))),
+                  ],
+                )),
             Expanded(
                 flex: 16,
                 child: Container(
@@ -118,7 +134,7 @@ class _DemoPageState extends State<DemoPage> {
         if (element.functionalArea.contains(event.localPosition)) {
           for (var listener in element.listeners) {
             for (var action in listener.actions) {
-              switch(action.actionType) {
+              switch (action.actionType) {
                 case ActionCodeType.sendRequest:
                   // TODO: Handle this case.
                   break;
@@ -127,7 +143,8 @@ class _DemoPageState extends State<DemoPage> {
                   break;
                 case ActionCodeType.openNextScreen:
                   setState(() {
-                    demoScreen = (action as OpenNextScreenBlock).nextScreenBundle!;
+                    demoScreen =
+                        (action as OpenNextScreenBlock).nextScreenBundle!;
                     screensHistory.add(demoScreen);
                   });
                   break;

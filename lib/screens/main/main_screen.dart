@@ -126,7 +126,7 @@ class _MainPageState extends State<MainPage> {
                 children: _buildDraggableActionsList(),
               ),
             )),
-        _buildEditedLayoutWidget(),
+        _buildLayoutEditorWidget(),
       ]),
       floatingActionButton: FloatingActionButton(
         onPressed: _onAddScreenPressed,
@@ -167,33 +167,44 @@ class _MainPageState extends State<MainPage> {
     return widgets;
   }
 
-  Widget _buildEditedLayoutWidget() {
+  Widget _buildLayoutEditorWidget() {
     var selectedScreenBundle = appFruits.selectedProject!.selectedLayout;
     if (selectedScreenBundle?.layoutBytes != null) {
       return Container(
-          width: SCREEN_IMAGE_WIDTH,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              RepaintBoundary(
-                key: screenImageKey,
-                child: Image.memory(selectedScreenBundle!.layoutBytes!,
-                    fit: BoxFit.contain),
-              ),
-              Listener(
-                  onPointerDown: _onPointerDown,
-                  onPointerUp: _onPointerUp,
-                  onPointerMove: _onPointerMove,
-                  child: MouseRegion(
-                      cursor: SystemMouseCursors.precise,
-                      child: CustomPaint(
-                        painter: ElementPainter(getLayoutBundle()!.elements),
-                      ))),
-              _getAddItemButtons()
-            ],
-          ));
+        width: SCREEN_IMAGE_WIDTH,
+        padding: const EdgeInsets.only(top: 42, bottom: 42),
+        child: Stack(fit: StackFit.expand, children: [
+          RepaintBoundary(
+            key: screenImageKey,
+            child: Image.memory(selectedScreenBundle!.layoutBytes!,
+                fit: BoxFit.contain),
+          ),
+          Listener(
+              onPointerDown: _onPointerDown,
+              onPointerUp: _onPointerUp,
+              onPointerMove: _onPointerMove,
+              child: MouseRegion(
+                  cursor: SystemMouseCursors.precise,
+                  child: CustomPaint(
+                    painter:
+                    ElementPainter(getLayoutBundle()!.elements),
+                  ))),
+          _getAddItemButtons()
+          // Column(
+          //   children: [
+          //     Container(
+          //         alignment: Alignment.center,
+          //         height: 42,
+          //         child: Text(
+          //           selectedScreenBundle!.name,
+          //           style: const TextStyle(fontSize: 18),
+          //         )),
+          //   ],
+          // ),
+        ]),
+      );
     } else {
-      return Expanded(flex: 16, child: Container(color: Colors.white));
+      return Container(width: SCREEN_IMAGE_WIDTH, color: Colors.white);
     }
   }
 
@@ -389,7 +400,7 @@ class _MainPageState extends State<MainPage> {
                     items: ViewType.values
                         .map((type) => DropdownMenuItem<ViewType>(
                               value: type,
-                              child: Text(type.name),
+                              child: Text(type.viewName),
                             ))
                         .toList(),
                     onTap: () {
@@ -654,7 +665,7 @@ class _MainPageState extends State<MainPage> {
         builder: (context) {
           Map<String, ViewType> viewTypesMap = {};
           for (var viewType in ViewType.values) {
-            viewTypesMap[viewType.name.capitalizeFirst!] = viewType;
+            viewTypesMap[viewType.viewName] = viewType;
           }
 
           return AlertDialog(
@@ -714,7 +725,7 @@ class _MainPageState extends State<MainPage> {
                 .add(ListenerCodeBlock(ListenerCodeType.onItemSelected));
           }
           break;
-        case ViewType.list:
+        case ViewType.listContainer:
           getLayoutBundle()!
               .listLinkListItemsMap
               .putIfAbsent(element, () => []);

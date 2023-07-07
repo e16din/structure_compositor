@@ -25,11 +25,11 @@ class CodeGenerator {
   static void _generateProjectXml(Project project, Directory folder) async {
     var resultXml = "<project name=\"${project.name}\">";
     for (var screen in project.layouts) {
-      resultXml += "\n  <screen name=\"${screen.name}\""
+      resultXml += "\n  <layout name=\"${screen.name}\""
           "\n     layout_path=\"${screen.layoutPath}\" >";
       for (var element in screen.elements) {
         resultXml += "\n    <element name_id=\"${element.name}\""
-            "\n      view_type=\"${element.viewType.name}\""
+            "\n      view_type=\"${element.viewType.viewName}\""
             "\n      description=\"${element.description}\""
             "\n      color=\"${element.color}\""
             "\n      functionalArea=\"${element.functionalArea.toString()}\" >";
@@ -177,7 +177,7 @@ class App: Application() {
               android:checked="${e.value}" />
     """;
           break;
-        case ViewType.column:
+        case ViewType.columnContainer:
           resultXml += """
          <LinearLayout 
               android:id="$viewId"
@@ -190,7 +190,7 @@ class App: Application() {
          </LinearLayout>
     """;
           break;
-        case ViewType.row:
+        case ViewType.rowContainer:
           resultXml += """
          <LinearLayout 
               android:id="$viewId"
@@ -203,7 +203,7 @@ class App: Application() {
          </LinearLayout>
     """;
           break;
-        case ViewType.stack:
+        case ViewType.stackContainer:
           resultXml += """
          <FrameLayout 
               android:id="$viewId"
@@ -215,7 +215,7 @@ class App: Application() {
          </FrameLayout>
     """;
           break;
-        case ViewType.list:
+        case ViewType.listContainer:
           resultXml += """
          <androidx.recyclerview.widget.RecyclerView 
               android:id="$viewId"
@@ -311,16 +311,16 @@ $actionCode
 \t\t\tTODO("Not yet implemented")
 \t\t}""";
           break;
-        case ViewType.column:
+        case ViewType.columnContainer:
           // do nothing
           break;
-        case ViewType.row:
+        case ViewType.rowContainer:
           // do nothing
           break;
-        case ViewType.stack:
+        case ViewType.stackContainer:
           // do nothing
           break;
-        case ViewType.list:
+        case ViewType.listContainer:
           var itemLayoutName = "item_${e.name.toLowerCase()}";
           await _generateListItemXml(itemLayoutName);
 
@@ -480,7 +480,7 @@ class ${name}DataSource {
   }
 
   static String _makeViewId(LayoutElement e) {
-    return "${e.name}${e.viewType.name}";
+    return "${e.name}${e.viewType.viewName}";
   }
 
   static String _makeActivityName(ScreenBundle screen) {
@@ -517,16 +517,16 @@ class ${name}DataSource {
       case ViewType.selector:
         result = "Switch";
         break;
-      case ViewType.column:
+      case ViewType.columnContainer:
         result = "LinearLayout";
         break;
-      case ViewType.row:
+      case ViewType.rowContainer:
         result = "LinearLayout";
         break;
-      case ViewType.stack:
+      case ViewType.stackContainer:
         result = "FrameLayout";
         break;
-      case ViewType.list:
+      case ViewType.listContainer:
         result = "RecyclerView";
         break;
     }
