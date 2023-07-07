@@ -10,7 +10,10 @@
 
 20% усилий и 80% результата!
 
-[Смотри свежую демку (2м 56с): https://youtu.be/fMw-fU_FZB8](https://youtu.be/fMw-fU_FZB8)
+Видео-примеры:
+- [Создаем прототип магазина волшебных товаров из набросков на бумаге](https://youtu.be/yDqQJ-uk3qo)
+- [Делаем код проекта со скриншетов Telegram](https://youtu.be/fMw-fU_FZB8)
+
 
 ![Structure Compositor в деле](https://github.com/e16din/structure_compositor/blob/main/screen1.png)
 
