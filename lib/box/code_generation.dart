@@ -29,7 +29,7 @@ class CodeGenerator {
           "\n     layout_path=\"${screen.layoutPath}\" >";
       for (var element in screen.elements) {
         resultXml += "\n    <element name_id=\"${element.name}\""
-            "\n      view_type=\"${element.viewType.viewName}\""
+            "\n      view_type=\"${element.viewType.name}\""
             "\n      description=\"${element.description}\""
             "\n      color=\"${element.color}\""
             "\n      functionalArea=\"${element.functionalArea.toString()}\" >";
@@ -123,15 +123,7 @@ class App: Application() {
       resultXml += """\n\n\t<!-- Description: ${e.description} -->\n\n""";
       var viewId = "@+id/${_makeViewId(e)}";
       switch (e.viewType) {
-        case ViewType.unknown:
-          resultXml += """
-          <Unknown
-              android:id="$viewId"
-              android:layout_width="wrap_content"
-              android:layout_height="wrap_content"
-              android:text="${e.value}" />
-    """;
-          break;
+
         case ViewType.label:
           resultXml += """
           <TextView
@@ -177,7 +169,7 @@ class App: Application() {
               android:checked="${e.value}" />
     """;
           break;
-        case ViewType.columnContainer:
+        case ViewType.combine:
           resultXml += """
          <LinearLayout 
               android:id="$viewId"
@@ -190,32 +182,7 @@ class App: Application() {
          </LinearLayout>
     """;
           break;
-        case ViewType.rowContainer:
-          resultXml += """
-         <LinearLayout 
-              android:id="$viewId"
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
-              android:orientation="horizontal"
-              >
-          <!-- Value: ${e.value} -->
-          
-         </LinearLayout>
-    """;
-          break;
-        case ViewType.stackContainer:
-          resultXml += """
-         <FrameLayout 
-              android:id="$viewId"
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
-              >
-          <!-- Value: ${e.value} -->
-          
-         </FrameLayout>
-    """;
-          break;
-        case ViewType.listContainer:
+        case ViewType.list:
           resultXml += """
          <androidx.recyclerview.widget.RecyclerView 
               android:id="$viewId"
@@ -284,9 +251,6 @@ class ${activityName} : AppCompatActivity() {
       result +=
           "\n\t\tval $valName = findViewById<${_makeViewClassName(e)}>(R.id.$valName)";
       switch (e.viewType) {
-        case ViewType.unknown:
-          // do nothing
-          break;
         case ViewType.label:
           // do nothing
           break;
@@ -311,16 +275,7 @@ $actionCode
 \t\t\tTODO("Not yet implemented")
 \t\t}""";
           break;
-        case ViewType.columnContainer:
-          // do nothing
-          break;
-        case ViewType.rowContainer:
-          // do nothing
-          break;
-        case ViewType.stackContainer:
-          // do nothing
-          break;
-        case ViewType.listContainer:
+        case ViewType.list:
           var itemLayoutName = "item_${e.name.toLowerCase()}";
           await _generateListItemXml(itemLayoutName);
 
@@ -480,7 +435,7 @@ class ${name}DataSource {
   }
 
   static String _makeViewId(LayoutElement e) {
-    return "${e.name}${e.viewType.viewName}";
+    return "${e.name}${e.viewType.name}";
   }
 
   static String _makeActivityName(ScreenBundle screen) {
@@ -499,9 +454,6 @@ class ${name}DataSource {
   static String _makeViewClassName(LayoutElement e) {
     var result = "";
     switch (e.viewType) {
-      case ViewType.unknown:
-        result = "View";
-        break;
       case ViewType.label:
         result = "TextView";
         break;
@@ -517,16 +469,10 @@ class ${name}DataSource {
       case ViewType.selector:
         result = "Switch";
         break;
-      case ViewType.columnContainer:
+      case ViewType.combine:
         result = "LinearLayout";
         break;
-      case ViewType.rowContainer:
-        result = "LinearLayout";
-        break;
-      case ViewType.stackContainer:
-        result = "FrameLayout";
-        break;
-      case ViewType.listContainer:
+      case ViewType.list:
         result = "RecyclerView";
         break;
     }

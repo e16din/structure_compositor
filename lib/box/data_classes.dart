@@ -44,16 +44,13 @@ class ScreenBundle extends LayoutBundle {
 }
 
 enum ViewType {
-  unknown("Unknown"),
+  button("Button"),
   label("Label"),
   field("Field"),
-  button("Button"),
   image("Image"),
   selector("Selector"),
-  columnContainer("Column Container"), // vertical
-  rowContainer("Row Container"), // horizontal
-  stackContainer("Stack Container"), // frame
-  listContainer("List Container");
+  list("List"),
+  combine("Stack Container");
 
   final String viewName;
 
@@ -65,7 +62,7 @@ class LayoutElement {
 
   late Color color;
 
-  ViewType viewType = ViewType.unknown;
+  ViewType viewType = ViewType.button;
 
   String name = "";
 
@@ -82,7 +79,7 @@ class LayoutElement {
   LayoutElement(this.functionalArea, this.color, this.isInEdit);
 
   bool hasDataSource() {
-    return viewType == ViewType.listContainer; // todo: add data sources feature
+    return viewType == ViewType.list; // todo: add data sources feature
   }
 }
 

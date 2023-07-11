@@ -7,13 +7,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:structure_compositor/box/widget_utils.dart';
 
 // import 'package:shared_preferences/shared_preferences.dart';
 // import 'dart:developer' as developer;
 // import 'package:file_picker/file_picker.dart';
 import '../box/app_utils.dart';
-import 'main/main_screen.dart';
+import 'aria/aria_editor_screen.dart';
 import '../box/data_classes.dart';
+import 'elemental_editor_screen.dart';
 
 class StartScreen extends StatelessWidget {
   const StartScreen({Key? key}) : super(key: key);
@@ -29,6 +31,15 @@ class StartScreen extends StatelessWidget {
       home: const StartPage(title: 'Structure Compositor'),
     );
   }
+}
+
+enum WayToCreateCode {
+  aria("Area: Functional Areas Editor"),
+  elemental("Elemental: Elements Code Editor");
+
+  final String title;
+
+  const WayToCreateCode(this.title);
 }
 
 // todo: сохранять последние открытые вкладки/ восстанавливать их при загрузке
@@ -123,7 +134,7 @@ class _StartPageState extends State<StartPage> {
           color: Colors.deepPurpleAccent,
           child: Container(
             padding:
-            const EdgeInsets.only(top: 16, left: 16, bottom: 16, right: 16),
+                const EdgeInsets.only(top: 16, left: 16, bottom: 16, right: 16),
             child: Row(
               children: [
                 Expanded(
@@ -134,17 +145,42 @@ class _StartPageState extends State<StartPage> {
                     },
                   ),
                 ),
-                Container(padding:
-                    const EdgeInsets.only(top: 24, left: 24, bottom: 24, right: 24),
+                Container(
+                    padding: const EdgeInsets.only(
+                        top: 24, left: 24, bottom: 24, right: 24),
                     child: const Icon(Icons.navigate_next))
               ],
             ),
           ),
         ),
-        onTap: () {
+        onTap: () async {
           appFruits.selectedProject = project;
 
-          Get.to(const MainScreen());
+          var way = WayToCreateCode.aria;
+          await showDialog(
+              context: context,
+              builder: (context) {
+                Map<String, WayToCreateCode> itemsMap = {};
+                for (var way in WayToCreateCode.values) {
+                  itemsMap[way.title] = way;
+                }
+
+                return AlertDialog(
+                    title: const Text("Select The Way:"),
+                    content: makeMenuWidget(
+                        itemsMap, context, (selected) => {way = selected}));
+              }).then((value) => {_onProjectClick(way)});
         });
+  }
+
+  void _onProjectClick(selected) {
+    switch (selected) {
+      case WayToCreateCode.aria:
+        Get.to(const AriaEditorScreen());
+        break;
+      case WayToCreateCode.elemental:
+        Get.to(const ElementalEditorScreen());
+        break;
+    }
   }
 }

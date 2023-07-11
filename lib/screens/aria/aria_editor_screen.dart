@@ -12,16 +12,15 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer' as developer;
 import 'package:file_picker/file_picker.dart';
-import 'package:structure_compositor/screens/main/layouts_list_widget.dart';
+import 'package:structure_compositor/screens/aria/layouts_list_widget.dart';
 
 import '../../box/app_utils.dart';
 import '../../box/data_classes.dart';
 import '../../box/widget_utils.dart';
 
-int _nextColorPosition = 0;
 
-class MainScreen extends StatelessWidget {
-  const MainScreen({Key? key}) : super(key: key);
+class AriaEditorScreen extends StatelessWidget {
+  const AriaEditorScreen({Key? key}) : super(key: key);
 
 // This widget is the root of your application.
   @override
@@ -30,19 +29,19 @@ class MainScreen extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MainPage(),
+      home: const AriaEditorPage(),
     );
   }
 }
 
-class MainPage extends StatefulWidget {
-  const MainPage({Key? key}) : super(key: key);
+class AriaEditorPage extends StatefulWidget {
+  const AriaEditorPage({Key? key}) : super(key: key);
 
   @override
-  State<MainPage> createState() => _MainPageState();
+  State<AriaEditorPage> createState() => _AriaEditorPageState();
 }
 
-class _MainPageState extends State<MainPage> {
+class _AriaEditorPageState extends State<AriaEditorPage> {
   var KEY_LAYOUT_IMAGE = 'KEY_LAYOUT_IMAGE';
   var KEY_ELEMENTS = 'KEY_ELEMENTS';
 
@@ -126,7 +125,7 @@ class _MainPageState extends State<MainPage> {
                 children: _buildDraggableActionsList(),
               ),
             )),
-        _buildLayoutEditorWidget(),
+        _buildFunctionalAreasWidget(),
       ]),
       floatingActionButton: FloatingActionButton(
         onPressed: _onAddScreenPressed,
@@ -167,16 +166,16 @@ class _MainPageState extends State<MainPage> {
     return widgets;
   }
 
-  Widget _buildLayoutEditorWidget() {
-    var selectedScreenBundle = appFruits.selectedProject!.selectedLayout;
-    if (selectedScreenBundle?.layoutBytes != null) {
+  Widget _buildFunctionalAreasWidget() {
+    var selectedLayout = appFruits.selectedProject!.selectedLayout;
+    if (selectedLayout?.layoutBytes != null) {
       return Container(
         width: SCREEN_IMAGE_WIDTH,
         padding: const EdgeInsets.only(top: 42, bottom: 42),
         child: Stack(fit: StackFit.expand, children: [
           RepaintBoundary(
             key: screenImageKey,
-            child: Image.memory(selectedScreenBundle!.layoutBytes!,
+            child: Image.memory(selectedLayout!.layoutBytes!,
                 fit: BoxFit.contain),
           ),
           Listener(
@@ -416,9 +415,6 @@ class _MainPageState extends State<MainPage> {
                         icon: const Icon(Icons.close),
                         onPressed: () {
                           setState(() {
-                            if (_nextColorPosition > 0) {
-                              _nextColorPosition -= 1;
-                            }
                             getLayoutBundle()!.elements.remove(element);
                           });
                         }),
@@ -629,7 +625,7 @@ class _MainPageState extends State<MainPage> {
   void _onPointerDown(PointerDownEvent event) {
     setState(() {
       _lastRect = Rect.fromPoints(event.localPosition, event.localPosition);
-      _activeElement = LayoutElement(_lastRect!, getNextColor(), true)
+      _activeElement = LayoutElement(_lastRect!, getNextColor(getLayoutBundle()?.elements.length), true)
         ..name = 'element${getLayoutBundle()!.elements.length + 1}';
 
       getLayoutBundle()!.elements.add(_activeElement!);
@@ -680,27 +676,9 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
-  final List<MaterialColor> _rainbowColors = <MaterialColor>[
-    Colors.red,
-    Colors.orange,
-    Colors.yellow,
-    Colors.green,
-    Colors.lightBlue,
-    Colors.blue,
-    Colors.deepPurple
-  ];
 
-  Color getNextColor() {
-    var nextColorPosition = _nextColorPosition;
 
-    if (_nextColorPosition < _rainbowColors.length - 1) {
-      _nextColorPosition += 1;
-    } else {
-      _nextColorPosition = 0;
-    }
 
-    return _rainbowColors[nextColorPosition].shade400;
-  }
 
   void _onElementTypeChanged(ViewType? viewType, LayoutElement element) {
     setState(() {
@@ -725,7 +703,7 @@ class _MainPageState extends State<MainPage> {
                 .add(ListenerCodeBlock(ListenerCodeType.onItemSelected));
           }
           break;
-        case ViewType.listContainer:
+        case ViewType.list:
           getLayoutBundle()!
               .listLinkListItemsMap
               .putIfAbsent(element, () => []);
@@ -752,7 +730,7 @@ class _MainPageState extends State<MainPage> {
     _listWaitedForListItem = listElement;
     showDialog(
         context: context,
-        builder: (contxt) {
+        builder: (context) {
           return const AlertDialog(
               title: Text("Next Step:"),
               content: Text("Draw an area of List Item on the layout"));

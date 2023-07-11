@@ -54,3 +54,21 @@ class ElementPainter extends CustomPainter {
     return true;
   }
 }
+
+
+final List<MaterialColor> _rainbowColors = <MaterialColor>[
+  Colors.red,
+  Colors.orange,
+  Colors.yellow,
+  Colors.green,
+  Colors.lightBlue,
+  Colors.blue,
+  Colors.deepPurple
+];
+
+
+Color getNextColor(int? index) {
+  var nextColorPosition = index ??= 0 % _rainbowColors.length;
+
+  return _rainbowColors[nextColorPosition].shade400;
+}
