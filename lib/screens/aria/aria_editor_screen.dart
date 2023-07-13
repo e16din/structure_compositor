@@ -147,14 +147,14 @@ class _AriaEditorPageState extends State<AriaEditorPage> {
           codeBlocks.add(ListenerCodeBlock(listenerType));
       }
     }
-    for (var actionType in ActionCodeType.values) {
+    for (var actionType in ActionCodeTypeMain.values) {
       switch (actionType) {
-        case ActionCodeType.openNextScreen:
+        case ActionCodeTypeMain.openNextScreen:
           codeBlocks.add(OpenNextScreenBlock());
           break;
 
         default:
-          codeBlocks.add(ActionCodeBlock(actionType));
+          codeBlocks.add(ActionCodeBlockMain(actionType));
       }
     }
 
@@ -234,7 +234,7 @@ class _AriaEditorPageState extends State<AriaEditorPage> {
         if (layoutBytes != null) {
           screenBundle.layoutBytes = layoutBytes;
         } else if (f.path != null) {
-          screenBundle.layoutBytes = await _readFileByte(f.path!);
+          screenBundle.layoutBytes = await readFileByte(f.path!);
         }
 
         resultScreens.add(screenBundle);
@@ -244,15 +244,6 @@ class _AriaEditorPageState extends State<AriaEditorPage> {
         appFruits.selectedProject!.selectedLayout = resultScreens.first;
       });
     }
-  }
-
-  Future<Uint8List> _readFileByte(String filePath) async {
-    File audioFile = File(filePath);
-    Uint8List? bytes;
-    await audioFile.readAsBytes().then((value) {
-      bytes = Uint8List.fromList(value);
-    });
-    return bytes!;
   }
 
   Container _buildActionWidget(CodeBlock codeBlock) {
@@ -309,8 +300,8 @@ class _AriaEditorPageState extends State<AriaEditorPage> {
     } else {
       var screenBundles = appFruits.selectedProject!.layouts;
       setState(() {
-        if (codeBlock is ActionCodeBlock) {
-          if (codeBlock.actionType == ActionCodeType.openNextScreen &&
+        if (codeBlock is ActionCodeBlockMain) {
+          if (codeBlock.actionType == ActionCodeTypeMain.openNextScreen &&
               screenBundles.isNotEmpty) {
             var hoveredCodeBlockHolder = hoveredCodeBlock!;
             selectLayout(
@@ -319,7 +310,7 @@ class _AriaEditorPageState extends State<AriaEditorPage> {
               var copyStubWith = codeBlock.copyStubWith(selected);
               hoveredCodeBlockHolder.actions.add(copyStubWith);
             });
-          } else if (codeBlock.actionType == ActionCodeType.backToPrevious &&
+          } else if (codeBlock.actionType == ActionCodeTypeMain.backToPrevious &&
               screenBundles.isNotEmpty) {
             hoveredCodeBlock?.actions.add(codeBlock.copyBlock());
           } else {

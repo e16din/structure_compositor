@@ -15,7 +15,7 @@ import 'package:structure_compositor/box/widget_utils.dart';
 import '../box/app_utils.dart';
 import 'aria/aria_editor_screen.dart';
 import '../box/data_classes.dart';
-import 'elemental_editor_screen.dart';
+import 'actions_editor_screen.dart';
 
 class StartScreen extends StatelessWidget {
   const StartScreen({Key? key}) : super(key: key);
@@ -34,8 +34,8 @@ class StartScreen extends StatelessWidget {
 }
 
 enum WayToCreateCode {
-  aria("Area: Functional Areas Editor"),
-  elemental("Elemental: Elements Code Editor");
+  aria("Functional Areas Editor"),
+  elemental("Actions Code Editor");
 
   final String title;
 
@@ -179,7 +179,7 @@ class _StartPageState extends State<StartPage> {
         Get.to(const AriaEditorScreen());
         break;
       case WayToCreateCode.elemental:
-        Get.to(const ElementalEditorScreen());
+        Get.to(const ActionsEditorScreen());
         break;
     }
   }

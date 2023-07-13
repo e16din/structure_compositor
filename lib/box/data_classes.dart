@@ -27,13 +27,16 @@ class LayoutBundle {
 
   Uint8List? layoutBytes;
 
-  List<LayoutElement> elements = <LayoutElement>[];
+  List<LayoutElement> elements = [];
+  List<ActionCodeBlock> actions = [];
 
   Map<LayoutElement, List<LayoutElement>> listLinkListItemsMap = {}; // todo: move it
 
 
   LayoutBundle(this.name);
 }
+
+
 
 class ScreenBundle extends LayoutBundle {
 
@@ -42,6 +45,40 @@ class ScreenBundle extends LayoutBundle {
   ScreenBundle(super.name);
 
 }
+
+// ============
+
+enum ActionCodeType {
+  doOnInit,
+  doOnClick,
+  doOnDataChanged,
+  showText,
+  showImage,
+  moveToNextScreen,
+  moveToBackScreen,
+  todo,
+}
+
+enum EditorType { actionsEditor, layoutEditor }
+
+class ActionCodeBlock {
+
+  late String id;
+
+  ActionCodeType type;
+  String name;
+  Color color = Colors.deepPurpleAccent;
+  bool isContainer = false;
+
+  List<ActionCodeBlock> actions = [];
+
+  Rect layoutArea;
+
+  ActionCodeBlock(
+      {required this.type, required this.name, required this.isContainer, required this.layoutArea});
+}
+
+// ===============
 
 enum ViewType {
   button("Button"),
@@ -93,7 +130,7 @@ class ContainerScreenElement extends LayoutElement {
 
 enum CodeType { action, listener }
 
-enum ActionCodeType {
+enum ActionCodeTypeMain {
   sendRequest,
   updateWidget,
   openNextScreen,
@@ -125,7 +162,7 @@ abstract class CodeBlock {
 
 class ListenerCodeBlock extends CodeBlock {
   ListenerCodeType listenerType;
-  List<ActionCodeBlock> actions = [];
+  List<ActionCodeBlockMain> actions = [];
 
   ListenerCodeBlock(this.listenerType){
     name = "${listenerType.name}() { }";
@@ -138,26 +175,26 @@ class ListenerCodeBlock extends CodeBlock {
   }
 }
 
-class ActionCodeBlock extends CodeBlock {
-  ActionCodeType actionType;
+class ActionCodeBlockMain extends CodeBlock {
+  ActionCodeTypeMain actionType;
   List<ListenerCodeBlock> listeners =
       []; // NOTE: for actions with result (async actions, callbacks)
 
-  ActionCodeBlock(this.actionType){
+  ActionCodeBlockMain(this.actionType){
     name = "${actionType.name}()";
     color = Colors.green;
   }
 
   @override
-  ActionCodeBlock copyBlock() {
-    return ActionCodeBlock(actionType);
+  ActionCodeBlockMain copyBlock() {
+    return ActionCodeBlockMain(actionType);
   }
 }
 
-class OpenNextScreenBlock extends ActionCodeBlock {
+class OpenNextScreenBlock extends ActionCodeBlockMain {
   ScreenBundle? nextScreenBundle;
 
-  OpenNextScreenBlock(): super(ActionCodeType.openNextScreen);
+  OpenNextScreenBlock(): super(ActionCodeTypeMain.openNextScreen);
 
   OpenNextScreenBlock copyStubWith(ScreenBundle nextScreenBundle) {
     return OpenNextScreenBlock()

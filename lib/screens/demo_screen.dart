@@ -135,35 +135,35 @@ class _DemoPageState extends State<DemoPage> {
           for (var listener in element.listeners) {
             for (var action in listener.actions) {
               switch (action.actionType) {
-                case ActionCodeType.sendRequest:
+                case ActionCodeTypeMain.sendRequest:
                   // TODO: Handle this case.
                   break;
-                case ActionCodeType.updateWidget:
+                case ActionCodeTypeMain.updateWidget:
                   // TODO: Handle this case.
                   break;
-                case ActionCodeType.openNextScreen:
+                case ActionCodeTypeMain.openNextScreen:
                   setState(() {
                     demoScreen =
                         (action as OpenNextScreenBlock).nextScreenBundle!;
                     screensHistory.add(demoScreen);
                   });
                   break;
-                case ActionCodeType.backToPrevious:
+                case ActionCodeTypeMain.backToPrevious:
                   _onDemoBackPressed();
                   break;
-                case ActionCodeType.changeData:
+                case ActionCodeTypeMain.changeData:
                   // TODO: Handle this case.
                   break;
-                case ActionCodeType.callFunction:
+                case ActionCodeTypeMain.callFunction:
                   // TODO: Handle this case.
                   break;
-                case ActionCodeType.showAlertDialog:
+                case ActionCodeTypeMain.showAlertDialog:
                   // TODO: Handle this case.
                   break;
-                case ActionCodeType.showSnackBar:
+                case ActionCodeTypeMain.showSnackBar:
                   // TODO: Handle this case.
                   break;
-                case ActionCodeType.comment:
+                case ActionCodeTypeMain.comment:
                   // TODO: Handle this case.
                   break;
               }

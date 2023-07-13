@@ -55,6 +55,34 @@ class ElementPainter extends CustomPainter {
   }
 }
 
+class ActionsPainter extends CustomPainter {
+  List<ActionCodeBlock> actions = [];
+  ActionCodeBlock? activeAction;
+
+  ActionsPainter(this.actions, this.activeAction);
+
+  @override
+  void paint(Canvas canvas, Size size) async {
+    var paint = Paint()..style = PaintingStyle.stroke;
+
+    if (activeAction != null) {
+      paint.strokeWidth = 2;
+      paint.color = activeAction!.color;
+      canvas.drawRect(activeAction!.layoutArea, paint);
+    }
+
+    for (var action in actions) {
+      paint.strokeWidth = 5;
+      paint.color = action.color;
+      canvas.drawRect(action.layoutArea, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true;
+  }
+}
 
 final List<MaterialColor> _rainbowColors = <MaterialColor>[
   Colors.red,
@@ -66,9 +94,10 @@ final List<MaterialColor> _rainbowColors = <MaterialColor>[
   Colors.deepPurple
 ];
 
-
 Color getNextColor(int? index) {
   var nextColorPosition = index ??= 0 % _rainbowColors.length;
-
+  if (nextColorPosition == _rainbowColors.length) {
+    nextColorPosition = 0;
+  }
   return _rainbowColors[nextColorPosition].shade400;
 }

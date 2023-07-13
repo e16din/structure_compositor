@@ -371,7 +371,7 @@ $actionCode
 
     var openNextScreenBlock = e.listeners.firstWhereOrNull((listener) =>
         listener.actions.any(
-            (action) => action.actionType == ActionCodeType.openNextScreen));
+            (action) => action.actionType == ActionCodeTypeMain.openNextScreen));
     if (openNextScreenBlock != null) {
       var action = openNextScreenBlock.actions
               .firstWhereOrNull((action) => action is OpenNextScreenBlock)
@@ -384,7 +384,7 @@ $actionCode
 
     var backToPrevBlock = e.listeners.firstWhereOrNull((listener) => listener
         .actions
-        .any((action) => action.actionType == ActionCodeType.backToPrevious));
+        .any((action) => action.actionType == ActionCodeTypeMain.backToPrevious));
     if (backToPrevBlock != null) {
       onButtonClick = "\t\t\tonBackPressedDispatcher.onBackPressed()";
     }

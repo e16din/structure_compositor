@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'data_classes.dart';
 
@@ -12,3 +13,12 @@ Uint8List convertToUint8List(String layoutBytes) {
 }
 
 var onSetStateListener = () {};
+
+Future<Uint8List> readFileByte(String filePath) async {
+  File audioFile = File(filePath);
+  Uint8List? bytes;
+  await audioFile.readAsBytes().then((value) {
+    bytes = Uint8List.fromList(value);
+  });
+  return bytes!;
+}
