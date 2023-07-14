@@ -41,10 +41,20 @@ class ActionsEditorPage extends StatefulWidget {
 }
 
 final Rect _defaultArea =
-    Rect.fromCenter(center: const Offset(100, 100), width: 100, height: 100);
+Rect.fromCenter(center: const Offset(100, 100), width: 100, height: 100);
 
 class _ActionsEditorPageState extends State<ActionsEditorPage> {
+  EditorType _selectedEditor = EditorType.actionsEditor;
+
+  final _editorTypeSelectorState = [true, false];
+
   final List<ActionCodeBlock> _actionsCodeBlocks = [
+    ActionCodeBlock(
+        type: ActionCodeType.doNothing,
+        name: "doNothing",
+        isContainer: true,
+        layoutArea: _defaultArea)
+      ..color = Colors.deepPurpleAccent.withOpacity(0.7),
     ActionCodeBlock(
         type: ActionCodeType.doOnInit,
         name: "doOnInit",
@@ -64,6 +74,11 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         layoutArea: _defaultArea)
       ..color = Colors.deepPurpleAccent.withOpacity(0.7),
     ActionCodeBlock(
+        type: ActionCodeType.nothing,
+        name: "nothing",
+        isContainer: false,
+        layoutArea: _defaultArea),
+    ActionCodeBlock(
         type: ActionCodeType.showText,
         name: "showText",
         isContainer: false,
@@ -74,7 +89,12 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         isContainer: false,
         layoutArea: _defaultArea),
     ActionCodeBlock(
-        type: ActionCodeType.showImage,
+        type: ActionCodeType.showList,
+        name: "showList",
+        isContainer: false,
+        layoutArea: _defaultArea),
+    ActionCodeBlock(
+        type: ActionCodeType.updateData,
         name: "updateData",
         isContainer: false,
         layoutArea: _defaultArea),
@@ -86,13 +106,19 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       ..color = Colors.green,
     ActionCodeBlock(
         type: ActionCodeType.moveToBackScreen,
-        name: "moveToNextScreen",
+        name: "moveToBackScreen",
         isContainer: false,
         layoutArea: _defaultArea)
       ..color = Colors.green,
     ActionCodeBlock(
         type: ActionCodeType.todo,
         name: "TODO",
+        isContainer: false,
+        layoutArea: _defaultArea)
+      ..color = Colors.redAccent,
+    ActionCodeBlock(
+        type: ActionCodeType.note,
+        name: "// NOTE",
         isContainer: false,
         layoutArea: _defaultArea)
       ..color = Colors.redAccent,
@@ -160,13 +186,14 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   void _onPointerDown(PointerDownEvent event) {
     setState(() {
       var lastRect = Rect.fromPoints(event.localPosition, event.localPosition);
+      final actionId = 'element${getLayoutBundle()!.actions.length + 1}';
       _activeAction = ActionCodeBlock(
           type: ActionCodeType.doOnInit,
           name: "unknownAction {}",
           isContainer: true,
           layoutArea: lastRect)
         ..color = getNextColor(getLayoutBundle()?.actions.length)
-        ..id = 'element${getLayoutBundle()!.actions.length + 1}';
+        ..actionId = actionId;
     });
   }
 
@@ -186,30 +213,29 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       });
     }
 
-    var action = _activeAction!;
-    showDialog(
-        context: context,
-        builder: (context) {
-          Map<String, ActionCodeBlock> actionsMap = {};
-          for (var action in _actionsCodeBlocks.where((element) => element.isContainer)) {
-            actionsMap["${action.name} { }"] = action;
-          }
-
-          return AlertDialog(
-              title: const Text("Select action:"),
-              content: makeMenuWidget(actionsMap, context, (selected) {
-                _onActionTypeSelected(selected, action);
-              }));
-        }).then((item) {
-      setState(() {
-        _activeAction = null;
-      });
-    });
+    _selectActions();
   }
 
-  EditorType _selectedEditor = EditorType.actionsEditor;
-
-  final List<bool> _editorTypeSelectorState = [true, false];
+  void _selectActions() {
+    Map<String, ActionCodeBlock> containerActionsMap = {};
+    var containerActions =
+    _actionsCodeBlocks.where((element) => element.isContainer);
+    for (var action in containerActions) {
+      containerActionsMap["${action.name} { }"] = action;
+    }
+    var otherActions =
+    _actionsCodeBlocks.where((element) => !element.isContainer);
+    Map<String, ActionCodeBlock> otherActionsMap = {};
+    for (var action in otherActions) {
+      otherActionsMap["${action.name}()"] = action;
+    }
+    showMenuDialog(context, "Select action container:", containerActionsMap,
+            (selectedContainer) {
+          showMenuDialog(context, "Select action:", otherActionsMap,
+                  (selected) =>
+                  _onActionTypeSelected(selectedContainer, selected));
+        });
+  }
 
   Widget _buildActionsEditorWidget() {
     Widget content;
@@ -219,52 +245,130 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
           width: 640,
           padding: const EdgeInsets.only(bottom: 110),
           child: ListView.separated(
-            separatorBuilder: (context, index) => const Divider(
+            separatorBuilder: (context, index) =>
+            const Divider(
               height: 1,
               indent: 16,
               endIndent: 24,
             ),
             scrollDirection: Axis.vertical,
-            itemCount: (appFruits.selectedProject?.selectedLayout != null
-                ? appFruits.selectedProject?.selectedLayout?.actions.length
+            itemCount: (getLayoutBundle() != null
+                ? getLayoutBundle()?.actions.length
                 : 0)!,
             itemBuilder: (BuildContext context, int index) {
-              var action =
-                  appFruits.selectedProject?.selectedLayout?.actions[index];
+              var action = getLayoutBundle()?.actions[index];
               if (action != null) {
+                List<Widget> viewActions = [];
+                for (var innerAction in action.actions) {
+                  var innerActionWidget = Container(
+                      alignment: Alignment.topLeft,
+                      padding: const EdgeInsets.only(
+                          left: 16 + 64, top: 12, bottom: 4),
+                      child: Row(
+                        children: [
+                          Text(
+                            "${innerAction.name}()",
+                            style: const TextStyle(fontSize: 18),
+                          ),
+                          Container(
+                            alignment: Alignment.topRight,
+                            padding: const EdgeInsets.all(16),
+                            child: IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    action.actions.remove(innerAction);
+                                  });
+                                },
+                                icon: const Icon(Icons.remove_circle)),
+                          )
+                        ],
+                      ));
+                  viewActions.add(innerActionWidget);
+                }
+
+                debugPrint("debug: init actionId:  ${action.actionId}");
+
                 return InkWell(
+                  onHover: (focused) {
+                    if (focused) {
+                      setState(() {
+                        _activeAction = action;
+                      });
+                    }
+                  },
+
+                  hoverColor: Colors.white,
+                  // hoverColor,
+                  // highlightColor,
+                  focusColor: Colors.white,
+                  highlightColor: Colors.white,
                   child: Container(
-                    color: action.color,
+                    decoration: BoxDecoration(
+                        border: Border.all(color: action.color, width: 4)),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         Container(
                             alignment: Alignment.topLeft,
-                            padding:
-                                EdgeInsets.only(left: 16, top: 12, bottom: 4),
+                            padding: const EdgeInsets.only(
+                                left: 16, top: 12, bottom: 4),
                             child: Row(
                               children: [
                                 SizedBox(
                                     width: 156,
-                                    child: TextFormField(
-                                        initialValue: action.id)),
+                                    child: _actionIdWidget(action)),
+                                Container(
+                                  alignment: Alignment.topRight,
+                                  padding: const EdgeInsets.all(16),
+                                  child: IconButton(
+                                      onPressed: () {
+                                        _activeAction = ActionCodeBlock(
+                                            type: action.type,
+                                            name: action.name,
+                                            isContainer: action.isContainer,
+                                            layoutArea: action.layoutArea)
+                                          ..actionId = action.actionId
+                                          ..color = action.color;
+
+                                        _selectActions();
+                                      },
+                                      icon: const Icon(Icons.add_box_rounded)),
+                                ),
                                 Container(
                                     alignment: Alignment.topLeft,
-                                    padding:
-                                    EdgeInsets.only(left: 16, top: 12, bottom: 4),
-                                    child: Text(".${action.name} {", style: TextStyle(fontSize: 21),)),
+                                    padding: const EdgeInsets.only(
+                                        left: 16, top: 12, bottom: 4),
+                                    child: Text(
+                                      ".${action.name} {",
+                                      style: const TextStyle(fontSize: 18),
+                                    )),
+                                Container(
+                                  alignment: Alignment.topRight,
+                                  padding: const EdgeInsets.all(16),
+                                  child: IconButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          getLayoutBundle()
+                                              ?.actions
+                                              .remove(action);
+                                          _activeAction = null;
+                                        });
+                                      },
+                                      icon: const Icon(Icons.remove_circle)),
+                                )
                               ],
                             )),
+                        Column(
+                          children: viewActions,
+                        ),
                         Container(
                             alignment: Alignment.topLeft,
-                            padding:
-                                EdgeInsets.only(left: 16, top: 12, bottom: 4),
-                            child: Text("")),
-                        Container(
-                            alignment: Alignment.topLeft,
-                            padding:
-                                EdgeInsets.only(left: 16, top: 12, bottom: 4),
-                            child: Text("}")),
+                            padding: const EdgeInsets.only(
+                                left: 16, top: 12, bottom: 4),
+                            child: const Text(
+                              "}",
+                              style: TextStyle(fontSize: 18),
+                            )),
                       ],
                     ),
                   ),
@@ -453,13 +557,46 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     }
   }
 
-  void _onActionTypeSelected(ActionCodeBlock selected, ActionCodeBlock action) {
+  void _onActionTypeSelected(ActionCodeBlock selectedContainer,
+      ActionCodeBlock selectedContent) {
     setState(() {
       var newAction = _activeAction!
-        ..name = selected.name
-        ..type = selected.type
-        ..isContainer = selected.isContainer;
+        ..name = selectedContainer.name
+        ..type = selectedContainer.type
+        ..isContainer = selectedContainer.isContainer;
+
+      newAction.actions.add(selectedContent);
+
       getLayoutBundle()!.actions.add(newAction);
     });
   }
+
+  _actionIdWidget(ActionCodeBlock action) {
+    final Widget result;
+    if (_activeAction == action) {
+      result = TextFormField(
+        initialValue: action.actionId,
+        onChanged: (text) {
+            _onActionIdChanged(text);
+        },
+      );
+    } else {
+      result = Text(action.actionId);
+    }
+
+    return result;
+  }
+
+  _onActionIdChanged(String text) {
+    final newId = _activeAction!.actionId;
+      for (var a in getLayoutBundle()!.actions) {
+        if(a.actionId.compareTo(newId) == 0) {
+            a.actionId = text;
+        }
+      }
+
+      setState(() {
+      });
+  }
+
 }

@@ -34,6 +34,21 @@ Widget makeMenuWidget(Map<String, dynamic> itemsMap, BuildContext context,
       child: Column(children: menuItems));
 }
 
+void showMenuDialog(BuildContext context, String title, Map<String, dynamic> itemsMap,
+void Function(dynamic) onItemSelected) {
+  dynamic selectedItem;
+  showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+            title: Text(title),
+            content: makeMenuWidget(
+                itemsMap, context, (selected) => {selectedItem = selected}));
+      }).then((item) {
+    onItemSelected(selectedItem);
+  });
+}
+
 class ElementPainter extends CustomPainter {
   List<LayoutElement> elements = [];
 

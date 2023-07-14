@@ -49,21 +49,30 @@ class ScreenBundle extends LayoutBundle {
 // ============
 
 enum ActionCodeType {
+  // Containers
+  doNothing,
   doOnInit,
   doOnClick,
   doOnDataChanged,
+  // View
+  nothing,
   showText,
   showImage,
+  showList,
+  updateData,
+  // Navigation
   moveToNextScreen,
   moveToBackScreen,
+  // Comment
   todo,
+  note,
 }
 
 enum EditorType { actionsEditor, layoutEditor }
 
 class ActionCodeBlock {
 
-  late String id;
+  late String actionId;
 
   ActionCodeType type;
   String name;
