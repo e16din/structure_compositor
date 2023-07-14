@@ -7,6 +7,7 @@
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 // import 'package:shared_preferences/shared_preferences.dart';
 // import 'dart:developer' as developer;
@@ -41,20 +42,14 @@ class ActionsEditorPage extends StatefulWidget {
 }
 
 final Rect _defaultArea =
-Rect.fromCenter(center: const Offset(100, 100), width: 100, height: 100);
+    Rect.fromCenter(center: const Offset(100, 100), width: 100, height: 100);
 
 class _ActionsEditorPageState extends State<ActionsEditorPage> {
   EditorType _selectedEditor = EditorType.actionsEditor;
 
-  final _editorTypeSelectorState = [true, false];
+  final _editorTypeSelectorState = [true, false, false];
 
   final List<ActionCodeBlock> _actionsCodeBlocks = [
-    ActionCodeBlock(
-        type: ActionCodeType.doNothing,
-        name: "doNothing",
-        isContainer: true,
-        layoutArea: _defaultArea)
-      ..color = Colors.deepPurpleAccent.withOpacity(0.7),
     ActionCodeBlock(
         type: ActionCodeType.doOnInit,
         name: "doOnInit",
@@ -92,12 +87,14 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         type: ActionCodeType.showList,
         name: "showList",
         isContainer: false,
-        layoutArea: _defaultArea),
+        layoutArea: _defaultArea)
+      ..withDataSource = true,
     ActionCodeBlock(
-        type: ActionCodeType.updateData,
-        name: "updateData",
+        type: ActionCodeType.updateDataSource,
+        name: "updateDataSource",
         isContainer: false,
-        layoutArea: _defaultArea),
+        layoutArea: _defaultArea)
+      ..withDataSource = true,
     ActionCodeBlock(
         type: ActionCodeType.moveToNextScreen,
         name: "moveToNextScreen",
@@ -112,16 +109,18 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       ..color = Colors.green,
     ActionCodeBlock(
         type: ActionCodeType.todo,
-        name: "TODO",
+        name: "TODO()",
         isContainer: false,
         layoutArea: _defaultArea)
-      ..color = Colors.redAccent,
+      ..color = Colors.redAccent
+      ..withComment = true,
     ActionCodeBlock(
         type: ActionCodeType.note,
-        name: "// NOTE",
+        name: "// NOTE:",
         isContainer: false,
         layoutArea: _defaultArea)
-      ..color = Colors.redAccent,
+      ..color = Colors.redAccent
+      ..withComment = true,
   ];
 
   Project makeNewProject() {
@@ -219,23 +218,24 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   void _selectActions() {
     Map<String, ActionCodeBlock> containerActionsMap = {};
     var containerActions =
-    _actionsCodeBlocks.where((element) => element.isContainer);
+        _actionsCodeBlocks.where((element) => element.isContainer);
     for (var action in containerActions) {
       containerActionsMap["${action.name} { }"] = action;
     }
     var otherActions =
-    _actionsCodeBlocks.where((element) => !element.isContainer);
+        _actionsCodeBlocks.where((element) => !element.isContainer);
     Map<String, ActionCodeBlock> otherActionsMap = {};
     for (var action in otherActions) {
       otherActionsMap["${action.name}()"] = action;
     }
     showMenuDialog(context, "Select action container:", containerActionsMap,
-            (selectedContainer) {
-          showMenuDialog(context, "Select action:", otherActionsMap,
-                  (selected) =>
-                  _onActionTypeSelected(selectedContainer, selected));
-        });
+        (selectedContainer) {
+      showMenuDialog(context, "Select action:", otherActionsMap,
+          (selected) => _onActionTypeSelected(selectedContainer, selected));
+    });
   }
+
+  final double ID_WIDTH = 156;
 
   Widget _buildActionsEditorWidget() {
     Widget content;
@@ -245,8 +245,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
           width: 640,
           padding: const EdgeInsets.only(bottom: 110),
           child: ListView.separated(
-            separatorBuilder: (context, index) =>
-            const Divider(
+            separatorBuilder: (context, index) => const Divider(
               height: 1,
               indent: 16,
               endIndent: 24,
@@ -260,27 +259,40 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
               if (action != null) {
                 List<Widget> viewActions = [];
                 for (var innerAction in action.actions) {
+                  String innerActionName;
+                  if (innerAction.withComment) {
+                    innerActionName = innerAction.name;
+                  } else {
+                    innerActionName = "${innerAction.name}()";
+                  }
+
                   var innerActionWidget = Container(
                       alignment: Alignment.topLeft,
                       padding: const EdgeInsets.only(
                           left: 16 + 64, top: 12, bottom: 4),
-                      child: Row(
+                      child: Column(
                         children: [
-                          Text(
-                            "${innerAction.name}()",
-                            style: const TextStyle(fontSize: 18),
+                          Row(
+                            children: [
+                              Text(
+                                innerActionName,
+                                style: const TextStyle(fontSize: 18),
+                              ),
+                              Container(
+                                alignment: Alignment.topRight,
+                                // padding: const EdgeInsets.all(16),
+                                child: IconButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        action.actions.remove(innerAction);
+                                      });
+                                    },
+                                    icon: const Icon(Icons.remove_circle)),
+                              )
+                            ],
                           ),
-                          Container(
-                            alignment: Alignment.topRight,
-                            padding: const EdgeInsets.all(16),
-                            child: IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    action.actions.remove(innerAction);
-                                  });
-                                },
-                                icon: const Icon(Icons.remove_circle)),
-                          )
+                          _buildAdditionActionWidgets(
+                              innerAction, innerActionName)
                         ],
                       ));
                   viewActions.add(innerActionWidget);
@@ -315,7 +327,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                             child: Row(
                               children: [
                                 SizedBox(
-                                    width: 156,
+                                    width: ID_WIDTH,
                                     child: _actionIdWidget(action)),
                                 Container(
                                   alignment: Alignment.topRight,
@@ -328,7 +340,9 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                                             isContainer: action.isContainer,
                                             layoutArea: action.layoutArea)
                                           ..actionId = action.actionId
-                                          ..color = action.color;
+                                          ..color = action.color
+                                        ..withComment = action.withComment
+                                        ..withDataSource = action.withDataSource;
 
                                         _selectActions();
                                       },
@@ -423,6 +437,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                 },
                 children: const [
                   Text("Actions"),
+                  Text("Code"),
                   Text("Layout"),
                 ]),
           ),
@@ -452,6 +467,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     var name = codeBlock.name;
     if (codeBlock.isContainer) {
       name += " { }";
+    } else if (codeBlock.withComment) {
+      name += "";
     } else {
       name += "()";
     }
@@ -480,52 +497,12 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     );
   }
 
-  void _onActionButtonMovingEnd(details, ActionCodeBlock codeBlock) {
-    // if (hoveredCodeBlock == null) {
-    //   if (codeBlock is LifecycleEventBlock) {
-    //     var itemsMap = <String, String>{};
-    //     for (var event in codeBlock.events) {
-    //       itemsMap.putIfAbsent(event, () => event);
-    //     }
-    //     showDialog(
-    //         context: context,
-    //         builder: (context) {
-    //           return AlertDialog(
-    //             title: const Text("Select lifecycle event:"),
-    //             content: makeMenuWidget(itemsMap, context, (selected) {
-    //               setState(() {
-    //                 element?.listeners.add(codeBlock.copyStubWith(selected));
-    //               });
-    //             }),
-    //           );
-    //         });
-    //   } else {
-    //     setState(() {
-    //       element?.listeners.add(codeBlock.copyBlock() as ListenerCodeBlock);
-    //     });
-    //   }
-    // } else {
-    //   var screenBundles = appFruits.selectedProject!.layouts;
-    //   setState(() {
-    //     if (codeBlock is ActionCodeBlock) {
-    //       if (codeBlock.actionType == ActionCodeType.openNextScreen &&
-    //           screenBundles.isNotEmpty) {
-    //         var hoveredCodeBlockHolder = hoveredCodeBlock!;
-    //         selectLayout(
-    //             codeBlock as OpenNextScreenBlock, hoveredCodeBlockHolder,
-    //                 (selected) {
-    //               var copyStubWith = codeBlock.copyStubWith(selected);
-    //               hoveredCodeBlockHolder.actions.add(copyStubWith);
-    //             });
-    //       } else if (codeBlock.actionType == ActionCodeType.backToPrevious &&
-    //           screenBundles.isNotEmpty) {
-    //         hoveredCodeBlock?.actions.add(codeBlock.copyBlock());
-    //       } else {
-    //         hoveredCodeBlock?.actions.add(codeBlock.copyBlock());
-    //       }
-    //     }
-    //   });
-    // }
+  void _onActionButtonMovingEnd(details, ActionCodeBlock action) {
+    if (_activeAction?.isContainer == true) {
+      setState(() {
+        _activeAction!.actions.add(action);
+      });
+    }
   }
 
   Future<void> _onAddScreenPressed() async {
@@ -557,14 +534,17 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     }
   }
 
-  void _onActionTypeSelected(ActionCodeBlock selectedContainer,
-      ActionCodeBlock selectedContent) {
+  void _onActionTypeSelected(
+      ActionCodeBlock selectedContainer, ActionCodeBlock selectedContent) {
     setState(() {
       var newAction = _activeAction!
         ..name = selectedContainer.name
         ..type = selectedContainer.type
         ..isContainer = selectedContainer.isContainer;
 
+      if(selectedContent.withDataSource){
+        selectedContent.dataSourceId = 'dataSource${getLayoutBundle()!.actions.length + 1}';
+      }
       newAction.actions.add(selectedContent);
 
       getLayoutBundle()!.actions.add(newAction);
@@ -577,7 +557,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       result = TextFormField(
         initialValue: action.actionId,
         onChanged: (text) {
-            _onActionIdChanged(text);
+          _onActionIdChanged(text);
         },
       );
     } else {
@@ -587,16 +567,66 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     return result;
   }
 
-  _onActionIdChanged(String text) {
-    final newId = _activeAction!.actionId;
-      for (var a in getLayoutBundle()!.actions) {
-        if(a.actionId.compareTo(newId) == 0) {
-            a.actionId = text;
-        }
-      }
+  _dataSourceIdWidget(ActionCodeBlock actionWithDataSource) {
+    final Widget result;
 
-      setState(() {
-      });
+    if (_activeAction!.actions.contains(actionWithDataSource)) {
+     result = TextFormField(
+        initialValue: actionWithDataSource.dataSourceId,
+        onChanged: (text) {
+          _onDataSourceIdChanged(text);
+        },
+      );
+    } else {
+      result = Text(actionWithDataSource.dataSourceId!);
+    }
+
+    return result;
   }
 
+  _onActionIdChanged(String text) {
+    final newId = _activeAction!.actionId;
+    for (var a in getLayoutBundle()!.actions) {
+      if (a.actionId.compareTo(newId) == 0) {
+        a.actionId = text;
+      }
+    }
+
+    setState(() {});
+  }
+
+  _onDataSourceIdChanged(String text) {
+    final newId = _activeAction!.dataSourceId ??= "";
+    for (var a in getLayoutBundle()!.actions) {
+      if (a.dataSourceId?.compareTo(newId) == 0) {
+        a.dataSourceId = text;
+      }
+    }
+
+    setState(() {});
+  }
+
+  Widget _buildAdditionActionWidgets(
+      ActionCodeBlock action, String innerActionName) {
+    List<Widget> widgets = [];
+
+    if (action.withComment) {
+      widgets.add(SizedBox(
+          width: double.infinity,
+          child: TextFormField(
+            decoration:
+                InputDecoration(labelText: "Enter $innerActionName comment"),
+          )));
+    }
+
+    if (action.withDataSource) {
+      widgets
+          .add(Container(child: FilledButton(onPressed: () {  }, child: Text("${_activeAction!.actionId}DataSource")),));
+    }
+
+    return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: widgets);
+  }
 }

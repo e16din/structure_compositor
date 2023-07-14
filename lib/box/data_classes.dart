@@ -50,7 +50,6 @@ class ScreenBundle extends LayoutBundle {
 
 enum ActionCodeType {
   // Containers
-  doNothing,
   doOnInit,
   doOnClick,
   doOnDataChanged,
@@ -59,7 +58,7 @@ enum ActionCodeType {
   showText,
   showImage,
   showList,
-  updateData,
+  updateDataSource,
   // Navigation
   moveToNextScreen,
   moveToBackScreen,
@@ -74,10 +73,15 @@ class ActionCodeBlock {
 
   late String actionId;
 
+  String? dataSourceId;
+  String? comment;
+
   ActionCodeType type;
   String name;
   Color color = Colors.deepPurpleAccent;
   bool isContainer = false;
+  bool withComment = false;
+  bool withDataSource = false;
 
   List<ActionCodeBlock> actions = [];
 
