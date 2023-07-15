@@ -82,7 +82,7 @@ class ActionsPainter extends CustomPainter {
 
     if (activeAction != null) {
       paint.strokeWidth = 2;
-      paint.color =layout.getElementByAction(activeAction!).elementColor;
+      paint.color = layout.getElementByAction(activeAction!).elementColor;
       canvas.drawRect(activeAction!.layoutArea, paint);
     }
 
@@ -99,7 +99,7 @@ class ActionsPainter extends CustomPainter {
   }
 }
 
-final List<MaterialColor> _rainbowColors = <MaterialColor>[
+final List<MaterialColor> rainbowColors = <MaterialColor>[
   Colors.red,
   Colors.orange,
   Colors.yellow,
@@ -110,9 +110,9 @@ final List<MaterialColor> _rainbowColors = <MaterialColor>[
 ];
 
 Color getNextColor(int? index) {
-  var nextColorPosition = index ??= 0 % _rainbowColors.length;
-  if (nextColorPosition == _rainbowColors.length) {
+  var nextColorPosition = index ??= 0 % rainbowColors.length;
+  if (nextColorPosition == rainbowColors.length) {
     nextColorPosition = 0;
   }
-  return _rainbowColors[nextColorPosition].shade400;
+  return rainbowColors[nextColorPosition].shade400;
 }

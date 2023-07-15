@@ -44,6 +44,7 @@ dependencies:
   json_annotation: ^4.8.1
   file_saver: ^0.2.4
   get: ^4.6.5
+  code_text_field: ^1.1.0
 
 dev_dependencies:
   flutter_test:

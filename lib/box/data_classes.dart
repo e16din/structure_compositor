@@ -73,7 +73,7 @@ enum ActionCodeType {
   note,
 }
 
-enum EditorType { actionsEditor, layoutEditor }
+enum EditorType { actionsEditor, codeEditor, layoutEditor }
 
 class CodeElement {
   String elementId;

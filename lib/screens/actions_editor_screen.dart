@@ -5,6 +5,10 @@
 // import 'dart:math';
 // import 'dart:typed_data';
 
+import 'package:code_text_field/code_text_field.dart';
+import 'package:highlight/languages/xml.dart';
+import 'package:highlight/languages/kotlin.dart';
+import 'package:flutter_highlight/themes/monokai-sublime.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
@@ -122,6 +126,9 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       ..withComment = true,
   ];
 
+  CodeController? _xmlCodeController;
+  CodeController? _kotlinCodeController;
+
   Project makeNewProject() {
     return Project(name: "New Project");
   }
@@ -129,6 +136,16 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   @override
   void initState() {
     super.initState();
+
+    _xmlCodeController = CodeController(
+      text: "source",
+      language: xml
+    );
+
+    _kotlinCodeController = CodeController(
+        text: "source",
+        language: kotlin
+    );
   }
 
   @override
@@ -190,6 +207,10 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
           layoutArea: lastRect)
         ..elementId = _nextElementId()
         ..actionId = _nextActionId();
+
+      var element = CodeElement(_activeAction!.elementId,
+          getNextColor(getLayoutBundle()?.elements.length));
+      getLayoutBundle()!.elements.add(element);
     });
   }
 
@@ -210,6 +231,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         area.top.floor() == area.bottom.floor()) {
       setState(() {
         _activeAction = null;
+        getLayoutBundle()!.elements.removeLast();
       });
     }
 
@@ -408,8 +430,27 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
           ),
         );
         break;
+      case EditorType.codeEditor:
+        content = Container(
+            width: 640,
+            child: CodeTheme(
+              data: const CodeThemeData(styles: monokaiSublimeTheme),
+              child: CodeField(
+                controller: _kotlinCodeController!,
+                textStyle: const TextStyle(fontFamily: 'SourceCode'),
+              ),
+            ));
+        break;
       case EditorType.layoutEditor:
-        content = Container(width: 640);
+        content = Container(
+            width: 640,
+            child: CodeTheme(
+              data: const CodeThemeData(styles: monokaiSublimeTheme),
+              child: CodeField(
+                controller: _xmlCodeController!,
+                textStyle: const TextStyle(fontFamily: 'SourceCode'),
+              ),
+            ));
         break;
     }
 
@@ -438,8 +479,10 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                     for (int i = 0; i < _editorTypeSelectorState.length; i++) {
                       _editorTypeSelectorState[i] = i == index;
                     }
-                    if (_editorTypeSelectorState.first) {
+                    if (_editorTypeSelectorState[0]) {
                       _selectedEditor = EditorType.actionsEditor;
+                    } else if (_editorTypeSelectorState[1]) {
+                      _selectedEditor = EditorType.codeEditor;
                     } else {
                       _selectedEditor = EditorType.layoutEditor;
                     }
@@ -572,11 +615,6 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       }
       newAction.actions.add(selectedContent);
 
-      if (isNewElement) {
-        var element = CodeElement(newAction.elementId,
-            getNextColor(getLayoutBundle()?.elements.length));
-        getLayoutBundle()!.elements.add(element);
-      }
       getLayoutBundle()!.actions.add(newAction);
       getLayoutBundle()!.sortActionsByElement();
     });
@@ -588,7 +626,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       result = TextFormField(
         initialValue: action.elementId,
         onChanged: (text) {
-          _onActionIdChanged(text);
+          _onElementIdChanged(text);
         },
       );
     } else {
@@ -598,11 +636,17 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     return result;
   }
 
-  _onActionIdChanged(String text) {
-    final newId = _activeAction!.elementId;
+  _onElementIdChanged(String newElementId) {
+    var commonElementId = _activeAction!.elementId;
     for (var a in getLayoutBundle()!.actions) {
-      if (a.elementId.compareTo(newId) == 0) {
-        a.elementId = text;
+      if (a.elementId.compareTo(commonElementId) == 0) {
+        a.elementId = newElementId;
+      }
+    }
+
+    for (var element in getLayoutBundle()!.elements) {
+      if (element.elementId == commonElementId) {
+        element.elementId = newElementId;
       }
     }
 
