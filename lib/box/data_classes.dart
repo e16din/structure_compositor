@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:structure_compositor/box/app_utils.dart';
 
 class AppDataFruits {
   List<Project> projects = [];
@@ -27,23 +28,28 @@ class LayoutBundle {
 
   Uint8List? layoutBytes;
 
-  List<LayoutElement> elements = [];
-  List<ActionCodeBlock> actions = [];
+  List<LayoutElement> elementsMain = [];
 
-  Map<LayoutElement, List<LayoutElement>> listLinkListItemsMap = {}; // todo: move it
+  List<CodeAction> actions = [];
+  List<CodeElement> elements = [];
 
+  Map<LayoutElement, List<LayoutElement>> listLinkListItemsMap =
+      {}; // todo: move it
 
   LayoutBundle(this.name);
+
+  CodeElement getElementByAction(CodeAction action) =>
+      elements.firstWhere((element) => element.elementId == action.elementId);
+
+  void sortActionsByElement() {
+    actions.sort((a, b) => a.elementId.compareTo(b.elementId));
+  }
 }
 
-
-
 class ScreenBundle extends LayoutBundle {
-
   var isLauncher = false;
 
   ScreenBundle(super.name);
-
 }
 
 // ============
@@ -69,8 +75,15 @@ enum ActionCodeType {
 
 enum EditorType { actionsEditor, layoutEditor }
 
-class ActionCodeBlock {
+class CodeElement {
+  String elementId;
+  Color elementColor;
 
+  CodeElement(this.elementId, this.elementColor);
+}
+
+class CodeAction {
+  late String elementId;
   late String actionId;
 
   String? dataSourceId;
@@ -78,17 +91,20 @@ class ActionCodeBlock {
 
   ActionCodeType type;
   String name;
-  Color color = Colors.deepPurpleAccent;
+  Color actionColor = Colors.deepPurpleAccent;
   bool isContainer = false;
   bool withComment = false;
   bool withDataSource = false;
 
-  List<ActionCodeBlock> actions = [];
+  List<CodeAction> actions = [];
 
   Rect layoutArea;
 
-  ActionCodeBlock(
-      {required this.type, required this.name, required this.isContainer, required this.layoutArea});
+  CodeAction(
+      {required this.type,
+      required this.name,
+      required this.isContainer,
+      required this.layoutArea});
 }
 
 // ===============
@@ -134,11 +150,9 @@ class LayoutElement {
 }
 
 class ContainerScreenElement extends LayoutElement {
-
   List<LayoutElement> content = [];
 
   ContainerScreenElement(super.functionalArea, super.color, super.isInEdit);
-
 }
 
 enum CodeType { action, listener }
@@ -177,7 +191,7 @@ class ListenerCodeBlock extends CodeBlock {
   ListenerCodeType listenerType;
   List<ActionCodeBlockMain> actions = [];
 
-  ListenerCodeBlock(this.listenerType){
+  ListenerCodeBlock(this.listenerType) {
     name = "${listenerType.name}() { }";
     color = Colors.purple;
   }
@@ -193,7 +207,7 @@ class ActionCodeBlockMain extends CodeBlock {
   List<ListenerCodeBlock> listeners =
       []; // NOTE: for actions with result (async actions, callbacks)
 
-  ActionCodeBlockMain(this.actionType){
+  ActionCodeBlockMain(this.actionType) {
     name = "${actionType.name}()";
     color = Colors.green;
   }
@@ -207,11 +221,10 @@ class ActionCodeBlockMain extends CodeBlock {
 class OpenNextScreenBlock extends ActionCodeBlockMain {
   ScreenBundle? nextScreenBundle;
 
-  OpenNextScreenBlock(): super(ActionCodeTypeMain.openNextScreen);
+  OpenNextScreenBlock() : super(ActionCodeTypeMain.openNextScreen);
 
   OpenNextScreenBlock copyStubWith(ScreenBundle nextScreenBundle) {
-    return OpenNextScreenBlock()
-      ..nextScreenBundle = nextScreenBundle;
+    return OpenNextScreenBlock()..nextScreenBundle = nextScreenBundle;
   }
 }
 
@@ -226,12 +239,11 @@ class LifecycleEventBlock extends ListenerCodeBlock {
 
   late String selectedEvent;
 
-  LifecycleEventBlock(): super(ListenerCodeType.onLifecycleEvent) {
+  LifecycleEventBlock() : super(ListenerCodeType.onLifecycleEvent) {
     color = Colors.purple.withOpacity(0.7);
   }
 
   LifecycleEventBlock copyStubWith(String selectedEvent) {
-    return LifecycleEventBlock()
-      ..selectedEvent = selectedEvent;
+    return LifecycleEventBlock()..selectedEvent = selectedEvent;
   }
 }

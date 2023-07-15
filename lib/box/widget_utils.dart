@@ -71,10 +71,10 @@ class ElementPainter extends CustomPainter {
 }
 
 class ActionsPainter extends CustomPainter {
-  List<ActionCodeBlock> actions = [];
-  ActionCodeBlock? activeAction;
+  LayoutBundle layout;
+  CodeAction? activeAction;
 
-  ActionsPainter(this.actions, this.activeAction);
+  ActionsPainter(this.layout, this.activeAction);
 
   @override
   void paint(Canvas canvas, Size size) async {
@@ -82,13 +82,13 @@ class ActionsPainter extends CustomPainter {
 
     if (activeAction != null) {
       paint.strokeWidth = 2;
-      paint.color = activeAction!.color;
+      paint.color =layout.getElementByAction(activeAction!).elementColor;
       canvas.drawRect(activeAction!.layoutArea, paint);
     }
 
-    for (var action in actions) {
+    for (var action in layout.actions) {
       paint.strokeWidth = 5;
-      paint.color = action.color;
+      paint.color = layout.getElementByAction(action).elementColor;
       canvas.drawRect(action.layoutArea, paint);
     }
   }

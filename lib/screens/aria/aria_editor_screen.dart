@@ -104,12 +104,12 @@ class _AriaEditorPageState extends State<AriaEditorPage> {
                 },
                 child: Stack(children: [
                   Container(color: Colors.amberAccent),
-                  if (screenBundle?.elements.isNotEmpty == true)
+                  if (screenBundle?.elementsMain.isNotEmpty == true)
                     ListView.builder(
-                      itemCount: screenBundle?.elements.length,
+                      itemCount: screenBundle?.elementsMain.length,
                       itemBuilder: (BuildContext context, int index) {
                         var elementRow = _buildElementRow(
-                            screenBundle!.elements[index], index);
+                            screenBundle!.elementsMain[index], index);
                         return elementRow;
                       },
                     ),
@@ -186,7 +186,7 @@ class _AriaEditorPageState extends State<AriaEditorPage> {
                   cursor: SystemMouseCursors.precise,
                   child: CustomPaint(
                     painter:
-                    ElementPainter(getLayoutBundle()!.elements),
+                    ElementPainter(getLayoutBundle()!.elementsMain),
                   ))),
           _getAddItemButtons()
           // Column(
@@ -406,7 +406,7 @@ class _AriaEditorPageState extends State<AriaEditorPage> {
                         icon: const Icon(Icons.close),
                         onPressed: () {
                           setState(() {
-                            getLayoutBundle()!.elements.remove(element);
+                            getLayoutBundle()!.elementsMain.remove(element);
                           });
                         }),
                     IconButton(
@@ -616,27 +616,27 @@ class _AriaEditorPageState extends State<AriaEditorPage> {
   void _onPointerDown(PointerDownEvent event) {
     setState(() {
       _lastRect = Rect.fromPoints(event.localPosition, event.localPosition);
-      _activeElement = LayoutElement(_lastRect!, getNextColor(getLayoutBundle()?.elements.length), true)
-        ..name = 'element${getLayoutBundle()!.elements.length + 1}';
+      _activeElement = LayoutElement(_lastRect!, getNextColor(getLayoutBundle()?.elementsMain.length), true)
+        ..name = 'element${getLayoutBundle()!.elementsMain.length + 1}';
 
-      getLayoutBundle()!.elements.add(_activeElement!);
+      getLayoutBundle()!.elementsMain.add(_activeElement!);
     });
   }
 
   void _onPointerMove(PointerMoveEvent event) {
     setState(() {
-      getLayoutBundle()!.elements.last.functionalArea =
+      getLayoutBundle()!.elementsMain.last.functionalArea =
           Rect.fromPoints(_lastRect!.topLeft, event.localPosition);
     });
   }
 
   void _onPointerUp(PointerUpEvent event) {
-    var area = getLayoutBundle()!.elements.last.functionalArea;
+    var area = getLayoutBundle()!.elementsMain.last.functionalArea;
     if (area.left.floor() == area.right.floor() &&
         area.top.floor() == area.bottom.floor()) {
       setState(() {
         _listWaitedForListItem = null;
-        getLayoutBundle()!.elements.removeLast();
+        getLayoutBundle()!.elementsMain.removeLast();
       });
     } else {
 // todo: save data to db

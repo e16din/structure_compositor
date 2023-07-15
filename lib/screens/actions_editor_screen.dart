@@ -7,7 +7,6 @@
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 // import 'package:shared_preferences/shared_preferences.dart';
 // import 'dart:developer' as developer;
@@ -49,77 +48,77 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 
   final _editorTypeSelectorState = [true, false, false];
 
-  final List<ActionCodeBlock> _actionsCodeBlocks = [
-    ActionCodeBlock(
+  final List<CodeAction> _actionsCodeBlocks = [
+    CodeAction(
         type: ActionCodeType.doOnInit,
         name: "doOnInit",
         isContainer: true,
         layoutArea: _defaultArea)
-      ..color = Colors.deepPurpleAccent.withOpacity(0.7),
-    ActionCodeBlock(
+      ..actionColor = Colors.deepPurpleAccent.withOpacity(0.7),
+    CodeAction(
         type: ActionCodeType.doOnClick,
         name: "doOnClick",
         isContainer: true,
         layoutArea: _defaultArea)
-      ..color = Colors.deepPurpleAccent.withOpacity(0.7),
-    ActionCodeBlock(
+      ..actionColor = Colors.deepPurpleAccent.withOpacity(0.7),
+    CodeAction(
         type: ActionCodeType.doOnDataChanged,
         name: "doOnDataChanged",
         isContainer: true,
         layoutArea: _defaultArea)
-      ..color = Colors.deepPurpleAccent.withOpacity(0.7),
-    ActionCodeBlock(
+      ..actionColor = Colors.deepPurpleAccent.withOpacity(0.7),
+    CodeAction(
         type: ActionCodeType.nothing,
         name: "nothing",
         isContainer: false,
         layoutArea: _defaultArea),
-    ActionCodeBlock(
+    CodeAction(
         type: ActionCodeType.showText,
         name: "showText",
         isContainer: false,
         layoutArea: _defaultArea),
-    ActionCodeBlock(
+    CodeAction(
         type: ActionCodeType.showImage,
         name: "showImage",
         isContainer: false,
         layoutArea: _defaultArea),
-    ActionCodeBlock(
+    CodeAction(
         type: ActionCodeType.showList,
         name: "showList",
         isContainer: false,
         layoutArea: _defaultArea)
       ..withDataSource = true,
-    ActionCodeBlock(
+    CodeAction(
         type: ActionCodeType.updateDataSource,
         name: "updateDataSource",
         isContainer: false,
         layoutArea: _defaultArea)
       ..withDataSource = true,
-    ActionCodeBlock(
+    CodeAction(
         type: ActionCodeType.moveToNextScreen,
         name: "moveToNextScreen",
         isContainer: false,
         layoutArea: _defaultArea)
-      ..color = Colors.green,
-    ActionCodeBlock(
+      ..actionColor = Colors.green,
+    CodeAction(
         type: ActionCodeType.moveToBackScreen,
         name: "moveToBackScreen",
         isContainer: false,
         layoutArea: _defaultArea)
-      ..color = Colors.green,
-    ActionCodeBlock(
+      ..actionColor = Colors.green,
+    CodeAction(
         type: ActionCodeType.todo,
         name: "TODO()",
         isContainer: false,
         layoutArea: _defaultArea)
-      ..color = Colors.redAccent
+      ..actionColor = Colors.redAccent
       ..withComment = true,
-    ActionCodeBlock(
+    CodeAction(
         type: ActionCodeType.note,
         name: "// NOTE:",
         isContainer: false,
         layoutArea: _defaultArea)
-      ..color = Colors.redAccent
+      ..actionColor = Colors.redAccent
       ..withComment = true,
   ];
 
@@ -170,8 +169,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
               child: MouseRegion(
                   cursor: SystemMouseCursors.precise,
                   child: CustomPaint(
-                    painter: ActionsPainter(
-                        getLayoutBundle()!.actions, _activeAction),
+                    painter: ActionsPainter(getLayoutBundle()!, _activeAction),
                   )))
         ]),
       );
@@ -180,21 +178,24 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     }
   }
 
-  ActionCodeBlock? _activeAction;
+  CodeAction? _activeAction;
 
   void _onPointerDown(PointerDownEvent event) {
     setState(() {
       var lastRect = Rect.fromPoints(event.localPosition, event.localPosition);
-      final actionId = 'element${getLayoutBundle()!.actions.length + 1}';
-      _activeAction = ActionCodeBlock(
+      _activeAction = CodeAction(
           type: ActionCodeType.doOnInit,
           name: "unknownAction {}",
           isContainer: true,
           layoutArea: lastRect)
-        ..color = getNextColor(getLayoutBundle()?.actions.length)
-        ..actionId = actionId;
+        ..elementId = _nextElementId()
+        ..actionId = _nextActionId();
     });
   }
+
+  String _nextElementId() => 'element${getLayoutBundle()!.actions.length + 1}';
+
+  String _nextActionId() => 'element${getLayoutBundle()!.actions.length + 1}';
 
   void _onPointerMove(PointerMoveEvent event) {
     setState(() {
@@ -212,11 +213,11 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       });
     }
 
-    _selectActions();
+    _selectActions(true);
   }
 
-  void _selectActions() {
-    Map<String, ActionCodeBlock> containerActionsMap = {};
+  void _selectActions(bool isNewElement) {
+    Map<String, CodeAction> containerActionsMap = {};
     var containerActions =
         _actionsCodeBlocks.where((element) => element.isContainer);
     for (var action in containerActions) {
@@ -224,14 +225,18 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     }
     var otherActions =
         _actionsCodeBlocks.where((element) => !element.isContainer);
-    Map<String, ActionCodeBlock> otherActionsMap = {};
+    Map<String, CodeAction> otherActionsMap = {};
     for (var action in otherActions) {
       otherActionsMap["${action.name}()"] = action;
     }
     showMenuDialog(context, "Select action container:", containerActionsMap,
         (selectedContainer) {
-      showMenuDialog(context, "Select action:", otherActionsMap,
-          (selected) => _onActionTypeSelected(selectedContainer, selected));
+      showMenuDialog(
+          context,
+          "Select action:",
+          otherActionsMap,
+          (selected) =>
+              _onActionTypeSelected(selectedContainer, selected, isNewElement));
     });
   }
 
@@ -292,13 +297,13 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                             ],
                           ),
                           _buildAdditionActionWidgets(
-                              innerAction, innerActionName)
+                              action, innerAction, innerActionName)
                         ],
                       ));
                   viewActions.add(innerActionWidget);
                 }
 
-                debugPrint("debug: init actionId:  ${action.actionId}");
+                debugPrint("debug: init elementId:  ${action.actionId}");
 
                 return InkWell(
                   onHover: (focused) {
@@ -316,7 +321,11 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                   highlightColor: Colors.white,
                   child: Container(
                     decoration: BoxDecoration(
-                        border: Border.all(color: action.color, width: 4)),
+                        border: Border.all(
+                            color: getLayoutBundle()!
+                                .getElementByAction(action)
+                                .elementColor,
+                            width: 4)),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
@@ -328,23 +337,24 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                               children: [
                                 SizedBox(
                                     width: ID_WIDTH,
-                                    child: _actionIdWidget(action)),
+                                    child: _elementIdWidget(action)),
                                 Container(
                                   alignment: Alignment.topRight,
                                   padding: const EdgeInsets.all(16),
                                   child: IconButton(
                                       onPressed: () {
-                                        _activeAction = ActionCodeBlock(
+                                        _activeAction = CodeAction(
                                             type: action.type,
                                             name: action.name,
                                             isContainer: action.isContainer,
                                             layoutArea: action.layoutArea)
                                           ..actionId = action.actionId
-                                          ..color = action.color
-                                        ..withComment = action.withComment
-                                        ..withDataSource = action.withDataSource;
+                                          ..elementId = action.elementId
+                                          ..withComment = action.withComment
+                                          ..withDataSource =
+                                              action.withDataSource;
 
-                                        _selectActions();
+                                        _selectActions(false);
                                       },
                                       icon: const Icon(Icons.add_box_rounded)),
                                 ),
@@ -463,7 +473,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     return widgets;
   }
 
-  Container _buildDraggableActionWidget(ActionCodeBlock codeBlock) {
+  Container _buildDraggableActionWidget(CodeAction codeBlock) {
     var name = codeBlock.name;
     if (codeBlock.isContainer) {
       name += " { }";
@@ -478,7 +488,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       child: Draggable(
         feedback: FilledButton(
             style: ButtonStyle(
-                backgroundColor: MaterialStateProperty.all(codeBlock.color)),
+                backgroundColor:
+                    MaterialStateProperty.all(codeBlock.actionColor)),
             onPressed: () {},
             child: Text(name,
                 style: const TextStyle(fontSize: 12),
@@ -488,7 +499,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         },
         child: FilledButton(
             style: ButtonStyle(
-                backgroundColor: MaterialStateProperty.all(codeBlock.color)),
+                backgroundColor:
+                    MaterialStateProperty.all(codeBlock.actionColor)),
             onPressed: () {},
             child: Text(name,
                 style: const TextStyle(fontSize: 12),
@@ -497,10 +509,20 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     );
   }
 
-  void _onActionButtonMovingEnd(details, ActionCodeBlock action) {
+  void _onActionButtonMovingEnd(details, CodeAction action) {
     if (_activeAction?.isContainer == true) {
       setState(() {
-        _activeAction!.actions.add(action);
+        var newAction = CodeAction(
+            type: action.type,
+            name: action.name,
+            isContainer: action.isContainer,
+            layoutArea: action.layoutArea)
+          ..actionId = _activeAction!.actionId
+          ..elementId = _activeAction!.elementId
+          ..withComment = action.withComment
+          ..withDataSource = action.withDataSource;
+
+        _activeAction!.actions.add(newAction);
       });
     }
   }
@@ -534,72 +556,53 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     }
   }
 
-  void _onActionTypeSelected(
-      ActionCodeBlock selectedContainer, ActionCodeBlock selectedContent) {
+  void _onActionTypeSelected(CodeAction selectedContainer,
+      CodeAction selectedContent, bool isNewElement) {
     setState(() {
       var newAction = _activeAction!
         ..name = selectedContainer.name
         ..type = selectedContainer.type
         ..isContainer = selectedContainer.isContainer;
 
-      if(selectedContent.withDataSource){
-        selectedContent.dataSourceId = 'dataSource${getLayoutBundle()!.actions.length + 1}';
+      if (selectedContent.withDataSource) {
+        selectedContent
+          ..dataSourceId = 'dataSource${getLayoutBundle()!.actions.length + 1}'
+          ..actionId = newAction.actionId
+          ..elementId = newAction.elementId;
       }
       newAction.actions.add(selectedContent);
 
+      if (isNewElement) {
+        var element = CodeElement(newAction.elementId,
+            getNextColor(getLayoutBundle()?.elements.length));
+        getLayoutBundle()!.elements.add(element);
+      }
       getLayoutBundle()!.actions.add(newAction);
+      getLayoutBundle()!.sortActionsByElement();
     });
   }
 
-  _actionIdWidget(ActionCodeBlock action) {
+  _elementIdWidget(CodeAction action) {
     final Widget result;
     if (_activeAction == action) {
       result = TextFormField(
-        initialValue: action.actionId,
+        initialValue: action.elementId,
         onChanged: (text) {
           _onActionIdChanged(text);
         },
       );
     } else {
-      result = Text(action.actionId);
-    }
-
-    return result;
-  }
-
-  _dataSourceIdWidget(ActionCodeBlock actionWithDataSource) {
-    final Widget result;
-
-    if (_activeAction!.actions.contains(actionWithDataSource)) {
-     result = TextFormField(
-        initialValue: actionWithDataSource.dataSourceId,
-        onChanged: (text) {
-          _onDataSourceIdChanged(text);
-        },
-      );
-    } else {
-      result = Text(actionWithDataSource.dataSourceId!);
+      result = Text(action.elementId);
     }
 
     return result;
   }
 
   _onActionIdChanged(String text) {
-    final newId = _activeAction!.actionId;
+    final newId = _activeAction!.elementId;
     for (var a in getLayoutBundle()!.actions) {
-      if (a.actionId.compareTo(newId) == 0) {
-        a.actionId = text;
-      }
-    }
-
-    setState(() {});
-  }
-
-  _onDataSourceIdChanged(String text) {
-    final newId = _activeAction!.dataSourceId ??= "";
-    for (var a in getLayoutBundle()!.actions) {
-      if (a.dataSourceId?.compareTo(newId) == 0) {
-        a.dataSourceId = text;
+      if (a.elementId.compareTo(newId) == 0) {
+        a.elementId = text;
       }
     }
 
@@ -607,10 +610,10 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   }
 
   Widget _buildAdditionActionWidgets(
-      ActionCodeBlock action, String innerActionName) {
+      CodeAction action, CodeAction innerAction, String innerActionName) {
     List<Widget> widgets = [];
 
-    if (action.withComment) {
+    if (innerAction.withComment) {
       widgets.add(SizedBox(
           width: double.infinity,
           child: TextFormField(
@@ -619,9 +622,11 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
           )));
     }
 
-    if (action.withDataSource) {
-      widgets
-          .add(Container(child: FilledButton(onPressed: () {  }, child: Text("${_activeAction!.actionId}DataSource")),));
+    if (innerAction.withDataSource) {
+      widgets.add(Container(
+        child: FilledButton(
+            onPressed: () {}, child: Text("${action.elementId}DataSource")),
+      ));
     }
 
     return Column(

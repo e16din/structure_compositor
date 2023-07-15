@@ -27,7 +27,7 @@ class CodeGenerator {
     for (var screen in project.layouts) {
       resultXml += "\n  <layout name=\"${screen.name}\""
           "\n     layout_path=\"${screen.layoutPath}\" >";
-      for (var element in screen.elements) {
+      for (var element in screen.elementsMain) {
         resultXml += "\n    <element name_id=\"${element.name}\""
             "\n      view_type=\"${element.viewType.name}\""
             "\n      description=\"${element.description}\""
@@ -72,7 +72,7 @@ class CodeGenerator {
     var dataSources = """
     """;
     for (var screen in project.layouts) {
-      for (var element in screen.elements) {
+      for (var element in screen.elementsMain) {
         if (element.hasDataSource()) {
           _generateDataSourceClass(element.name.capitalizeFirst!);
 
@@ -119,7 +119,7 @@ class App: Application() {
 \tandroid:orientation="vertical">
 """;
 
-    for (var e in screen.elements) {
+    for (var e in screen.elementsMain) {
       resultXml += """\n\n\t<!-- Description: ${e.description} -->\n\n""";
       var viewId = "@+id/${_makeViewId(e)}";
       switch (e.viewType) {
@@ -240,7 +240,7 @@ class ${activityName} : AppCompatActivity() {
 \t\tsuper.onCreate(savedInstanceState)
 \t\tsetContentView(R.layout.${_makeLayoutName(screen)})""";
 
-    for (var e in screen.elements) {
+    for (var e in screen.elementsMain) {
       if (e.description.isNotEmpty) {
         result += "\n\t\t/**"
             "\n\t\tDescription: ${e.description}"

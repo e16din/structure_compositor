@@ -78,7 +78,7 @@ class _DemoPageState extends State<DemoPage> {
                         child: MouseRegion(
                             cursor: SystemMouseCursors.click,
                             child: CustomPaint(
-                              painter: ElementPainter(demoScreen.elements),
+                              painter: ElementPainter(demoScreen.elementsMain),
                             )),
                       ),
                     ),
@@ -130,7 +130,7 @@ class _DemoPageState extends State<DemoPage> {
 
   void _onPointerUp(PointerEvent event) {
     setState(() {
-      for (var element in demoScreen.elements) {
+      for (var element in demoScreen.elementsMain) {
         if (element.functionalArea.contains(event.localPosition)) {
           for (var listener in element.listeners) {
             for (var action in listener.actions) {
