@@ -6,6 +6,7 @@
 // import 'dart:typed_data';
 
 import 'package:code_text_field/code_text_field.dart';
+import 'package:get/get.dart';
 import 'package:highlight/languages/xml.dart';
 import 'package:highlight/languages/kotlin.dart';
 import 'package:flutter_highlight/themes/monokai-sublime.dart';
@@ -137,9 +138,16 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   void initState() {
     super.initState();
 
-    _xmlCodeController = CodeController(text: "source", language: xml);
+    _xmlCodeController = CodeController(language: xml);
 
-    _kotlinCodeController = CodeController(text: "source", language: kotlin);
+    _kotlinCodeController = CodeController(language: kotlin);
+  }
+
+  @override
+  void dispose() {
+    _xmlCodeController?.dispose();
+    _kotlinCodeController?.dispose();
+    super.dispose();
   }
 
   @override
@@ -298,13 +306,17 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
             ));
         break;
       case EditorType.layoutEditor:
+        _xmlCodeController?.text = _generateXmlLayout(getLayoutBundle()!);
+
         content = Container(
             width: 640,
-            child: CodeTheme(
-              data: const CodeThemeData(styles: monokaiSublimeTheme),
-              child: CodeField(
-                controller: _xmlCodeController!,
-                textStyle: const TextStyle(fontFamily: 'SourceCode'),
+            child: SingleChildScrollView(
+              child: CodeTheme(
+                data: const CodeThemeData(styles: monokaiSublimeTheme),
+                child: CodeField(
+                  controller: _xmlCodeController!,
+                  textStyle: const TextStyle(fontFamily: 'SourceCode'),
+                ),
               ),
             ));
         break;
@@ -357,10 +369,13 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   }
 
   Widget _buildActionsListWidget() {
-    return Container(
-        color: Colors.orangeAccent,
-        width: 180,
-        child: Column(children: _buildDraggableActionsList()));
+    return SingleChildScrollView(
+      child: Container(
+          padding: const EdgeInsets.only(bottom: 280),
+          color: Colors.orangeAccent,
+          width: 180,
+          child: Column(children: _buildDraggableActionsList())),
+    );
   }
 
   List<Widget> _buildDraggableActionsList() {
@@ -584,7 +599,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 
     var element = getLayoutBundle()!.getElementByAction(action);
     Map<String, ViewType> viewTypesMap = {};
-    for(var viewType in element.viewTypes){
+    for (var viewType in element.viewTypes) {
       viewTypesMap[viewType.viewName] = viewType;
     }
     return InkWell(
@@ -615,9 +630,12 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                   children: [
                     SizedBox(width: ID_WIDTH, child: _elementIdWidget(action)),
                     Container(
-                      child: OutlinedButton(child:Text(element.selectedViewType.viewName),
+                      child: OutlinedButton(
+                          child: Text(element.selectedViewType.viewName),
                           onPressed: () {
-                            showMenuDialog(context, "Select View Type", viewTypesMap, (selected) {
+                            showMenuDialog(
+                                context, "Select View Type", viewTypesMap,
+                                (selected) {
                               setState(() {
                                 element.selectedViewType = selected;
                               });
@@ -683,5 +701,102 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         // onSetStateListener.call();
       },
     );
+  }
+
+  String _generateXmlLayout(LayoutBundle layoutBundle) {
+    String result = """
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+\txmlns:app="http://schemas.android.com/apk/res-auto"
+\txmlns:tools="http://schemas.android.com/tools"
+\tandroid:layout_width="match_parent"
+\tandroid:layout_height="match_parent"
+\tandroid:orientation="vertical">
+""";
+    for (var e in layoutBundle.elements) {
+      var viewId =
+          "@+id/${e.elementId}${e.selectedViewType.viewName.removeAllWhitespace}";
+      switch (e.selectedViewType) {
+        case ViewType.text:
+          result += """
+          
+          <TextView
+              android:id="$viewId"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:text="todo" />
+    """;
+          break;
+        case ViewType.field:
+          result += """
+          
+          <EditText
+              android:id="$viewId"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:hint="todo" />
+    """;
+          break;
+        case ViewType.button:
+          result += """
+          
+          <Button
+              android:id="$viewId"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:text="todo" />
+    """;
+          break;
+        case ViewType.image:
+          result += """
+          
+          <ImageView
+              android:id="$viewId"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              app:compatSrc="todo" />
+    """;
+          break;
+        case ViewType.selector:
+          result += """
+          
+          <Switch
+              android:id="$viewId"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:checked="todo" />
+    """;
+          break;
+        case ViewType.list:
+          result += """
+          
+         <androidx.recyclerview.widget.RecyclerView 
+              android:id="$viewId"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              />
+    """;
+          break;
+        case ViewType.otherView:
+          result += """
+          
+         <View 
+              android:id="$viewId"
+              android:layout_width="200dp"
+              android:layout_height="200dp"
+              />
+    """;
+          break;
+      }
+    }
+
+    result += """\n</LinearLayout>
+    
+    
+    
+    
+    """;
+
+    return result;
   }
 }

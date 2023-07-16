@@ -123,6 +123,7 @@ enum ViewType {
   image("Image"),
   selector("Selector"),
   list("List"),
+  listItem("List Item"),
   otherView("Other View"),;
 
   final String viewName;
