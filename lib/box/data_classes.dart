@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:structure_compositor/box/app_utils.dart';
 
 class AppDataFruits {
@@ -38,11 +39,44 @@ class LayoutBundle {
 
   LayoutBundle(this.name);
 
-  CodeElement getElementByAction(CodeAction action) =>
-      elements.firstWhere((element) => element.elementId == action.elementId);
+  CodeElement getElementByAction(CodeAction action) {
+      return getElement(elements, action.elementId)!;
+  }
+
+  CodeElement? getElement(List<CodeElement> elements, String elementId) {
+    for(var element in elements){
+      if(element.elementId == elementId){
+        return element;
+      }
+    }
+    for(var element in elements){
+      return getElement(element.content, elementId);
+    }
+
+    return null;
+  }
 
   void sortActionsByElement() {
     actions.sort((a, b) => a.elementId.compareTo(b.elementId));
+  }
+
+  void removeElement(CodeElement element) {
+    elements.remove(element);
+    for(var e in element.content){
+      removeElement(e);
+    }
+  }
+
+  List<CodeElement> getAllElements() {
+    return getElementsFrom(elements);
+  }
+  List<CodeElement> getElementsFrom(List<CodeElement> elements) {
+    var result = <CodeElement>[];
+    for(var e in elements){
+      result.add(e);
+      result.addAll(getElementsFrom(e.content));
+    }
+    return result;
   }
 }
 
@@ -82,6 +116,12 @@ class CodeElement {
   List<ViewType> viewTypes = [];
   ViewType selectedViewType = ViewType.otherView;
 
+  Rect area = _defaultArea;
+
+  List<CodeElement> content = [];
+
+  bool isContainer() => content.isNotEmpty;
+
   CodeElement(this.elementId, this.elementColor);
 }
 
@@ -105,8 +145,6 @@ class CodeAction {
   bool withDataSource = false;
 
   List<CodeAction> actions = [];
-
-  Rect layoutArea = _defaultArea;
 
   CodeAction(
       {required this.type,

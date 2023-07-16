@@ -56,7 +56,7 @@ class ElementPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) async {
-    var paint = Paint()..style = PaintingStyle.stroke;
+    final paint = Paint()..style = PaintingStyle.stroke;
     for (var element in elements) {
       paint.strokeWidth = element.isInEdit ? 2 : 5;
       paint.color = element.isInEdit ? Colors.black : element.color;
@@ -78,18 +78,20 @@ class ActionsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) async {
-    var paint = Paint()..style = PaintingStyle.stroke;
+    final paint = Paint()..style = PaintingStyle.stroke;
 
     if (activeAction != null) {
       paint.strokeWidth = 2;
       paint.color = layout.getElementByAction(activeAction!).elementColor;
-      canvas.drawRect(activeAction!.layoutArea, paint);
+      final element = layout.getElementByAction(activeAction!);
+      canvas.drawRect(element.area, paint);
     }
 
     for (var action in layout.actions) {
       paint.strokeWidth = 5;
       paint.color = layout.getElementByAction(action).elementColor;
-      canvas.drawRect(action.layoutArea, paint);
+      final element = layout.getElementByAction(action);
+      canvas.drawRect(element.area, paint);
     }
   }
 

@@ -206,29 +206,30 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
           type: CodeActionType.doOnInit,
           name: "unknownAction {}",
           isContainer: true)
-        ..layoutArea = lastRect
         ..elementId = _nextElementId()
         ..actionId = _nextActionId();
 
       var element = CodeElement(_activeAction!.elementId,
-          getNextColor(getLayoutBundle()?.elements.length));
+          getNextColor(getLayoutBundle()?.getAllElements().length))
+        ..area = lastRect;
       getLayoutBundle()!.elements.add(element);
     });
   }
 
-  String _nextElementId() => 'element${getLayoutBundle()!.elements.length + 1}';
+  String _nextElementId() => 'element${getLayoutBundle()!.getAllElements().length + 1}';
 
   String _nextActionId() => 'action${getLayoutBundle()!.actions.length + 1}';
 
   void _onPointerMove(PointerMoveEvent event) {
     setState(() {
-      _activeAction!.layoutArea = Rect.fromPoints(
-          _activeAction!.layoutArea.topLeft, event.localPosition);
+      var element = getLayoutBundle()!.getElementByAction(_activeAction!);
+      element.area = Rect.fromPoints(element.area.topLeft, event.localPosition);
     });
   }
 
   void _onPointerUp(PointerUpEvent event) {
-    var area = _activeAction!.layoutArea;
+    var element = getLayoutBundle()!.getElementByAction(_activeAction!);
+    var area = element.area;
     if (area.left.floor() == area.right.floor() &&
         area.top.floor() == area.bottom.floor()) {
       setState(() {
@@ -430,7 +431,6 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
             type: action.type,
             name: action.name,
             isContainer: action.isContainer)
-          ..layoutArea = action.layoutArea
           ..actionId = _activeAction!.actionId
           ..elementId = _activeAction!.elementId
           ..withComment = action.withComment
@@ -493,6 +493,15 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         element.selectedViewType = viewTypes.first;
       }
 
+      for (var e in getLayoutBundle()!.getAllElements()) {
+        if (e.area.contains(element.area.topLeft) &&
+            e.area.contains(element.area.bottomRight)) {
+          e.content.add(element);
+          getLayoutBundle()!.removeElement(element);
+          break;
+        }
+      }
+
       getLayoutBundle()!.actions.add(newAction);
       getLayoutBundle()!.sortActionsByElement();
     });
@@ -522,7 +531,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       }
     }
 
-    for (var element in getLayoutBundle()!.elements) {
+    for (var element in getLayoutBundle()!.getAllElements()) {
       if (element.elementId == commonElementId) {
         element.elementId = newElementId;
       }
@@ -651,7 +660,6 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                                 type: action.type,
                                 name: action.name,
                                 isContainer: action.isContainer)
-                              ..layoutArea = action.layoutArea
                               ..actionId = action.actionId
                               ..elementId = action.elementId
                               ..withComment = action.withComment
@@ -676,6 +684,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                           onPressed: () {
                             setState(() {
                               getLayoutBundle()?.actions.remove(action);
+                              getLayoutBundle()?.removeElement(element);
                               _activeAction = null;
                             });
                           },
@@ -713,82 +722,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 \tandroid:layout_height="match_parent"
 \tandroid:orientation="vertical">
 """;
-    for (var e in layoutBundle.elements) {
-      var viewId =
-          "@+id/${e.elementId}${e.selectedViewType.viewName.removeAllWhitespace}";
-      switch (e.selectedViewType) {
-        case ViewType.text:
-          result += """
-          
-          <TextView
-              android:id="$viewId"
-              android:layout_width="wrap_content"
-              android:layout_height="wrap_content"
-              android:text="todo" />
-    """;
-          break;
-        case ViewType.field:
-          result += """
-          
-          <EditText
-              android:id="$viewId"
-              android:layout_width="wrap_content"
-              android:layout_height="wrap_content"
-              android:hint="todo" />
-    """;
-          break;
-        case ViewType.button:
-          result += """
-          
-          <Button
-              android:id="$viewId"
-              android:layout_width="wrap_content"
-              android:layout_height="wrap_content"
-              android:text="todo" />
-    """;
-          break;
-        case ViewType.image:
-          result += """
-          
-          <ImageView
-              android:id="$viewId"
-              android:layout_width="wrap_content"
-              android:layout_height="wrap_content"
-              app:compatSrc="todo" />
-    """;
-          break;
-        case ViewType.selector:
-          result += """
-          
-          <Switch
-              android:id="$viewId"
-              android:layout_width="wrap_content"
-              android:layout_height="wrap_content"
-              android:checked="todo" />
-    """;
-          break;
-        case ViewType.list:
-          result += """
-          
-         <androidx.recyclerview.widget.RecyclerView 
-              android:id="$viewId"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              />
-    """;
-          break;
-        case ViewType.otherView:
-          result += """
-          
-         <View 
-              android:id="$viewId"
-              android:layout_width="200dp"
-              android:layout_height="200dp"
-              />
-    """;
-          break;
-      }
-    }
+    result += _generateXmlViewsByElements(layoutBundle.elements);
 
     result += """\n</LinearLayout>
     
@@ -797,6 +731,109 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     
     """;
 
+    return result;
+  }
+
+  String _generateXmlViewsByElements(List<CodeElement> elements) {
+    String result = "";
+    for (var e in elements) {
+      if (e.isContainer()) {
+        var containerViewId =
+            "@+id/${e.elementId}${e.selectedViewType.viewName.removeAllWhitespace}";
+        result += """
+        <LinearLayout
+              android:id="$containerViewId"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:orientation="vertical"
+              >
+        """;
+        result += _generateXmlViewsByElements(e.content);
+        result += """
+        
+        </LinearLayout>
+        """;
+      } else {
+        var viewId =
+            "@+id/${e.elementId}${e.selectedViewType.viewName.removeAllWhitespace}";
+
+        switch (e.selectedViewType) {
+          case ViewType.text:
+            result += """
+          
+          <TextView
+              android:id="$viewId"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:text="todo" />
+    """;
+            break;
+          case ViewType.field:
+            result += """
+          
+          <EditText
+              android:id="$viewId"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:hint="todo" />
+    """;
+            break;
+          case ViewType.button:
+            result += """
+          
+          <Button
+              android:id="$viewId"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:text="todo" />
+    """;
+            break;
+          case ViewType.image:
+            result += """
+          
+          <ImageView
+              android:id="$viewId"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              app:compatSrc="todo" />
+    """;
+            break;
+          case ViewType.selector:
+            result += """
+          
+          <Switch
+              android:id="$viewId"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:checked="todo" />
+    """;
+            break;
+          case ViewType.list:
+            result += """
+          
+         <androidx.recyclerview.widget.RecyclerView 
+              android:id="$viewId"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              />
+    """;
+            break;
+          case ViewType.otherView:
+            result += """
+          
+         <View 
+              android:id="$viewId"
+              android:layout_width="200dp"
+              android:layout_height="200dp"
+              />
+    """;
+            break;
+          case ViewType.listItem:
+            // TODO: Generate item.xml
+            break;
+        }
+      }
+    }
     return result;
   }
 }
