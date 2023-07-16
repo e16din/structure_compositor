@@ -54,11 +54,11 @@ class ScreenBundle extends LayoutBundle {
 
 // ============
 
-enum ActionCodeType {
+enum CodeActionType {
   // Containers
   doOnInit,
   doOnClick,
-  doOnDataChanged,
+  doOnTextChanged,
   // View
   nothing,
   showText,
@@ -79,8 +79,15 @@ class CodeElement {
   String elementId;
   Color elementColor;
 
+  List<ViewType> viewTypes = [];
+  ViewType selectedViewType = ViewType.otherView;
+
   CodeElement(this.elementId, this.elementColor);
 }
+
+final Rect _defaultArea =
+Rect.fromCenter(center: const Offset(100, 100), width: 100, height: 100);
+
 
 class CodeAction {
   late String elementId;
@@ -89,7 +96,8 @@ class CodeAction {
   String? dataSourceId;
   String? comment;
 
-  ActionCodeType type;
+  CodeActionType type;
+
   String name;
   Color actionColor = Colors.deepPurpleAccent;
   bool isContainer = false;
@@ -98,25 +106,24 @@ class CodeAction {
 
   List<CodeAction> actions = [];
 
-  Rect layoutArea;
+  Rect layoutArea = _defaultArea;
 
   CodeAction(
       {required this.type,
       required this.name,
-      required this.isContainer,
-      required this.layoutArea});
+      required this.isContainer});
 }
 
 // ===============
 
 enum ViewType {
   button("Button"),
-  label("Label"),
+  text("Text"),
   field("Field"),
   image("Image"),
   selector("Selector"),
   list("List"),
-  combine("Stack Container");
+  otherView("Other View"),;
 
   final String viewName;
 

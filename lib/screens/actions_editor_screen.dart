@@ -44,9 +44,6 @@ class ActionsEditorPage extends StatefulWidget {
   State<ActionsEditorPage> createState() => _ActionsEditorPageState();
 }
 
-final Rect _defaultArea =
-    Rect.fromCenter(center: const Offset(100, 100), width: 100, height: 100);
-
 class _ActionsEditorPageState extends State<ActionsEditorPage> {
   EditorType _selectedEditor = EditorType.actionsEditor;
 
@@ -54,77 +51,80 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 
   final List<CodeAction> _actionsCodeBlocks = [
     CodeAction(
-        type: ActionCodeType.doOnInit,
-        name: "doOnInit",
-        isContainer: true,
-        layoutArea: _defaultArea)
+        type: CodeActionType.doOnInit, name: "doOnInit", isContainer: true)
       ..actionColor = Colors.deepPurpleAccent.withOpacity(0.7),
     CodeAction(
-        type: ActionCodeType.doOnClick,
-        name: "doOnClick",
-        isContainer: true,
-        layoutArea: _defaultArea)
+        type: CodeActionType.doOnClick, name: "doOnClick", isContainer: true)
       ..actionColor = Colors.deepPurpleAccent.withOpacity(0.7),
     CodeAction(
-        type: ActionCodeType.doOnDataChanged,
-        name: "doOnDataChanged",
-        isContainer: true,
-        layoutArea: _defaultArea)
+        type: CodeActionType.doOnTextChanged,
+        name: "doOnTextChanged",
+        isContainer: true)
       ..actionColor = Colors.deepPurpleAccent.withOpacity(0.7),
     CodeAction(
-        type: ActionCodeType.nothing,
-        name: "nothing",
-        isContainer: false,
-        layoutArea: _defaultArea),
+        type: CodeActionType.nothing, name: "nothing", isContainer: false),
     CodeAction(
-        type: ActionCodeType.showText,
-        name: "showText",
-        isContainer: false,
-        layoutArea: _defaultArea),
+        type: CodeActionType.showText, name: "showText", isContainer: false),
     CodeAction(
-        type: ActionCodeType.showImage,
-        name: "showImage",
-        isContainer: false,
-        layoutArea: _defaultArea),
+        type: CodeActionType.showImage, name: "showImage", isContainer: false),
     CodeAction(
-        type: ActionCodeType.showList,
-        name: "showList",
-        isContainer: false,
-        layoutArea: _defaultArea)
+        type: CodeActionType.showList, name: "showList", isContainer: false)
       ..withDataSource = true,
     CodeAction(
-        type: ActionCodeType.updateDataSource,
+        type: CodeActionType.updateDataSource,
         name: "updateDataSource",
-        isContainer: false,
-        layoutArea: _defaultArea)
+        isContainer: false)
       ..withDataSource = true,
     CodeAction(
-        type: ActionCodeType.moveToNextScreen,
+        type: CodeActionType.moveToNextScreen,
         name: "moveToNextScreen",
-        isContainer: false,
-        layoutArea: _defaultArea)
+        isContainer: false)
       ..actionColor = Colors.green,
     CodeAction(
-        type: ActionCodeType.moveToBackScreen,
+        type: CodeActionType.moveToBackScreen,
         name: "moveToBackScreen",
-        isContainer: false,
-        layoutArea: _defaultArea)
+        isContainer: false)
       ..actionColor = Colors.green,
-    CodeAction(
-        type: ActionCodeType.todo,
-        name: "TODO()",
-        isContainer: false,
-        layoutArea: _defaultArea)
+    CodeAction(type: CodeActionType.todo, name: "TODO()", isContainer: false)
       ..actionColor = Colors.redAccent
       ..withComment = true,
-    CodeAction(
-        type: ActionCodeType.note,
-        name: "// NOTE:",
-        isContainer: false,
-        layoutArea: _defaultArea)
+    CodeAction(type: CodeActionType.note, name: "// NOTE:", isContainer: false)
       ..actionColor = Colors.redAccent
       ..withComment = true,
   ];
+
+  List<ViewType> _getViewTypesByAction(CodeAction action) {
+    List<ViewType> result = [];
+    switch (action.type) {
+      case CodeActionType.doOnClick:
+        result.add(ViewType.button);
+        break;
+      case CodeActionType.doOnTextChanged:
+        result.add(ViewType.field);
+        break;
+      default:
+        //do nothing
+        break;
+    }
+
+    for (var innerAction in action.actions) {
+      switch (innerAction.type) {
+        case CodeActionType.showText:
+          result.add(ViewType.text);
+          break;
+        case CodeActionType.showImage:
+          result.add(ViewType.image);
+          break;
+        case CodeActionType.showList:
+          result.add(ViewType.list);
+          break;
+        default:
+          break;
+      }
+    }
+
+    return result;
+  }
 
   CodeController? _xmlCodeController;
   CodeController? _kotlinCodeController;
@@ -137,15 +137,9 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   void initState() {
     super.initState();
 
-    _xmlCodeController = CodeController(
-      text: "source",
-      language: xml
-    );
+    _xmlCodeController = CodeController(text: "source", language: xml);
 
-    _kotlinCodeController = CodeController(
-        text: "source",
-        language: kotlin
-    );
+    _kotlinCodeController = CodeController(text: "source", language: kotlin);
   }
 
   @override
@@ -201,10 +195,10 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     setState(() {
       var lastRect = Rect.fromPoints(event.localPosition, event.localPosition);
       _activeAction = CodeAction(
-          type: ActionCodeType.doOnInit,
+          type: CodeActionType.doOnInit,
           name: "unknownAction {}",
-          isContainer: true,
-          layoutArea: lastRect)
+          isContainer: true)
+        ..layoutArea = lastRect
         ..elementId = _nextElementId()
         ..actionId = _nextActionId();
 
@@ -214,9 +208,9 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     });
   }
 
-  String _nextElementId() => 'element${getLayoutBundle()!.actions.length + 1}';
+  String _nextElementId() => 'element${getLayoutBundle()!.elements.length + 1}';
 
-  String _nextActionId() => 'element${getLayoutBundle()!.actions.length + 1}';
+  String _nextActionId() => 'action${getLayoutBundle()!.actions.length + 1}';
 
   void _onPointerMove(PointerMoveEvent event) {
     setState(() {
@@ -284,145 +278,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
             itemBuilder: (BuildContext context, int index) {
               var action = getLayoutBundle()?.actions[index];
               if (action != null) {
-                List<Widget> viewActions = [];
-                for (var innerAction in action.actions) {
-                  String innerActionName;
-                  if (innerAction.withComment) {
-                    innerActionName = innerAction.name;
-                  } else {
-                    innerActionName = "${innerAction.name}()";
-                  }
-
-                  var innerActionWidget = Container(
-                      alignment: Alignment.topLeft,
-                      padding: const EdgeInsets.only(
-                          left: 16 + 64, top: 12, bottom: 4),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                innerActionName,
-                                style: const TextStyle(fontSize: 18),
-                              ),
-                              Container(
-                                alignment: Alignment.topRight,
-                                // padding: const EdgeInsets.all(16),
-                                child: IconButton(
-                                    onPressed: () {
-                                      setState(() {
-                                        action.actions.remove(innerAction);
-                                      });
-                                    },
-                                    icon: const Icon(Icons.remove_circle)),
-                              )
-                            ],
-                          ),
-                          _buildAdditionActionWidgets(
-                              action, innerAction, innerActionName)
-                        ],
-                      ));
-                  viewActions.add(innerActionWidget);
-                }
-
-                debugPrint("debug: init elementId:  ${action.actionId}");
-
-                return InkWell(
-                  onHover: (focused) {
-                    if (focused) {
-                      setState(() {
-                        _activeAction = action;
-                      });
-                    }
-                  },
-
-                  hoverColor: Colors.white,
-                  // hoverColor,
-                  // highlightColor,
-                  focusColor: Colors.white,
-                  highlightColor: Colors.white,
-                  child: Container(
-                    decoration: BoxDecoration(
-                        border: Border.all(
-                            color: getLayoutBundle()!
-                                .getElementByAction(action)
-                                .elementColor,
-                            width: 4)),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        Container(
-                            alignment: Alignment.topLeft,
-                            padding: const EdgeInsets.only(
-                                left: 16, top: 12, bottom: 4),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                    width: ID_WIDTH,
-                                    child: _elementIdWidget(action)),
-                                Container(
-                                  alignment: Alignment.topRight,
-                                  padding: const EdgeInsets.all(16),
-                                  child: IconButton(
-                                      onPressed: () {
-                                        _activeAction = CodeAction(
-                                            type: action.type,
-                                            name: action.name,
-                                            isContainer: action.isContainer,
-                                            layoutArea: action.layoutArea)
-                                          ..actionId = action.actionId
-                                          ..elementId = action.elementId
-                                          ..withComment = action.withComment
-                                          ..withDataSource =
-                                              action.withDataSource;
-
-                                        _selectActions(false);
-                                      },
-                                      icon: const Icon(Icons.add_box_rounded)),
-                                ),
-                                Container(
-                                    alignment: Alignment.topLeft,
-                                    padding: const EdgeInsets.only(
-                                        left: 16, top: 12, bottom: 4),
-                                    child: Text(
-                                      ".${action.name} {",
-                                      style: const TextStyle(fontSize: 18),
-                                    )),
-                                Container(
-                                  alignment: Alignment.topRight,
-                                  padding: const EdgeInsets.all(16),
-                                  child: IconButton(
-                                      onPressed: () {
-                                        setState(() {
-                                          getLayoutBundle()
-                                              ?.actions
-                                              .remove(action);
-                                          _activeAction = null;
-                                        });
-                                      },
-                                      icon: const Icon(Icons.remove_circle)),
-                                )
-                              ],
-                            )),
-                        Column(
-                          children: viewActions,
-                        ),
-                        Container(
-                            alignment: Alignment.topLeft,
-                            padding: const EdgeInsets.only(
-                                left: 16, top: 12, bottom: 4),
-                            child: const Text(
-                              "}",
-                              style: TextStyle(fontSize: 18),
-                            )),
-                      ],
-                    ),
-                  ),
-                  onTap: () {
-                    // appFruits.selectedProject!.selectedLayout = screenBundle;
-                    // onSetStateListener.call();
-                  },
-                );
+                return _buildEditorActionWidget(action);
               } else {
                 return Container();
               }
@@ -558,8 +414,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         var newAction = CodeAction(
             type: action.type,
             name: action.name,
-            isContainer: action.isContainer,
-            layoutArea: action.layoutArea)
+            isContainer: action.isContainer)
+          ..layoutArea = action.layoutArea
           ..actionId = _activeAction!.actionId
           ..elementId = _activeAction!.elementId
           ..withComment = action.withComment
@@ -614,6 +470,13 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
           ..elementId = newAction.elementId;
       }
       newAction.actions.add(selectedContent);
+
+      var element = getLayoutBundle()!.getElementByAction(newAction);
+      var viewTypes = _getViewTypesByAction(newAction);
+      element.viewTypes = viewTypes;
+      if (viewTypes.isNotEmpty) {
+        element.selectedViewType = viewTypes.first;
+      }
 
       getLayoutBundle()!.actions.add(newAction);
       getLayoutBundle()!.sortActionsByElement();
@@ -677,5 +540,148 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: widgets);
+  }
+
+  Widget _buildEditorActionWidget(CodeAction action) {
+    List<Widget> innerActionWidgets = [];
+    for (var innerAction in action.actions) {
+      String innerActionName;
+      if (innerAction.withComment) {
+        innerActionName = innerAction.name;
+      } else {
+        innerActionName = "${innerAction.name}()";
+      }
+
+      var innerActionWidget = Container(
+          alignment: Alignment.topLeft,
+          padding: const EdgeInsets.only(left: 16 + 64, top: 12, bottom: 4),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Text(
+                    innerActionName,
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                  Container(
+                    alignment: Alignment.topRight,
+                    // padding: const EdgeInsets.all(16),
+                    child: IconButton(
+                        onPressed: () {
+                          setState(() {
+                            action.actions.remove(innerAction);
+                          });
+                        },
+                        icon: const Icon(Icons.remove_circle)),
+                  )
+                ],
+              ),
+              _buildAdditionActionWidgets(action, innerAction, innerActionName)
+            ],
+          ));
+      innerActionWidgets.add(innerActionWidget);
+    }
+
+    var element = getLayoutBundle()!.getElementByAction(action);
+    Map<String, ViewType> viewTypesMap = {};
+    for(var viewType in element.viewTypes){
+      viewTypesMap[viewType.viewName] = viewType;
+    }
+    return InkWell(
+      onHover: (focused) {
+        if (focused) {
+          setState(() {
+            _activeAction = action;
+          });
+        }
+      },
+
+      hoverColor: Colors.white,
+      // hoverColor,
+      // highlightColor,
+      focusColor: Colors.white,
+      highlightColor: Colors.white,
+      child: Container(
+        decoration: BoxDecoration(
+            border: Border.all(color: element.elementColor, width: 4)),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Container(
+                alignment: Alignment.topLeft,
+                padding: const EdgeInsets.only(left: 16, top: 12, bottom: 4),
+                child: Row(
+                  // mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    SizedBox(width: ID_WIDTH, child: _elementIdWidget(action)),
+                    Container(
+                      child: OutlinedButton(child:Text(element.selectedViewType.viewName),
+                          onPressed: () {
+                            showMenuDialog(context, "Select View Type", viewTypesMap, (selected) {
+                              setState(() {
+                                element.selectedViewType = selected;
+                              });
+                            });
+                          }),
+                    ),
+                    Container(
+                      alignment: Alignment.topRight,
+                      padding: const EdgeInsets.all(8),
+                      child: IconButton(
+                          onPressed: () {
+                            _activeAction = CodeAction(
+                                type: action.type,
+                                name: action.name,
+                                isContainer: action.isContainer)
+                              ..layoutArea = action.layoutArea
+                              ..actionId = action.actionId
+                              ..elementId = action.elementId
+                              ..withComment = action.withComment
+                              ..withDataSource = action.withDataSource;
+
+                            _selectActions(false);
+                          },
+                          icon: const Icon(Icons.add_box_rounded)),
+                    ),
+                    Container(
+                        alignment: Alignment.topLeft,
+                        padding:
+                            const EdgeInsets.only(left: 4, top: 12, bottom: 4),
+                        child: Text(
+                          ".${action.name} {",
+                          style: const TextStyle(fontSize: 18),
+                        )),
+                    Container(
+                      alignment: Alignment.topRight,
+                      padding: const EdgeInsets.all(16),
+                      child: IconButton(
+                          onPressed: () {
+                            setState(() {
+                              getLayoutBundle()?.actions.remove(action);
+                              _activeAction = null;
+                            });
+                          },
+                          icon: const Icon(Icons.remove_circle)),
+                    )
+                  ],
+                )),
+            Column(
+              children: innerActionWidgets,
+            ),
+            Container(
+                alignment: Alignment.topLeft,
+                padding: const EdgeInsets.only(left: 16, top: 12, bottom: 4),
+                child: const Text(
+                  "}",
+                  style: TextStyle(fontSize: 18),
+                )),
+          ],
+        ),
+      ),
+      onTap: () {
+        // appFruits.selectedProject!.selectedLayout = screenBundle;
+        // onSetStateListener.call();
+      },
+    );
   }
 }

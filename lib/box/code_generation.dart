@@ -124,7 +124,7 @@ class App: Application() {
       var viewId = "@+id/${_makeViewId(e)}";
       switch (e.viewType) {
 
-        case ViewType.label:
+        case ViewType.text:
           resultXml += """
           <TextView
               android:id="$viewId"
@@ -169,19 +169,19 @@ class App: Application() {
               android:checked="${e.value}" />
     """;
           break;
-        case ViewType.combine:
-          resultXml += """
-         <LinearLayout 
-              android:id="$viewId"
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
-              android:orientation="vertical"
-              >
-          <!-- Value: ${e.value} -->
-          
-         </LinearLayout>
-    """;
-          break;
+    //     case ViewType.combine:
+    //       resultXml += """
+    //      <LinearLayout
+    //           android:id="$viewId"
+    //           android:layout_width="match_parent"
+    //           android:layout_height="wrap_content"
+    //           android:orientation="vertical"
+    //           >
+    //       <!-- Value: ${e.value} -->
+    //
+    //      </LinearLayout>
+    // """;
+    //       break;
         case ViewType.list:
           resultXml += """
          <androidx.recyclerview.widget.RecyclerView 
@@ -251,7 +251,7 @@ class ${activityName} : AppCompatActivity() {
       result +=
           "\n\t\tval $valName = findViewById<${_makeViewClassName(e)}>(R.id.$valName)";
       switch (e.viewType) {
-        case ViewType.label:
+        case ViewType.text:
           // do nothing
           break;
         case ViewType.field:
@@ -454,7 +454,7 @@ class ${name}DataSource {
   static String _makeViewClassName(LayoutElement e) {
     var result = "";
     switch (e.viewType) {
-      case ViewType.label:
+      case ViewType.text:
         result = "TextView";
         break;
       case ViewType.field:
@@ -469,9 +469,9 @@ class ${name}DataSource {
       case ViewType.selector:
         result = "Switch";
         break;
-      case ViewType.combine:
-        result = "LinearLayout";
-        break;
+      // case ViewType.combine:
+      //   result = "LinearLayout";
+      //   break;
       case ViewType.list:
         result = "RecyclerView";
         break;
