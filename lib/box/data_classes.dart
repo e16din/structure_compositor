@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:code_text_field/code_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:structure_compositor/box/app_utils.dart';
@@ -33,6 +34,8 @@ class LayoutBundle {
 
   List<CodeAction> actions = [];
   List<CodeElement> elements = [];
+  List<CodeFile> layoutFiles = [];
+  List<CodeFile> codeFiles = [];
 
   Map<LayoutElement, List<LayoutElement>> listLinkListItemsMap =
       {}; // todo: move it
@@ -108,6 +111,22 @@ enum CodeActionType {
 }
 
 enum EditorType { actionsEditor, codeEditor, layoutEditor }
+
+enum CodeLanguage {
+  unknown,
+  xml,
+  kotlin
+}
+
+class CodeFile {
+  String fileName;
+  CodeLanguage language;
+
+  CodeController codeController;
+
+  CodeFile(this.language, this.fileName, this.codeController);
+
+}
 
 class CodeElement {
   String elementId;

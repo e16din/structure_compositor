@@ -127,9 +127,6 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     return result;
   }
 
-  CodeController? _xmlCodeController;
-  CodeController? _kotlinCodeController;
-
   Project makeNewProject() {
     return Project(name: "New Project");
   }
@@ -137,16 +134,20 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   @override
   void initState() {
     super.initState();
-
-    _xmlCodeController = CodeController(language: xml);
-
-    _kotlinCodeController = CodeController(language: kotlin);
   }
 
   @override
   void dispose() {
-    _xmlCodeController?.dispose();
-    _kotlinCodeController?.dispose();
+    var layout = getLayoutBundle();
+    if(layout!=null) {
+      for (var file in layout.layoutFiles) {
+        file.codeController.dispose();
+      }
+      for (var file in layout.codeFiles) {
+        file.codeController.dispose();
+      }
+    }
+
     super.dispose();
   }
 
@@ -216,7 +217,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     });
   }
 
-  String _nextElementId() => 'element${getLayoutBundle()!.getAllElements().length + 1}';
+  String _nextElementId() =>
+      'element${getLayoutBundle()!.getAllElements().length + 1}';
 
   String _nextActionId() => 'action${getLayoutBundle()!.actions.length + 1}';
 
@@ -268,7 +270,37 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   final double ID_WIDTH = 156;
 
   Widget _buildActionsEditorWidget() {
-    Widget content;
+    var layout = getLayoutBundle();
+
+    if (layout != null) {
+      if (layout.codeFiles.isEmpty == true) {
+        var file = CodeFile(CodeLanguage.kotlin, "main.kt",  CodeController(language: kotlin, text: "main.kt") );
+        layout.codeFiles.add(file);
+      }
+      if (layout.layoutFiles.isEmpty == true) {
+        var file = CodeFile(CodeLanguage.xml, "main.xml", CodeController(language: xml, text: "main.xml"));
+        layout.layoutFiles.add(file);
+      }
+
+      for (var element in layout.elements) {
+        if (element.selectedViewType == ViewType.list) {
+          var fileName = "${element.elementId}.xml";
+          var text = _generateXmlLayout(getLayoutBundle()!);
+          if (layout.layoutFiles
+                  .firstWhereOrNull((f) => f.fileName == fileName) ==
+              null) {
+            var file = CodeFile(CodeLanguage.xml, fileName, CodeController(language: xml, text: text));
+            layout.layoutFiles.add(file);
+          } else {
+            var file =
+                layout.layoutFiles.firstWhere((f) => f.fileName == fileName);
+            file.codeController.text = text;
+          }
+        }
+      }
+    }
+
+    Widget content = Container(width: 640);
     switch (_selectedEditor) {
       case EditorType.actionsEditor:
         content = Container(
@@ -281,11 +313,9 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
               endIndent: 24,
             ),
             scrollDirection: Axis.vertical,
-            itemCount: (getLayoutBundle() != null
-                ? getLayoutBundle()?.actions.length
-                : 0)!,
+            itemCount: (layout != null ? layout.actions.length : 0),
             itemBuilder: (BuildContext context, int index) {
-              var action = getLayoutBundle()?.actions[index];
+              var action = layout?.actions[index];
               if (action != null) {
                 return _buildEditorActionWidget(action);
               } else {
@@ -296,30 +326,14 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         );
         break;
       case EditorType.codeEditor:
-        content = Container(
-            width: 640,
-            child: CodeTheme(
-              data: const CodeThemeData(styles: monokaiSublimeTheme),
-              child: CodeField(
-                controller: _kotlinCodeController!,
-                textStyle: const TextStyle(fontFamily: 'SourceCode'),
-              ),
-            ));
+        if(layout!=null) {
+          content = _buildCodeFileWidgets(layout.codeFiles);
+        }
         break;
       case EditorType.layoutEditor:
-        _xmlCodeController?.text = _generateXmlLayout(getLayoutBundle()!);
-
-        content = Container(
-            width: 640,
-            child: SingleChildScrollView(
-              child: CodeTheme(
-                data: const CodeThemeData(styles: monokaiSublimeTheme),
-                child: CodeField(
-                  controller: _xmlCodeController!,
-                  textStyle: const TextStyle(fontFamily: 'SourceCode'),
-                ),
-              ),
-            ));
+        if(layout!=null) {
+          content = _buildCodeFileWidgets(layout.layoutFiles);
+        }
         break;
     }
 
@@ -365,6 +379,30 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
           ),
           Expanded(child: content),
         ],
+      ),
+    );
+  }
+
+  Container _buildCodeFileWidgets(List<CodeFile> files) {
+    return Container(
+      width: 640,
+      child: ListView.separated(
+        separatorBuilder: (context, index) => const Divider(
+          height: 1,
+          indent: 16,
+          endIndent: 24,
+        ),
+        scrollDirection: Axis.vertical,
+        itemCount: files.length,
+        itemBuilder: (BuildContext context, int index) {
+          return CodeTheme(
+            data: const CodeThemeData(styles: monokaiSublimeTheme),
+            child: CodeField(
+              controller: files[index].codeController,
+              textStyle: const TextStyle(fontFamily: 'SourceCode'),
+            ),
+          );
+        },
       ),
     );
   }
@@ -737,7 +775,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   String _generateXmlViewsByElements(List<CodeElement> elements) {
     String result = "";
     for (var e in elements) {
-      if (e.isContainer()) {
+      if (e.isContainer() && e.selectedViewType != ViewType.list) {
         var containerViewId =
             "@+id/${e.elementId}${e.selectedViewType.viewName.removeAllWhitespace}";
         result += """
