@@ -34,8 +34,8 @@ Widget makeMenuWidget(Map<String, dynamic> itemsMap, BuildContext context,
       child: Column(children: menuItems));
 }
 
-void showMenuDialog(BuildContext context, String title, Map<String, dynamic> itemsMap,
-void Function(dynamic) onItemSelected) {
+void showMenuDialog(BuildContext context, String title,
+    Map<String, dynamic> itemsMap, void Function(dynamic) onItemSelected) {
   dynamic selectedItem;
   showDialog(
       context: context,
@@ -72,25 +72,21 @@ class ElementPainter extends CustomPainter {
 
 class ActionsPainter extends CustomPainter {
   LayoutBundle layout;
-  CodeAction? activeAction;
 
-  ActionsPainter(this.layout, this.activeAction);
+  ActionsPainter(this.layout);
 
   @override
   void paint(Canvas canvas, Size size) async {
     final paint = Paint()..style = PaintingStyle.stroke;
 
-    if (activeAction != null) {
-      paint.strokeWidth = 2;
-      paint.color = layout.getElementByAction(activeAction!).elementColor;
-      final element = layout.getElementByAction(activeAction!);
-      canvas.drawRect(element.area, paint);
-    }
-
-    for (var action in layout.actions) {
-      paint.strokeWidth = 5;
-      paint.color = layout.getElementByAction(action).elementColor;
-      final element = layout.getElementByAction(action);
+    for (var element in layout.elements) {
+      if (layout.getActiveElement() == element) {
+        paint.strokeWidth = 2;
+        paint.color = element.elementColor.withOpacity(0.76);
+      } else {
+        paint.strokeWidth = 5;
+        paint.color = element.elementColor;
+      }
       canvas.drawRect(element.area, paint);
     }
   }

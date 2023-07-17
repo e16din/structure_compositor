@@ -2,8 +2,6 @@ import 'dart:typed_data';
 
 import 'package:code_text_field/code_text_field.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:structure_compositor/box/app_utils.dart';
 
 class AppDataFruits {
   List<Project> projects = [];
@@ -43,20 +41,14 @@ class LayoutBundle {
   LayoutBundle(this.name);
 
   CodeElement getElementByAction(CodeAction action) {
-      return getElement(elements, action.elementId)!;
+    return elements
+        .firstWhere((element) => element.elementId == action.elementId);
   }
 
-  CodeElement? getElement(List<CodeElement> elements, String elementId) {
-    for(var element in elements){
-      if(element.elementId == elementId){
-        return element;
-      }
-    }
-    for(var element in elements){
-      return getElement(element.content, elementId);
-    }
-
-    return null;
+  void sortElements() {
+    elements.sort((a, b) {
+      return a.area.topLeft.dy.compareTo(b.area.topLeft.dy);
+    });
   }
 
   void sortActionsByElement() {
@@ -65,21 +57,33 @@ class LayoutBundle {
 
   void removeElement(CodeElement element) {
     elements.remove(element);
-    for(var e in element.content){
-      removeElement(e);
+    for (var e in elements) {
+      e.content.remove(element.elementId);
     }
   }
 
-  List<CodeElement> getAllElements() {
-    return getElementsFrom(elements);
-  }
-  List<CodeElement> getElementsFrom(List<CodeElement> elements) {
-    var result = <CodeElement>[];
-    for(var e in elements){
-      result.add(e);
-      result.addAll(getElementsFrom(e.content));
+  void setActiveAction(CodeAction action) {
+    for (var a in actions) {
+      a.isActive = action.actionId == a.actionId;
     }
-    return result;
+  }
+
+  CodeAction getActiveAction() {
+    return actions.firstWhere((e) => e.isActive);
+  }
+
+  CodeElement getActiveElement() {
+    var activeAction = getActiveAction();
+    var activeElement =
+        elements.firstWhere((e) => e.elementId == activeAction.elementId);
+    return activeElement;
+  }
+
+  void resetActiveAction() {
+    for (var element in actions) {
+      element.isActive = false;
+    }
+    actions.first.isActive = true;
   }
 }
 
@@ -112,11 +116,7 @@ enum CodeActionType {
 
 enum EditorType { actionsEditor, codeEditor, layoutEditor }
 
-enum CodeLanguage {
-  unknown,
-  xml,
-  kotlin
-}
+enum CodeLanguage { unknown, xml, kotlin }
 
 class CodeFile {
   String fileName;
@@ -125,7 +125,6 @@ class CodeFile {
   CodeController codeController;
 
   CodeFile(this.language, this.fileName, this.codeController);
-
 }
 
 class CodeElement {
@@ -137,7 +136,7 @@ class CodeElement {
 
   Rect area = _defaultArea;
 
-  List<CodeElement> content = [];
+  List<String> content = []; // list of elementId
 
   bool isContainer() => content.isNotEmpty;
 
@@ -145,8 +144,7 @@ class CodeElement {
 }
 
 final Rect _defaultArea =
-Rect.fromCenter(center: const Offset(100, 100), width: 100, height: 100);
-
+    Rect.fromCenter(center: const Offset(100, 100), width: 100, height: 100);
 
 class CodeAction {
   late String elementId;
@@ -165,10 +163,10 @@ class CodeAction {
 
   List<CodeAction> actions = [];
 
+  bool isActive = false;
+
   CodeAction(
-      {required this.type,
-      required this.name,
-      required this.isContainer});
+      {required this.type, required this.name, required this.isContainer});
 }
 
 // ===============
@@ -181,7 +179,8 @@ enum ViewType {
   selector("Selector"),
   list("List"),
   listItem("List Item"),
-  otherView("Other View"),;
+  otherView("Other View"),
+  ;
 
   final String viewName;
 

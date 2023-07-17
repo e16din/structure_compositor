@@ -193,7 +193,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
               child: MouseRegion(
                   cursor: SystemMouseCursors.precise,
                   child: CustomPaint(
-                    painter: ActionsPainter(getLayoutBundle()!, _activeAction),
+                    painter: ActionsPainter(getLayoutBundle()!),
                   )))
         ]),
       );
@@ -202,45 +202,50 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     }
   }
 
-  CodeAction? _activeAction;
-
   void _onPointerDown(PointerDownEvent event) {
     setState(() {
       var lastRect = Rect.fromPoints(event.localPosition, event.localPosition);
-      _activeAction = CodeAction(
+      var nextElementId = _nextElementId();
+      var action = CodeAction(
           type: CodeActionType.doOnInit,
           name: "unknownAction {}",
           isContainer: true)
-        ..elementId = _nextElementId()
-        ..actionId = _nextActionId();
+        ..elementId = nextElementId
+        ..actionId = _nextActionId()
+        ..isActive = true;
 
-      var element = CodeElement(_activeAction!.elementId,
-          getNextColor(getLayoutBundle()?.getAllElements().length))
-        ..area = lastRect;
+      getLayoutBundle()!.actions.add(action);
+      getLayoutBundle()!.setActiveAction(action);
+
+      var nextColor = getNextColor(getLayoutBundle()?.elements.length);
+      var element = CodeElement(nextElementId, nextColor)..area = lastRect;
       getLayoutBundle()!.elements.add(element);
     });
   }
 
   String _nextElementId() =>
-      'element${getLayoutBundle()!.getAllElements().length + 1}';
+      'element${getLayoutBundle()!.elements.length + 1}';
 
   String _nextActionId() => 'action${getLayoutBundle()!.actions.length + 1}';
 
   void _onPointerMove(PointerMoveEvent event) {
     setState(() {
-      var element = getLayoutBundle()!.getElementByAction(_activeAction!);
+      debugPrint("Here! 3");
+      var element = getLayoutBundle()!.getActiveElement();
       element.area = Rect.fromPoints(element.area.topLeft, event.localPosition);
     });
   }
 
   void _onPointerUp(PointerUpEvent event) {
-    var element = getLayoutBundle()!.getElementByAction(_activeAction!);
+    debugPrint("Here! 4");
+    var element = getLayoutBundle()!.getActiveElement();
     var area = element.area;
     if (area.left.floor() == area.right.floor() &&
         area.top.floor() == area.bottom.floor()) {
       setState(() {
-        _activeAction = null;
+        getLayoutBundle()!.actions.removeLast();
         getLayoutBundle()!.elements.removeLast();
+        getLayoutBundle()!.resetActiveAction();
       });
     }
 
@@ -441,18 +446,19 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   }
 
   void _onActionButtonMovingEnd(details, CodeAction action) {
-    if (_activeAction?.isContainer == true) {
+    var activeAction = getLayoutBundle()!.getActiveAction();
+    if (activeAction.isContainer == true) {
       setState(() {
         var newAction = CodeAction(
             type: action.type,
             name: action.name,
             isContainer: action.isContainer)
-          ..actionId = _activeAction!.actionId
-          ..elementId = _activeAction!.elementId
+          ..actionId = activeAction.actionId
+          ..elementId = activeAction.elementId
           ..withComment = action.withComment
           ..withDataSource = action.withDataSource;
 
-        _activeAction!.actions.add(newAction);
+        activeAction.actions.add(newAction);
       });
     }
   }
@@ -501,39 +507,37 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     }
   }
 
-  void _onActionTypeSelected(CodeAction selectedContainer,
-      CodeAction selectedContent, bool isNewElement) {
+  void _onActionTypeSelected(CodeAction action, CodeAction innerAction, bool isNewElement) {
     setState(() {
-      var newAction = _activeAction!
-        ..name = selectedContainer.name
-        ..type = selectedContainer.type
-        ..isContainer = selectedContainer.isContainer;
+      var activeAction = getLayoutBundle()!.getActiveAction();
+      activeAction //todo: make copy of object
+        ..name = action.name
+        ..type = action.type
+        ..isContainer = action.isContainer;
 
-      if (selectedContent.withDataSource) {
-        selectedContent
+      if (innerAction.withDataSource) {//todo: make copy of object
+        innerAction
           ..dataSourceId = 'dataSource${getLayoutBundle()!.actions.length + 1}'
-          ..actionId = newAction.actionId
-          ..elementId = newAction.elementId;
+          ..elementId = activeAction.elementId;
       }
-      newAction.actions.add(selectedContent);
+      activeAction.actions.add(innerAction);
 
-      var element = getLayoutBundle()!.getElementByAction(newAction);
-      var viewTypes = _getViewTypesByAction(newAction);
+      debugPrint("Here! 2");
+      var element = getLayoutBundle()!.getElementByAction(activeAction);
+      var viewTypes = _getViewTypesByAction(activeAction);
       element.viewTypes = viewTypes;
       if (viewTypes.isNotEmpty) {
         element.selectedViewType = viewTypes.first;
       }
 
-      for (var e in getLayoutBundle()!.getAllElements()) {
+      for (var e in getLayoutBundle()!.elements) {
         if (e.area.contains(element.area.topLeft) &&
             e.area.contains(element.area.bottomRight)) {
-          e.content.add(element);
-          getLayoutBundle()!.removeElement(element);
+          e.content.add(element.elementId);
           break;
         }
       }
 
-      getLayoutBundle()!.actions.add(newAction);
       getLayoutBundle()!.sortActionsByElement();
 
       var layout = getLayoutBundle()!;
@@ -541,7 +545,11 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       for (var element in layout.elements) {
         if (element.selectedViewType == ViewType.list) {
           var fileName = "${element.elementId}.xml";
-          var text = "$fileName";
+          var contentElements = element.content
+              .map((elementId) => layout.elements
+                  .firstWhere((element) => element.elementId == elementId))
+              .toList();
+          var text = _generateXmlViewsByElements(contentElements);
           if (layout.layoutFiles
                   .firstWhereOrNull((f) => f.fileName == fileName) ==
               null) {
@@ -563,6 +571,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   }
 
   void _updateMainXmlCode() async {
+    getLayoutBundle()!.sortElements();
+
     var xmlLayoutText = await _generateXmlLayout(getLayoutBundle()!);
 
     var mainLayoutFile = getLayoutBundle()!.layoutFiles.first;
@@ -571,7 +581,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 
   _elementIdWidget(CodeAction action) {
     final Widget result;
-    if (_activeAction == action) {
+    if (getLayoutBundle()!.getActiveAction() == action) {
       result = TextFormField(
         initialValue: action.elementId,
         onChanged: (text) {
@@ -587,14 +597,14 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 
   _onElementIdChanged(String newElementId) {
     setState(() {
-      var commonElementId = _activeAction!.elementId;
+      var commonElementId = getLayoutBundle()!.getActiveAction().elementId;
       for (var a in getLayoutBundle()!.actions) {
         if (a.elementId.compareTo(commonElementId) == 0) {
           a.elementId = newElementId;
         }
       }
 
-      for (var element in getLayoutBundle()!.getAllElements()) {
+      for (var element in getLayoutBundle()!.elements) {
         if (element.elementId == commonElementId) {
           element.elementId = newElementId;
         }
@@ -668,6 +678,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       innerActionWidgets.add(innerActionWidget);
     }
 
+    debugPrint("Here! 1");
     var element = getLayoutBundle()!.getElementByAction(action);
     Map<String, ViewType> viewTypesMap = {};
     for (var viewType in element.viewTypes) {
@@ -677,7 +688,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       onHover: (focused) {
         if (focused) {
           setState(() {
-            _activeAction = action;
+            getLayoutBundle()!.setActiveAction(action);
           });
         }
       },
@@ -718,7 +729,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                       padding: const EdgeInsets.all(8),
                       child: IconButton(
                           onPressed: () {
-                            _activeAction = CodeAction(
+                            var activeAction = CodeAction(
                                 type: action.type,
                                 name: action.name,
                                 isContainer: action.isContainer)
@@ -726,7 +737,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                               ..elementId = action.elementId
                               ..withComment = action.withComment
                               ..withDataSource = action.withDataSource;
-
+                            getLayoutBundle()!.setActiveAction(activeAction);
                             _selectActions(false);
                           },
                           icon: const Icon(Icons.add_box_rounded)),
@@ -747,7 +758,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                             setState(() {
                               getLayoutBundle()?.actions.remove(action);
                               getLayoutBundle()?.removeElement(element);
-                              _activeAction = null;
+                              getLayoutBundle()?.resetActiveAction();
                             });
                           },
                           icon: const Icon(Icons.remove_circle)),
@@ -810,7 +821,11 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
               android:orientation="vertical"
               >
         """;
-        result += _generateXmlViewsByElements(e.content);
+        var contentElements = e.content
+            .map((elementId) => getLayoutBundle()!.elements
+            .firstWhere((element) => element.elementId == elementId))
+            .toList();
+        result += _generateXmlViewsByElements(contentElements);
         result += """
 
         </LinearLayout>
