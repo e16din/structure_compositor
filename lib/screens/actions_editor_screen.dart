@@ -218,13 +218,14 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       getLayoutBundle()!.setActiveAction(action);
 
       var nextColor = getNextColor(getLayoutBundle()?.elements.length);
-      var element = CodeElement(nextElementId, nextColor)..area = lastRect;
+      var element = CodeElement(nextElementId, nextColor)
+        ..area = lastRect
+        ..layoutFileName = getLayoutBundle()!.layoutFiles.first.fileName;
       getLayoutBundle()!.elements.add(element);
     });
   }
 
-  String _nextElementId() =>
-      'element${getLayoutBundle()!.elements.length + 1}';
+  String _nextElementId() => 'element${getLayoutBundle()!.elements.length + 1}';
 
   String _nextActionId() => 'action${getLayoutBundle()!.actions.length + 1}';
 
@@ -496,10 +497,10 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         layout.codeFiles.add(file);
       }
 
-      var xmlLayoutText = await _generateXmlLayout(getLayoutBundle()!);
+      // var xmlLayoutText = await _generateXmlLayout(getLayoutBundle()!);
       if (layout.layoutFiles.isEmpty == true) {
         var file = CodeFile(CodeLanguage.xml, "main.xml",
-            CodeController(language: xml, text: xmlLayoutText));
+            CodeController(language: xml, text: "main.xml"));
         layout.layoutFiles.add(file);
       }
 
@@ -507,7 +508,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     }
   }
 
-  void _onActionTypeSelected(CodeAction action, CodeAction innerAction, bool isNewElement) {
+  void _onActionTypeSelected(
+      CodeAction action, CodeAction innerAction, bool isNewElement) {
     setState(() {
       var activeAction = getLayoutBundle()!.getActiveAction();
       activeAction //todo: make copy of object
@@ -515,7 +517,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         ..type = action.type
         ..isContainer = action.isContainer;
 
-      if (innerAction.withDataSource) {//todo: make copy of object
+      if (innerAction.withDataSource) {
+        //todo: make copy of object
         innerAction
           ..dataSourceId = 'dataSource${getLayoutBundle()!.actions.length + 1}'
           ..elementId = activeAction.elementId;
@@ -545,11 +548,16 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       for (var element in layout.elements) {
         if (element.selectedViewType == ViewType.list) {
           var fileName = "${element.elementId}.xml";
+
           var contentElements = element.content
               .map((elementId) => layout.elements
                   .firstWhere((element) => element.elementId == elementId))
               .toList();
-          var text = _generateXmlViewsByElements(contentElements);
+          for (var element in contentElements) {
+            element.layoutFileName = fileName;
+          }
+
+          var text = _generateXmlViewsByElements(fileName, contentElements);
           if (layout.layoutFiles
                   .firstWhereOrNull((f) => f.fileName == fileName) ==
               null) {
@@ -795,7 +803,9 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 \tandroid:layout_height="match_parent"
 \tandroid:orientation="vertical">
 """;
-    result += _generateXmlViewsByElements(layoutBundle.elements);
+    var mainLayoutFile = getLayoutBundle()!.layoutFiles.first;
+    result += _generateXmlViewsByElements(
+        mainLayoutFile.fileName, layoutBundle.elements);
 
     result += """\n</LinearLayout>
     
@@ -807,9 +817,14 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     return result;
   }
 
-  String _generateXmlViewsByElements(List<CodeElement> elements) {
+  String _generateXmlViewsByElements(
+      String fileName, List<CodeElement> elements) {
     String result = "";
     for (var e in elements) {
+      if (e.layoutFileName != fileName) {
+        continue;
+      }
+
       if (e.isContainer() && e.selectedViewType != ViewType.list) {
         var containerViewId =
             "@+id/${e.elementId}${e.selectedViewType.viewName.removeAllWhitespace}";
@@ -822,10 +837,11 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
               >
         """;
         var contentElements = e.content
-            .map((elementId) => getLayoutBundle()!.elements
-            .firstWhere((element) => element.elementId == elementId))
+            .map((elementId) => getLayoutBundle()!
+                .elements
+                .firstWhere((element) => element.elementId == elementId))
             .toList();
-        result += _generateXmlViewsByElements(contentElements);
+        result += _generateXmlViewsByElements(fileName, contentElements);
         result += """
 
         </LinearLayout>

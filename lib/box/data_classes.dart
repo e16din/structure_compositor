@@ -136,7 +136,9 @@ class CodeElement {
 
   Rect area = _defaultArea;
 
-  List<String> content = []; // list of elementId
+  List<String> content = [];
+
+  late String layoutFileName; // list of elementId
 
   bool isContainer() => content.isNotEmpty;
 
