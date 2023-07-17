@@ -48,7 +48,11 @@ class ActionsEditorPage extends StatefulWidget {
 class _ActionsEditorPageState extends State<ActionsEditorPage> {
   EditorType _selectedEditor = EditorType.actionsEditor;
 
-  final _editorTypeSelectorState = [true, false, false];
+  final _editorTypeSelectorState = [
+    true,
+    false,
+    false
+  ]; // Action 0 | Code 1 | Layout 2
 
   final List<CodeAction> _actionsCodeBlocks = [
     CodeAction(
@@ -139,7 +143,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   @override
   void dispose() {
     var layout = getLayoutBundle();
-    if(layout!=null) {
+    if (layout != null) {
       for (var file in layout.layoutFiles) {
         file.codeController.dispose();
       }
@@ -166,7 +170,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          _onAddScreenPressed();
+          _onAddLayoutPressed();
         },
         tooltip: 'Select layout',
         child: const Icon(Icons.add),
@@ -272,34 +276,6 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   Widget _buildActionsEditorWidget() {
     var layout = getLayoutBundle();
 
-    if (layout != null) {
-      if (layout.codeFiles.isEmpty == true) {
-        var file = CodeFile(CodeLanguage.kotlin, "main.kt",  CodeController(language: kotlin, text: "main.kt") );
-        layout.codeFiles.add(file);
-      }
-      if (layout.layoutFiles.isEmpty == true) {
-        var file = CodeFile(CodeLanguage.xml, "main.xml", CodeController(language: xml, text: "main.xml"));
-        layout.layoutFiles.add(file);
-      }
-
-      for (var element in layout.elements) {
-        if (element.selectedViewType == ViewType.list) {
-          var fileName = "${element.elementId}.xml";
-          var text = _generateXmlLayout(getLayoutBundle()!);
-          if (layout.layoutFiles
-                  .firstWhereOrNull((f) => f.fileName == fileName) ==
-              null) {
-            var file = CodeFile(CodeLanguage.xml, fileName, CodeController(language: xml, text: text));
-            layout.layoutFiles.add(file);
-          } else {
-            var file =
-                layout.layoutFiles.firstWhere((f) => f.fileName == fileName);
-            file.codeController.text = text;
-          }
-        }
-      }
-    }
-
     Widget content = Container(width: 640);
     switch (_selectedEditor) {
       case EditorType.actionsEditor:
@@ -326,13 +302,13 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         );
         break;
       case EditorType.codeEditor:
-        if(layout!=null) {
-          content = _buildCodeFileWidgets(layout.codeFiles);
+        if (layout != null) {
+          content = _buildCodeFilesWidgets(layout.codeFiles);
         }
         break;
       case EditorType.layoutEditor:
-        if(layout!=null) {
-          content = _buildCodeFileWidgets(layout.layoutFiles);
+        if (layout != null) {
+          content = _buildCodeFilesWidgets(layout.layoutFiles);
         }
         break;
     }
@@ -358,6 +334,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                 ),
                 isSelected: _editorTypeSelectorState,
                 onPressed: (int index) {
+                  _updateMainXmlCode();
+
                   setState(() {
                     for (int i = 0; i < _editorTypeSelectorState.length; i++) {
                       _editorTypeSelectorState[i] = i == index;
@@ -383,7 +361,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     );
   }
 
-  Container _buildCodeFileWidgets(List<CodeFile> files) {
+  Container _buildCodeFilesWidgets(List<CodeFile> files) {
     return Container(
       width: 640,
       child: ListView.separated(
@@ -479,7 +457,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     }
   }
 
-  Future<void> _onAddScreenPressed() async {
+  Future<void> _onAddLayoutPressed() async {
     FilePickerResult? result = await FilePicker.platform
         .pickFiles(type: FileType.image, allowMultiple: true);
 
@@ -501,10 +479,25 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 
         resultScreens.add(screenBundle);
       }
-      setState(() {
-        appFruits.selectedProject!.layouts.addAll(resultScreens);
-        appFruits.selectedProject!.selectedLayout = resultScreens.first;
-      });
+
+      appFruits.selectedProject!.layouts.addAll(resultScreens);
+      var layout = resultScreens.first;
+      appFruits.selectedProject!.selectedLayout = layout;
+
+      if (layout.codeFiles.isEmpty == true) {
+        var file = CodeFile(CodeLanguage.kotlin, "main.kt",
+            CodeController(language: kotlin, text: "main.kt"));
+        layout.codeFiles.add(file);
+      }
+
+      var xmlLayoutText = await _generateXmlLayout(getLayoutBundle()!);
+      if (layout.layoutFiles.isEmpty == true) {
+        var file = CodeFile(CodeLanguage.xml, "main.xml",
+            CodeController(language: xml, text: xmlLayoutText));
+        layout.layoutFiles.add(file);
+      }
+
+      setState(() {});
     }
   }
 
@@ -542,7 +535,38 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 
       getLayoutBundle()!.actions.add(newAction);
       getLayoutBundle()!.sortActionsByElement();
+
+      var layout = getLayoutBundle()!;
+
+      for (var element in layout.elements) {
+        if (element.selectedViewType == ViewType.list) {
+          var fileName = "${element.elementId}.xml";
+          var text = "$fileName";
+          if (layout.layoutFiles
+                  .firstWhereOrNull((f) => f.fileName == fileName) ==
+              null) {
+            var file = CodeFile(CodeLanguage.xml, fileName,
+                CodeController(language: xml, text: text));
+            layout.layoutFiles.add(file);
+          } else {
+            var file =
+                layout.layoutFiles.firstWhere((f) => f.fileName == fileName);
+            file.codeController.text = text;
+          }
+        }
+      }
+
+      if (_editorTypeSelectorState[2]) {
+        _updateMainXmlCode();
+      }
     });
+  }
+
+  void _updateMainXmlCode() async {
+    var xmlLayoutText = await _generateXmlLayout(getLayoutBundle()!);
+
+    var mainLayoutFile = getLayoutBundle()!.layoutFiles.first;
+    mainLayoutFile.codeController.text = xmlLayoutText;
   }
 
   _elementIdWidget(CodeAction action) {
@@ -562,20 +586,20 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   }
 
   _onElementIdChanged(String newElementId) {
-    var commonElementId = _activeAction!.elementId;
-    for (var a in getLayoutBundle()!.actions) {
-      if (a.elementId.compareTo(commonElementId) == 0) {
-        a.elementId = newElementId;
+    setState(() {
+      var commonElementId = _activeAction!.elementId;
+      for (var a in getLayoutBundle()!.actions) {
+        if (a.elementId.compareTo(commonElementId) == 0) {
+          a.elementId = newElementId;
+        }
       }
-    }
 
-    for (var element in getLayoutBundle()!.getAllElements()) {
-      if (element.elementId == commonElementId) {
-        element.elementId = newElementId;
+      for (var element in getLayoutBundle()!.getAllElements()) {
+        if (element.elementId == commonElementId) {
+          element.elementId = newElementId;
+        }
       }
-    }
-
-    setState(() {});
+    });
   }
 
   Widget _buildAdditionActionWidgets(
@@ -750,7 +774,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     );
   }
 
-  String _generateXmlLayout(LayoutBundle layoutBundle) {
+  Future<String> _generateXmlLayout(LayoutBundle layoutBundle) async {
     String result = """
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -788,17 +812,18 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         """;
         result += _generateXmlViewsByElements(e.content);
         result += """
-        
+
         </LinearLayout>
         """;
       } else {
-        var viewId =
-            "@+id/${e.elementId}${e.selectedViewType.viewName.removeAllWhitespace}";
+        var elementId = e.elementId;
+        debugPrint("elementId: $elementId");
+        var viewId = _getViewId(e);
 
         switch (e.selectedViewType) {
           case ViewType.text:
             result += """
-          
+
           <TextView
               android:id="$viewId"
               android:layout_width="wrap_content"
@@ -808,7 +833,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
             break;
           case ViewType.field:
             result += """
-          
+
           <EditText
               android:id="$viewId"
               android:layout_width="wrap_content"
@@ -818,7 +843,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
             break;
           case ViewType.button:
             result += """
-          
+
           <Button
               android:id="$viewId"
               android:layout_width="wrap_content"
@@ -828,7 +853,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
             break;
           case ViewType.image:
             result += """
-          
+
           <ImageView
               android:id="$viewId"
               android:layout_width="wrap_content"
@@ -838,7 +863,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
             break;
           case ViewType.selector:
             result += """
-          
+
           <Switch
               android:id="$viewId"
               android:layout_width="wrap_content"
@@ -848,8 +873,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
             break;
           case ViewType.list:
             result += """
-          
-         <androidx.recyclerview.widget.RecyclerView 
+
+         <androidx.recyclerview.widget.RecyclerView
               android:id="$viewId"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
@@ -858,8 +883,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
             break;
           case ViewType.otherView:
             result += """
-          
-         <View 
+
+         <View
               android:id="$viewId"
               android:layout_width="200dp"
               android:layout_height="200dp"
@@ -874,4 +899,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     }
     return result;
   }
+
+  String _getViewId(CodeElement e) =>
+      "@+id/${e.elementId}${e.selectedViewType.viewName.removeAllWhitespace}";
 }
