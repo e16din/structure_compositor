@@ -504,6 +504,13 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         layout.layoutFiles.add(file);
       }
 
+      var nextColor = getNextColor(getLayoutBundle()?.elements.length);
+      String nextElementId = _nextElementId();
+      var element = CodeElement(nextElementId, nextColor)
+        ..area = Rect.largest
+        ..layoutFileName = getLayoutBundle()!.layoutFiles.first.fileName;
+      getLayoutBundle()!.elements.add(element);
+
       setState(() {});
     }
   }
@@ -557,7 +564,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
             element.layoutFileName = fileName;
           }
 
-          var text = _generateXmlViewsByElements(fileName, contentElements);
+          var text =
+              _generateXmlViewsByElements(fileName, contentElements, true);
           if (layout.layoutFiles
                   .firstWhereOrNull((f) => f.fileName == fileName) ==
               null) {
@@ -579,11 +587,12 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   }
 
   void _updateMainXmlCode() async {
-    getLayoutBundle()!.sortElements();
+    var layout = getLayoutBundle()!;
+    layout.sortElements();
 
-    var xmlLayoutText = await _generateXmlLayout(getLayoutBundle()!);
-
-    var mainLayoutFile = getLayoutBundle()!.layoutFiles.first;
+    var mainLayoutFile = layout.layoutFiles.first;
+    String xmlLayoutText = _generateXmlViewsByElements(
+        mainLayoutFile.fileName, layout.elements, true);
     mainLayoutFile.codeController.text = xmlLayoutText;
   }
 
@@ -793,33 +802,13 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     );
   }
 
-  Future<String> _generateXmlLayout(LayoutBundle layoutBundle) async {
-    String result = """
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-\txmlns:app="http://schemas.android.com/apk/res-auto"
-\txmlns:tools="http://schemas.android.com/tools"
-\tandroid:layout_width="match_parent"
-\tandroid:layout_height="match_parent"
-\tandroid:orientation="vertical">
-""";
-    var mainLayoutFile = getLayoutBundle()!.layoutFiles.first;
-    result += _generateXmlViewsByElements(
-        mainLayoutFile.fileName, layoutBundle.elements);
-
-    result += """\n</LinearLayout>
-    
-    
-    
-    
-    """;
-
-    return result;
-  }
-
   String _generateXmlViewsByElements(
-      String fileName, List<CodeElement> elements) {
+      String fileName, List<CodeElement> elements, bool isRoot) {
     String result = "";
+    if (isRoot) {
+      result = """<?xml version="1.0" encoding="utf-8"?>
+      """;
+    }
     for (var e in elements) {
       if (e.layoutFileName != fileName) {
         continue;
@@ -841,7 +830,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                 .elements
                 .firstWhere((element) => element.elementId == elementId))
             .toList();
-        result += _generateXmlViewsByElements(fileName, contentElements);
+        result += _generateXmlViewsByElements(fileName, contentElements, false);
         result += """
 
         </LinearLayout>
