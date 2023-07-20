@@ -72,15 +72,22 @@ class ElementPainter extends CustomPainter {
 
 class ActionsPainter extends CustomPainter {
   LayoutBundle layout;
+  Rect? lastRect;
+  Color? lastColor;
 
-  ActionsPainter(this.layout);
+  ActionsPainter(this.layout, this.lastRect, this.lastColor);
 
   @override
   void paint(Canvas canvas, Size size) async {
     final paint = Paint()..style = PaintingStyle.stroke;
 
-    for (var element in layout.elements) {
-      if (layout.getActiveElement() == element) {
+    if (lastRect != null) {
+      paint.strokeWidth = 5;
+      paint.color = lastColor!;
+      canvas.drawRect(lastRect!, paint);
+    }
+    for (var element in layout.getAllElements()) {
+      if (layout.activeElement == element) {
         paint.strokeWidth = 5;
         paint.color = element.elementColor;
       } else {

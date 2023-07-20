@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:code_text_field/code_text_field.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 class AppDataFruits {
   List<Project> projects = [];
@@ -30,20 +31,17 @@ class LayoutBundle {
 
   List<LayoutElement> elementsMain = [];
 
-  List<CodeAction> actions = [];
   List<CodeElement> elements = [];
   List<CodeFile> layoutFiles = [];
   List<CodeFile> codeFiles = [];
+
+  late CodeAction activeAction;
+  late CodeElement activeElement;
 
   Map<LayoutElement, List<LayoutElement>> listLinkListItemsMap =
       {}; // todo: move it
 
   LayoutBundle(this.name);
-
-  CodeElement getElementByAction(CodeAction action) {
-    return elements
-        .firstWhere((element) => element.elementId == action.elementId);
-  }
 
   void sortElements() {
     elements.sort((a, b) {
@@ -51,39 +49,65 @@ class LayoutBundle {
     });
   }
 
-  void sortActionsByElement() {
-    actions.sort((a, b) => a.elementId.compareTo(b.elementId));
+  void removeElement(CodeElement element) {
+    _removeElement(element, elements);
   }
 
-  void removeElement(CodeElement element) {
+  void _removeElement(CodeElement element, List<CodeElement> elements) {
     elements.remove(element);
     for (var e in elements) {
-      e.content.remove(element.elementId);
+      _removeElement(element, e.contentElements);
     }
   }
 
-  void setActiveAction(CodeAction action) {
+  List<CodeAction> getAllActions() {
+    List<CodeAction> result = [];
+    List<CodeElement> allElements = getAllElements();
+    for (var e in allElements) {
+      result.addAll(e.actions);
+    }
+
+    return result;
+  }
+
+  List<CodeAction> _getAllActionsFrom(List<CodeAction> actions) {
+    List<CodeAction> result = [];
+    result.addAll(actions);
     for (var a in actions) {
-      a.isActive = action.actionId == a.actionId;
+      result.addAll(_getAllActionsFrom(a.innerActions));
     }
+    return result;
   }
 
-  CodeAction getActiveAction() {
-    return actions.firstWhere((e) => e.isActive);
+  CodeElement? getElementByAction(CodeAction action) {
+    List<CodeElement> allElements = getAllElements();
+
+    return allElements.firstWhereOrNull(
+        (element) {
+          var actions = _getAllActionsFrom(element.actions);
+          return actions.contains(action);
+        });
   }
 
-  CodeElement getActiveElement() {
-    var activeAction = getActiveAction();
-    var activeElement =
-        elements.firstWhere((e) => e.elementId == activeAction.elementId);
-    return activeElement;
+  void resetActiveElement() {
+    activeElement = elements.first;
   }
 
   void resetActiveAction() {
-    for (var element in actions) {
-      element.isActive = false;
+    activeAction = elements.first.actions.first;
+  }
+
+  List<CodeElement> getAllElements() {
+    return _getAllElementsFrom(elements);
+  }
+
+  List<CodeElement> _getAllElementsFrom(List<CodeElement> elements) {
+    List<CodeElement> result = [];
+    result.addAll(elements);
+    for (var e in elements) {
+      result.addAll(_getAllElementsFrom(e.contentElements));
     }
-    actions.first.isActive = true;
+    return result;
   }
 }
 
@@ -136,11 +160,12 @@ class CodeElement {
 
   Rect area = _defaultArea;
 
-  List<String> content = [];
+  List<CodeElement> contentElements = [];
+  List<CodeAction> actions = [];
 
   late String layoutFileName; // list of elementId
 
-  bool isContainer() => content.isNotEmpty;
+  bool isContainer() => contentElements.isNotEmpty;
 
   CodeElement(this.elementId, this.elementColor);
 }
@@ -149,7 +174,6 @@ final Rect _defaultArea =
     Rect.fromCenter(center: const Offset(100, 100), width: 100, height: 100);
 
 class CodeAction {
-  late String elementId;
   late String actionId;
 
   String? dataSourceId;
@@ -163,7 +187,7 @@ class CodeAction {
   bool withComment = false;
   bool withDataSource = false;
 
-  List<CodeAction> actions = [];
+  List<CodeAction> innerActions = [];
 
   bool isActive = false;
 
