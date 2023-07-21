@@ -19,6 +19,12 @@ class AreasEditorFruit {
   String? lastElementId;
 
   var onNewArea = (){};
+
+  void resetData() {
+    lastRect = null;
+    lastColor = null;
+    lastElementId = null;
+  }
 }
 
 var areasEditorFruit = AreasEditorFruit();

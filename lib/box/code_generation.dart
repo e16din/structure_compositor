@@ -122,77 +122,78 @@ class App: Application() {
     for (var e in screen.elementsMain) {
       resultXml += """\n\n\t<!-- Description: ${e.description} -->\n\n""";
       var viewId = "@+id/${_makeViewId(e)}";
-      switch (e.viewType) {
-
-        case ViewType.text:
-          resultXml += """
+      resultXml += switch (e.viewType) {
+        ViewType.text => """
           <TextView
               android:id="$viewId"
               android:layout_width="wrap_content"
               android:layout_height="wrap_content"
               android:text="${e.value}" />
-    """;
-          break;
-        case ViewType.field:
-          resultXml += """
+    """,
+        ViewType.field => """
           <EditText
               android:id="$viewId"
               android:layout_width="wrap_content"
               android:layout_height="wrap_content"
               android:hint="${e.value}" />
-    """;
-          break;
-        case ViewType.button:
-          resultXml += """
+    """,
+        ViewType.button => """
           <Button
               android:id="$viewId"
               android:layout_width="wrap_content"
               android:layout_height="wrap_content"
               android:text="${e.value}" />
-    """;
-          break;
-        case ViewType.image:
-          resultXml += """
+    """,
+        ViewType.image => """
           <ImageView
               android:id="$viewId"
               android:layout_width="wrap_content"
               android:layout_height="wrap_content"
               app:compatSrc="${e.value}" />
-    """;
-          break;
-        case ViewType.selector:
-          resultXml += """
+    """,
+        ViewType.selector => """
           <Switch
               android:id="$viewId"
               android:layout_width="wrap_content"
               android:layout_height="wrap_content"
               android:checked="${e.value}" />
-    """;
-          break;
-    //     case ViewType.combine:
-    //       resultXml += """
-    //      <LinearLayout
-    //           android:id="$viewId"
-    //           android:layout_width="match_parent"
-    //           android:layout_height="wrap_content"
-    //           android:orientation="vertical"
-    //           >
-    //       <!-- Value: ${e.value} -->
-    //
-    //      </LinearLayout>
-    // """;
-    //       break;
-        case ViewType.list:
-          resultXml += """
+    """,
+        //     case ViewType.combine:
+        //       resultXml += """
+        //      <LinearLayout
+        //           android:id="$viewId"
+        //           android:layout_width="match_parent"
+        //           android:layout_height="wrap_content"
+        //           android:orientation="vertical"
+        //           >
+        //       <!-- Value: ${e.value} -->
+        //
+        //      </LinearLayout>
+        // """;
+        //       break;
+        ViewType.list => """
          <androidx.recyclerview.widget.RecyclerView 
               android:id="$viewId"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
               />
          <!-- Value: ${e.value} -->
-    """;
-          break;
-      }
+    """,
+        ViewType.listItem => """
+      <View 
+          android:id="$viewId"
+          android:layout_width="match_parent"
+          android:layout_height="match_parent"
+          />
+""",
+        ViewType.otherView => """
+      <View 
+          android:id="$viewId"
+          android:layout_width="match_parent"
+          android:layout_height="match_parent"
+          />
+"""
+      };
     }
 
     resultXml += """\n</LinearLayout>""";
@@ -349,6 +350,10 @@ $actionCode
 \t}
 """;
           break;
+        case ViewType.listItem:
+          break;
+        case ViewType.otherView:
+          break;
       }
     }
 
@@ -370,8 +375,8 @@ $actionCode
     var onButtonClick = """\t\t\tTODO("Not yet implemented")""";
 
     var openNextScreenBlock = e.listeners.firstWhereOrNull((listener) =>
-        listener.actions.any(
-            (action) => action.actionType == ActionCodeTypeMain.openNextScreen));
+        listener.actions.any((action) =>
+            action.actionType == ActionCodeTypeMain.openNextScreen));
     if (openNextScreenBlock != null) {
       var action = openNextScreenBlock.actions
               .firstWhereOrNull((action) => action is OpenNextScreenBlock)
@@ -382,9 +387,9 @@ $actionCode
     \t\t\t)""";
     } // else {
 
-    var backToPrevBlock = e.listeners.firstWhereOrNull((listener) => listener
-        .actions
-        .any((action) => action.actionType == ActionCodeTypeMain.backToPrevious));
+    var backToPrevBlock = e.listeners.firstWhereOrNull((listener) =>
+        listener.actions.any((action) =>
+            action.actionType == ActionCodeTypeMain.backToPrevious));
     if (backToPrevBlock != null) {
       onButtonClick = "\t\t\tonBackPressedDispatcher.onBackPressed()";
     }
@@ -452,30 +457,19 @@ class ${name}DataSource {
   }
 
   static String _makeViewClassName(LayoutElement e) {
-    var result = "";
-    switch (e.viewType) {
-      case ViewType.text:
-        result = "TextView";
-        break;
-      case ViewType.field:
-        result = "EditText";
-        break;
-      case ViewType.button:
-        result = "Button";
-        break;
-      case ViewType.image:
-        result = "ImageView";
-        break;
-      case ViewType.selector:
-        result = "Switch";
-        break;
+    var result = switch (e.viewType) {
+      ViewType.text => "TextView",
+      ViewType.field => "EditText",
+      ViewType.button => "Button",
+      ViewType.image => "ImageView",
+      ViewType.selector => "Switch",
       // case ViewType.combine:
       //   result = "LinearLayout";
       //   break;
-      case ViewType.list:
-        result = "RecyclerView";
-        break;
-    }
+      ViewType.list => "RecyclerView",
+      ViewType.listItem => "ListItem",
+      ViewType.otherView => "OtherView",
+    };
     return result;
   }
 

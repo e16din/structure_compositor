@@ -380,7 +380,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 
   void _onActionButtonMovingEnd(details, CodeAction action) {
     var activeAction = getLayoutBundle()!.activeAction;
-    if (activeAction.isContainer == true) {
+    if (activeAction!.isContainer == true) {
       setState(() {
         var newAction = CodeAction(
             type: action.type,
@@ -471,7 +471,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         ..elementId = areasEditorFruit.lastElementId!;
 
       layout.activeElement = newElement;
-      layout.activeElement.actions.add(newAction);
+      layout.activeElement?.actions.add(newAction);
       layout.elements.add(newElement);
 
       debugPrint("Here! 2");
@@ -516,10 +516,12 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
           }
         }
       }
-      //
-      // if (_editorTypeSelectorState[2]) {
+
+      if (_editorTypeSelectorState[2]) {
         _updateMainXmlCode();
-      // }
+      }
+
+      areasEditorFruit.resetData();
     });
   }
 
@@ -551,7 +553,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 
   _onElementIdChanged(String newElementId) {
     setState(() {
-      var commonElementId = getLayoutBundle()!.activeElement.elementId;
+      var commonElementId = getLayoutBundle()!.activeElement?.elementId;
 
       for (var element in getLayoutBundle()!.getAllElements()) {
         if (element.elementId == commonElementId) {
@@ -704,7 +706,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                       child: IconButton(
                           onPressed: () {
                             setState(() {
-                              getLayoutBundle()?.activeElement.actions.remove(action);
+                              getLayoutBundle()?.activeElement?.actions.remove(action);
                               getLayoutBundle()?.removeElement(element);
                               getLayoutBundle()?.resetActiveElement();
                               getLayoutBundle()?.resetActiveAction();
@@ -850,8 +852,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     }
 
     if (isRoot) {
-      result += """
-      </LinearLayout>""";
+      result += "\n</LinearLayout>";
     }
     return result;
   }

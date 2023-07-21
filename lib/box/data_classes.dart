@@ -35,8 +35,8 @@ class LayoutBundle {
   List<CodeFile> layoutFiles = [];
   List<CodeFile> codeFiles = [];
 
-  late CodeAction activeAction;
-  late CodeElement activeElement;
+  CodeAction? activeAction;
+  CodeElement? activeElement;
 
   Map<LayoutElement, List<LayoutElement>> listLinkListItemsMap =
       {}; // todo: move it
@@ -82,19 +82,18 @@ class LayoutBundle {
   CodeElement? getElementByAction(CodeAction action) {
     List<CodeElement> allElements = getAllElements();
 
-    return allElements.firstWhereOrNull(
-        (element) {
-          var actions = _getAllActionsFrom(element.actions);
-          return actions.contains(action);
-        });
+    return allElements.firstWhereOrNull((element) {
+      var actions = _getAllActionsFrom(element.actions);
+      return actions.contains(action);
+    });
   }
 
   void resetActiveElement() {
-    activeElement = elements.first;
+    activeElement = elements.firstOrNull;
   }
 
   void resetActiveAction() {
-    activeAction = elements.first.actions.first;
+    activeAction = elements.firstOrNull?.actions.firstOrNull;
   }
 
   List<CodeElement> getAllElements() {
