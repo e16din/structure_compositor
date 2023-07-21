@@ -55,6 +55,7 @@ class LayoutBundle {
 
   void _removeElement(CodeElement element, List<CodeElement> elements) {
     elements.remove(element);
+
     for (var e in elements) {
       _removeElement(element, e.contentElements);
     }

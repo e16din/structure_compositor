@@ -489,7 +489,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         }
       }
       if(allContainers.isNotEmpty) {
-        layout.removeElement(newElement);
+        removeElement(newElement);
         allContainers.last.contentElements.add(newElement);
       }
 
@@ -706,10 +706,10 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                       child: IconButton(
                           onPressed: () {
                             setState(() {
-                              getLayoutBundle()?.activeElement?.actions.remove(action);
-                              getLayoutBundle()?.removeElement(element);
-                              getLayoutBundle()?.resetActiveElement();
-                              getLayoutBundle()?.resetActiveAction();
+                              var layoutBundle = getLayoutBundle();
+                              removeElement(element);
+                              layoutBundle?.resetActiveElement();
+                              layoutBundle?.resetActiveAction();
                             });
                           },
                           icon: const Icon(Icons.remove_circle)),
@@ -734,6 +734,16 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         // onSetStateListener.call();
       },
     );
+  }
+
+  void removeElement(CodeElement element) {
+    var layoutBundle = getLayoutBundle();
+    if(element.contentElements.isNotEmpty){
+      List<CodeElement>? containerList = layoutBundle!.getAllElements().firstWhereOrNull((e) => e.contentElements.contains(element))?.contentElements;
+      containerList ??= layoutBundle.elements;
+      containerList.addAll(element.contentElements);
+    }
+    layoutBundle?.removeElement(element);
   }
 
   String _generateXmlViewsByElements(List<CodeElement> elements, bool isRoot) {
