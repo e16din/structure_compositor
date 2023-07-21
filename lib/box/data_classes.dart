@@ -109,6 +109,15 @@ class LayoutBundle {
     }
     return result;
   }
+
+  CodeElement? getContainerOf(CodeElement? element) {
+    if (element == null) {
+      return null;
+    }
+
+    return getAllElements()
+        .firstWhereOrNull((e) => e.contentElements.contains(element));
+  }
 }
 
 class ScreenBundle extends LayoutBundle {

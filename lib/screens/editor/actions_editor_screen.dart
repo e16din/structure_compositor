@@ -140,7 +140,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   void initState() {
     super.initState();
 
-    areasEditorFruit.onNewArea = (){
+    areasEditorFruit.onNewArea = () {
       _selectActions(true);
     };
   }
@@ -184,8 +184,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     );
   }
 
-
-  String _nextActionId() => 'action${getLayoutBundle()!.getAllActions().length + 1}';
+  String _nextActionId() =>
+      'action${getLayoutBundle()!.getAllActions().length + 1}';
 
   void _selectActions(bool isNewElement) {
     Map<String, CodeAction> containerActionsMap = {};
@@ -272,7 +272,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                 ),
                 isSelected: _editorTypeSelectorState,
                 onPressed: (int index) {
-                  _updateMainXmlCode();
+                  _updateXmlCode();
 
                   setState(() {
                     for (int i = 0; i < _editorTypeSelectorState.length; i++) {
@@ -465,7 +465,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       }
       newAction.innerActions.add(innerAction);
 
-      var newElement = CodeElement(areasEditorFruit.lastElementId!, areasEditorFruit.lastColor!)
+      var newElement = CodeElement(
+          areasEditorFruit.lastElementId!, areasEditorFruit.lastColor!)
         ..area = areasEditorFruit.lastRect!
         ..layoutFileName = layout.layoutFiles.first.fileName
         ..elementId = areasEditorFruit.lastElementId!;
@@ -488,51 +489,54 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
           allContainers.add(e);
         }
       }
-      if(allContainers.isNotEmpty) {
+      if (allContainers.isNotEmpty) {
         removeElement(newElement);
         allContainers.last.contentElements.add(newElement);
       }
 
-      for (var element in layout.getAllElements()) {
-        if (element.selectedViewType == ViewType.list) {
-          for (var contentElement in element.contentElements) {
-            var fileName = "${contentElement.elementId}.xml";
-            contentElement.layoutFileName = fileName;
-
-
-            var text =
-            _generateXmlViewsByElements(contentElement.contentElements, true);
-            if (layout.layoutFiles
-                .firstWhereOrNull((f) => f.fileName == fileName) ==
-                null) {
-              var file = CodeFile(CodeLanguage.xml, fileName,
-                  CodeController(language: xml, text: text));
-              layout.layoutFiles.add(file);
-            } else {
-              var file =
-              layout.layoutFiles.firstWhere((f) => f.fileName == fileName);
-              file.codeController.text = text;
-            }
-          }
-        }
-      }
-
       if (_editorTypeSelectorState[2]) {
-        _updateMainXmlCode();
+        _updateXmlCode();
       }
 
       areasEditorFruit.resetData();
     });
   }
 
-  void _updateMainXmlCode() async {
+  void _updateXmlCode() {
+    // main
     var layout = getLayoutBundle()!;
     layout.sortElements();
 
     var mainLayoutFile = layout.layoutFiles.first;
-    var mainElements = layout.elements.where((e) => e.layoutFileName == layout.elements.first.layoutFileName).toList();
+    var mainElements = layout.elements
+        .where((e) => e.layoutFileName == layout.elements.first.layoutFileName)
+        .toList();
     String xmlLayoutText = _generateXmlViewsByElements(mainElements, true);
     mainLayoutFile.codeController.text = xmlLayoutText;
+
+    // items
+    for (var element in layout.getAllElements()) {
+      if (element.selectedViewType == ViewType.list) {
+        for (var contentElement in element.contentElements) {
+          var fileName = "${contentElement.elementId}.xml";
+          contentElement.layoutFileName = fileName;
+
+          var text =
+              _generateXmlViewsByElements(contentElement.contentElements, true);
+          if (layout.layoutFiles
+                  .firstWhereOrNull((f) => f.fileName == fileName) ==
+              null) {
+            var file = CodeFile(CodeLanguage.xml, fileName,
+                CodeController(language: xml, text: text));
+            layout.layoutFiles.add(file);
+          } else {
+            var file =
+                layout.layoutFiles.firstWhere((f) => f.fileName == fileName);
+            file.codeController.text = text;
+          }
+        }
+      }
+    }
   }
 
   _elementIdWidget(CodeElement element) {
@@ -563,8 +567,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     });
   }
 
-  Widget _buildAdditionActionWidgets(CodeElement element,
-      CodeAction action, CodeAction innerAction, String innerActionName) {
+  Widget _buildAdditionActionWidgets(CodeElement element, CodeAction action,
+      CodeAction innerAction, String innerActionName) {
     List<Widget> widgets = [];
 
     if (innerAction.withComment) {
@@ -623,7 +627,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                   )
                 ],
               ),
-              _buildAdditionActionWidgets(element, action, innerAction, innerActionName)
+              _buildAdditionActionWidgets(
+                  element, action, innerAction, innerActionName)
             ],
           ));
       innerActionWidgets.add(innerActionWidget);
@@ -710,6 +715,17 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                               removeElement(element);
                               layoutBundle?.resetActiveElement();
                               layoutBundle?.resetActiveAction();
+                              var sameFileElements = layoutBundle!
+                                  .getAllElements()
+                                  .where((e) =>
+                                      e.layoutFileName ==
+                                      element.layoutFileName);
+                              if (sameFileElements.isEmpty) {
+                                layoutBundle.layoutFiles.firstWhereOrNull((f) =>
+                                    element.layoutFileName == f.fileName);
+                              }
+
+                              _updateXmlCode();
                             });
                           },
                           icon: const Icon(Icons.remove_circle)),
@@ -738,10 +754,17 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 
   void removeElement(CodeElement element) {
     var layoutBundle = getLayoutBundle();
-    if(element.contentElements.isNotEmpty){
-      List<CodeElement>? containerList = layoutBundle!.getAllElements().firstWhereOrNull((e) => e.contentElements.contains(element))?.contentElements;
+    if (element.contentElements.isNotEmpty) {
+      var containerOfContainer = layoutBundle!.getContainerOf(layoutBundle.getContainerOf(element));
+      List<CodeElement>? containerList = containerOfContainer?.contentElements;
       containerList ??= layoutBundle.elements;
       containerList.addAll(element.contentElements);
+
+      if (containerList.isNotEmpty && containerOfContainer != null) {
+        for (var e in containerList) {
+          e.layoutFileName = containerOfContainer.layoutFileName;
+        }
+      }
     }
     layoutBundle?.removeElement(element);
   }
