@@ -12,13 +12,14 @@ import 'package:highlight/languages/kotlin.dart';
 import 'package:flutter_highlight/themes/monokai-sublime.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:structure_compositor/screens/editor/areas_editor_widget.dart';
 
 // import 'package:shared_preferences/shared_preferences.dart';
 // import 'dart:developer' as developer;
 // import 'package:file_picker/file_picker.dart';
-import '../box/app_utils.dart';
-import '../box/data_classes.dart';
-import '../box/widget_utils.dart';
+import '../../box/app_utils.dart';
+import '../../box/data_classes.dart';
+import '../../box/widget_utils.dart';
 
 class ActionsEditorScreen extends StatelessWidget {
   const ActionsEditorScreen({Key? key}) : super(key: key);
@@ -98,10 +99,6 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       ..withComment = true,
   ];
 
-  Rect? _lastRect;
-  Color? _lastColor;
-  String? _lastElementId;
-
   List<ViewType> _getViewTypesByAction(CodeAction action) {
     List<ViewType> result = [];
     switch (action.type) {
@@ -142,6 +139,10 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   @override
   void initState() {
     super.initState();
+
+    areasEditorFruit.onNewArea = (){
+      _selectActions(true);
+    };
   }
 
   @override
@@ -161,6 +162,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint("build!");
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
@@ -169,7 +171,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         children: [
           _buildActionsEditorWidget(),
           _buildActionsListWidget(),
-          _buildFunctionalAreasWidget()
+          AreasEditorWidget()
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -182,66 +184,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     );
   }
 
-  Widget _buildFunctionalAreasWidget() {
-    var selectedLayout = appFruits.selectedProject!.selectedLayout;
-    if (selectedLayout?.layoutBytes != null) {
-      return Container(
-        width: SCREEN_IMAGE_WIDTH,
-        padding: const EdgeInsets.only(top: 42, bottom: 42),
-        child: Stack(fit: StackFit.expand, children: [
-          Image.memory(selectedLayout!.layoutBytes!, fit: BoxFit.contain),
-          Listener(
-              onPointerDown: _onPointerDown,
-              onPointerUp: _onPointerUp,
-              onPointerMove: _onPointerMove,
-              child: MouseRegion(
-                  cursor: SystemMouseCursors.precise,
-                  child: CustomPaint(
-                    painter: ActionsPainter(
-                        getLayoutBundle()!, _lastRect, _lastColor),
-                  )))
-        ]),
-      );
-    } else {
-      return Container(width: SCREEN_IMAGE_WIDTH, color: Colors.white);
-    }
-  }
-
-  void _onPointerDown(PointerDownEvent event) {
-    setState(() {
-      _lastRect = Rect.fromPoints(event.localPosition, event.localPosition);
-      _lastColor = getNextColor(getLayoutBundle()?.getAllElements().length);
-      _lastElementId = _nextElementId();
-    });
-  }
-
-  String _nextElementId() => 'element${getLayoutBundle()!.getAllElements().length + 1}';
 
   String _nextActionId() => 'action${getLayoutBundle()!.getAllActions().length + 1}';
-
-  void _onPointerMove(PointerMoveEvent event) {
-    setState(() {
-      debugPrint("Here! 3");
-      // var element = getLayoutBundle()!.getActiveElement();
-      _lastRect = Rect.fromPoints(_lastRect!.topLeft, event.localPosition);
-    });
-  }
-
-  void _onPointerUp(PointerUpEvent event) {
-    debugPrint("Here! 4");
-    // var element = getLayoutBundle()!.getActiveElement();
-    var area = _lastRect!;
-    if (area.left.floor() == area.right.floor() &&
-        area.top.floor() == area.bottom.floor()) {
-      setState(() {
-        _lastRect = null;
-        _lastColor = null;
-        _lastElementId = null;
-      });
-    }
-
-    _selectActions(true);
-  }
 
   void _selectActions(bool isNewElement) {
     Map<String, CodeAction> containerActionsMap = {};
@@ -521,10 +465,10 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       }
       newAction.innerActions.add(innerAction);
 
-      var newElement = CodeElement(_lastElementId!, _lastColor!)
-        ..area = _lastRect!
+      var newElement = CodeElement(areasEditorFruit.lastElementId!, areasEditorFruit.lastColor!)
+        ..area = areasEditorFruit.lastRect!
         ..layoutFileName = layout.layoutFiles.first.fileName
-        ..elementId = _lastElementId!;
+        ..elementId = areasEditorFruit.lastElementId!;
 
       layout.activeElement = newElement;
       layout.activeElement.actions.add(newAction);
@@ -551,31 +495,31 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 
       for (var element in layout.getAllElements()) {
         if (element.selectedViewType == ViewType.list) {
-          var fileName = "${element.elementId}.xml";
+          for (var contentElement in element.contentElements) {
+            var fileName = "${contentElement.elementId}.xml";
+            contentElement.layoutFileName = fileName;
 
-          for (var element in element.contentElements) {
-            element.layoutFileName = fileName;
-          }
 
-          var text =
-              _generateXmlViewsByElements(fileName, element.contentElements, true);
-          if (layout.layoutFiles
-                  .firstWhereOrNull((f) => f.fileName == fileName) ==
-              null) {
-            var file = CodeFile(CodeLanguage.xml, fileName,
-                CodeController(language: xml, text: text));
-            layout.layoutFiles.add(file);
-          } else {
-            var file =
-                layout.layoutFiles.firstWhere((f) => f.fileName == fileName);
-            file.codeController.text = text;
+            var text =
+            _generateXmlViewsByElements(contentElement.contentElements, true);
+            if (layout.layoutFiles
+                .firstWhereOrNull((f) => f.fileName == fileName) ==
+                null) {
+              var file = CodeFile(CodeLanguage.xml, fileName,
+                  CodeController(language: xml, text: text));
+              layout.layoutFiles.add(file);
+            } else {
+              var file =
+              layout.layoutFiles.firstWhere((f) => f.fileName == fileName);
+              file.codeController.text = text;
+            }
           }
         }
       }
-
-      if (_editorTypeSelectorState[2]) {
+      //
+      // if (_editorTypeSelectorState[2]) {
         _updateMainXmlCode();
-      }
+      // }
     });
   }
 
@@ -584,8 +528,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     layout.sortElements();
 
     var mainLayoutFile = layout.layoutFiles.first;
-    String xmlLayoutText = _generateXmlViewsByElements(
-        mainLayoutFile.fileName, layout.elements, true);
+    var mainElements = layout.elements.where((e) => e.layoutFileName == layout.elements.first.layoutFileName).toList();
+    String xmlLayoutText = _generateXmlViewsByElements(mainElements, true);
     mainLayoutFile.codeController.text = xmlLayoutText;
   }
 
@@ -790,8 +734,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     );
   }
 
-  String _generateXmlViewsByElements(
-      String fileName, List<CodeElement> elements, bool isRoot) {
+  String _generateXmlViewsByElements(List<CodeElement> elements, bool isRoot) {
     String result = "";
     if (isRoot) {
       result = """<?xml version="1.0" encoding="utf-8"?>
@@ -804,10 +747,6 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       """;
     }
     for (var e in elements) {
-      if (e.layoutFileName != fileName) {
-        continue;
-      }
-
       var needToAddContainer =
           e.isContainer() && e.selectedViewType != ViewType.list;
       if (needToAddContainer) {
@@ -821,7 +760,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
               android:orientation="vertical"
               >
         """;
-        result += _generateXmlViewsByElements(fileName, e.contentElements, false);
+        debugPrint("elementId!!!");
+        result += _generateXmlViewsByElements(e.contentElements, false);
         result += """
 
         </LinearLayout>

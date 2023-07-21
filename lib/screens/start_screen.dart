@@ -15,7 +15,7 @@ import 'package:structure_compositor/box/widget_utils.dart';
 import '../box/app_utils.dart';
 import 'aria/aria_editor_screen.dart';
 import '../box/data_classes.dart';
-import 'actions_editor_screen.dart';
+import 'editor/actions_editor_screen.dart';
 
 class StartScreen extends StatelessWidget {
   const StartScreen({Key? key}) : super(key: key);

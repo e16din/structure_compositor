@@ -47,7 +47,7 @@ class _AriaEditorPageState extends State<AriaEditorPage> {
 
   final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
 
-  Rect? _lastRect;
+  Rect? lastRect;
   String _title = 'Structure Compositor';
 
   LayoutElement? hoveredElement;
@@ -615,8 +615,8 @@ class _AriaEditorPageState extends State<AriaEditorPage> {
 
   void _onPointerDown(PointerDownEvent event) {
     setState(() {
-      _lastRect = Rect.fromPoints(event.localPosition, event.localPosition);
-      _activeElement = LayoutElement(_lastRect!, getNextColor(getLayoutBundle()?.elementsMain.length), true)
+      lastRect = Rect.fromPoints(event.localPosition, event.localPosition);
+      _activeElement = LayoutElement(lastRect!, getNextColor(getLayoutBundle()?.elementsMain.length), true)
         ..name = 'element${getLayoutBundle()!.elementsMain.length + 1}';
 
       getLayoutBundle()!.elementsMain.add(_activeElement!);
@@ -626,7 +626,7 @@ class _AriaEditorPageState extends State<AriaEditorPage> {
   void _onPointerMove(PointerMoveEvent event) {
     setState(() {
       getLayoutBundle()!.elementsMain.last.functionalArea =
-          Rect.fromPoints(_lastRect!.topLeft, event.localPosition);
+          Rect.fromPoints(lastRect!.topLeft, event.localPosition);
     });
   }
 
