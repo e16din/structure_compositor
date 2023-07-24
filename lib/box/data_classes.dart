@@ -118,6 +118,23 @@ class LayoutBundle {
     return getAllElements()
         .firstWhereOrNull((e) => e.contentElements.contains(element));
   }
+
+  void removeEmptyFiles() {
+    List<CodeFile> emptyFiles = [];
+    for (var file in layoutFiles) {
+      if(!getAllElements().any((e) => e.layoutFileName == file.fileName)){
+        debugPrint("add emptyFiles: ${file.fileName}");
+        emptyFiles.add(file);
+      }
+    }
+
+    debugPrint("On delete List element (assert: emptyFiles.isNotEmpty) | ${emptyFiles.isNotEmpty}");
+
+    for (var f in emptyFiles) {
+      debugPrint("removeFile: ${f.fileName}");
+      layoutFiles.remove(f);
+    }
+  }
 }
 
 class ScreenBundle extends LayoutBundle {
@@ -177,6 +194,17 @@ class CodeElement {
   bool isContainer() => contentElements.isNotEmpty;
 
   CodeElement(this.elementId, this.elementColor);
+
+  void updateLayoutFileName(String fileName) {
+    _updateLayoutFileName(this, fileName);
+  }
+
+  void _updateLayoutFileName(CodeElement element, String fileName) {
+    element.layoutFileName = fileName;
+    for (var contentElement in element.contentElements) {
+      _updateLayoutFileName(contentElement, fileName);
+    }
+  }
 }
 
 final Rect _defaultArea =

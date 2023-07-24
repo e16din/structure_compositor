@@ -104,20 +104,32 @@ class ActionsPainter extends CustomPainter {
   }
 }
 
-final List<MaterialColor> rainbowColors = <MaterialColor>[
+final List<Color> rainbowColors = <Color>[
+  // rainbow
   Colors.red,
   Colors.orange,
   Colors.yellow,
   Colors.green,
-  Colors.lightBlue,
+  Colors.cyan,
   Colors.blue,
-  Colors.deepPurple
+  Colors.purple,
+  // other
+  Colors.grey,
+  Colors.indigo,
+  Colors.pink,
+  Colors.brown,
+  Colors.black,
+  Colors.white,
 ];
 
 Color getNextColor(int? index) {
-  var nextColorPosition = index ??= 0 % rainbowColors.length;
-  if (nextColorPosition == rainbowColors.length) {
-    nextColorPosition = 0;
+  try {
+    var nextColorPosition = index ??= 0 % rainbowColors.length;
+    if (nextColorPosition == rainbowColors.length) {
+      nextColorPosition = 0;
+    }
+    return rainbowColors[nextColorPosition].withOpacity(0.82);
+  } on Exception {
+    return rainbowColors.last.withOpacity(0.82);
   }
-  return rainbowColors[nextColorPosition].shade400;
 }

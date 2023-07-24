@@ -6,6 +6,7 @@
 // import 'dart:typed_data';
 
 import 'package:code_text_field/code_text_field.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:highlight/languages/xml.dart';
 import 'package:highlight/languages/kotlin.dart';
@@ -99,6 +100,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       ..withComment = true,
   ];
 
+  String MAIN_XML_FILE_NAME = "main.xml";
+
   List<ViewType> _getViewTypesByAction(CodeAction action) {
     List<ViewType> result = [];
     switch (action.type) {
@@ -171,7 +174,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         children: [
           _buildActionsEditorWidget(),
           _buildActionsListWidget(),
-          AreasEditorWidget()
+          AreasEditorWidget() // ATTENTION: do not add 'const'!
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -311,11 +314,44 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         scrollDirection: Axis.vertical,
         itemCount: files.length,
         itemBuilder: (BuildContext context, int index) {
-          return CodeTheme(
-            data: const CodeThemeData(styles: monokaiSublimeTheme),
-            child: CodeField(
-              controller: files[index].codeController,
-              textStyle: const TextStyle(fontFamily: 'SourceCode'),
+          return Container(
+            color: Colors.black45,
+            child: Column(
+              children: [
+                Row(
+                  // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                        width: 120,
+                        child:
+                            TextFormField(initialValue: files[index].fileName)),
+                    FilledButton(
+                        style: ButtonStyle(
+                            backgroundColor:
+                                MaterialStateProperty.all(Colors.blueAccent)),
+                        onPressed: () {
+                          String codeText = files[index].codeController.text;
+                          Clipboard.setData(ClipboardData(text: codeText))
+                              .then((_) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content:
+                                        Text('Copied to your clipboard!')));
+                          });
+                        },
+                        child: const Text("Copy It",
+                            style: TextStyle(fontSize: 12),
+                            textAlign: TextAlign.center)),
+                  ],
+                ),
+                CodeTheme(
+                  data: const CodeThemeData(styles: monokaiSublimeTheme),
+                  child: CodeField(
+                    controller: files[index].codeController,
+                    textStyle: const TextStyle(fontFamily: 'SourceCode'),
+                  ),
+                ),
+              ],
             ),
           );
         },
@@ -430,8 +466,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 
       // var xmlLayoutText = await _generateXmlLayout(getLayoutBundle()!);
       if (layout.layoutFiles.isEmpty == true) {
-        var file = CodeFile(CodeLanguage.xml, "main.xml",
-            CodeController(language: xml, text: "main.xml"));
+        var file = CodeFile(CodeLanguage.xml, MAIN_XML_FILE_NAME,
+            CodeController(language: xml, text: MAIN_XML_FILE_NAME));
         layout.layoutFiles.add(file);
       }
 
@@ -482,6 +518,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         newElement.selectedViewType = viewTypes.first;
       }
 
+      // check containers
       List<CodeElement> allContainers = [];
       for (var e in layout.getAllElements()) {
         if (e.area.contains(newElement.area.topLeft) &&
@@ -491,8 +528,28 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       }
       if (allContainers.isNotEmpty) {
         removeElement(newElement);
-        allContainers.last.contentElements.add(newElement);
+
+        var containerElement = allContainers.last;
+
+        newElement.layoutFileName = containerElement.layoutFileName;
+        debugPrint("newElement.layoutFileName: ${newElement.layoutFileName}");
+        containerElement.contentElements.add(newElement);
       }
+
+      // check content items
+      List<CodeElement> contentElements = [];
+      for (var e in layout.getAllElements()) {
+        if (newElement.area.contains(e.area.topLeft) &&
+            newElement.area.contains(e.area.bottomRight)) {
+          if (!contentElements.any((ce) =>
+              ce.area.contains(e.area.topLeft) &&
+              ce.area.contains(e.area.bottomRight))) {
+            contentElements.add(e);
+          }
+        }
+      }
+
+      newElement.contentElements.addAll(contentElements);
 
       if (_editorTypeSelectorState[2]) {
         _updateXmlCode();
@@ -503,39 +560,48 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   }
 
   void _updateXmlCode() {
-    // main
+    if (getLayoutBundle() == null) {
+      return;
+    }
+
     var layout = getLayoutBundle()!;
     layout.sortElements();
 
-    var mainLayoutFile = layout.layoutFiles.first;
-    var mainElements = layout.elements
-        .where((e) => e.layoutFileName == layout.elements.first.layoutFileName)
-        .toList();
-    String xmlLayoutText = _generateXmlViewsByElements(mainElements, true);
-    mainLayoutFile.codeController.text = xmlLayoutText;
+    var mainLayoutFile = layout.layoutFiles.firstOrNull;
+    if (mainLayoutFile != null) {
+      // items
+      for (var element in layout.getAllElements()) {
+        if (element.selectedViewType == ViewType.list) {
+          for (var contentElement in element.contentElements) {
+            var fileName = "${contentElement.elementId}.xml";
+            debugPrint("fileName: $fileName");
+            contentElement.updateLayoutFileName(fileName);
 
-    // items
-    for (var element in layout.getAllElements()) {
-      if (element.selectedViewType == ViewType.list) {
-        for (var contentElement in element.contentElements) {
-          var fileName = "${contentElement.elementId}.xml";
-          contentElement.layoutFileName = fileName;
-
-          var text =
-              _generateXmlViewsByElements(contentElement.contentElements, true);
-          if (layout.layoutFiles
-                  .firstWhereOrNull((f) => f.fileName == fileName) ==
-              null) {
-            var file = CodeFile(CodeLanguage.xml, fileName,
-                CodeController(language: xml, text: text));
-            layout.layoutFiles.add(file);
-          } else {
-            var file =
-                layout.layoutFiles.firstWhere((f) => f.fileName == fileName);
-            file.codeController.text = text;
+            var text = _generateXmlViewsByElements(
+                contentElement.contentElements, true);
+            if (layout.layoutFiles
+                    .firstWhereOrNull((f) => f.fileName == fileName) ==
+                null) {
+              debugPrint("createFile: $fileName");
+              var file = CodeFile(CodeLanguage.xml, fileName,
+                  CodeController(language: xml, text: text));
+              layout.layoutFiles.add(file);
+            } else {
+              var file =
+                  layout.layoutFiles.firstWhere((f) => f.fileName == fileName);
+              file.codeController.text = text;
+            }
           }
         }
       }
+
+      // main
+      var mainElements = layout.elements
+          .where(
+              (e) => e.layoutFileName == layout.elements.first.layoutFileName)
+          .toList();
+      String xmlLayoutText = _generateXmlViewsByElements(mainElements, true);
+      mainLayoutFile.codeController.text = xmlLayoutText;
     }
   }
 
@@ -711,19 +777,11 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                       child: IconButton(
                           onPressed: () {
                             setState(() {
-                              var layoutBundle = getLayoutBundle();
+                              var layout = getLayoutBundle();
                               removeElement(element);
-                              layoutBundle?.resetActiveElement();
-                              layoutBundle?.resetActiveAction();
-                              var sameFileElements = layoutBundle!
-                                  .getAllElements()
-                                  .where((e) =>
-                                      e.layoutFileName ==
-                                      element.layoutFileName);
-                              if (sameFileElements.isEmpty) {
-                                layoutBundle.layoutFiles.firstWhereOrNull((f) =>
-                                    element.layoutFileName == f.fileName);
-                              }
+                              layout?.resetActiveElement();
+                              layout?.resetActiveAction();
+                              layout?.removeEmptyFiles();
 
                               _updateXmlCode();
                             });
@@ -755,14 +813,15 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   void removeElement(CodeElement element) {
     var layoutBundle = getLayoutBundle();
     if (element.contentElements.isNotEmpty) {
-      var containerOfContainer = layoutBundle!.getContainerOf(layoutBundle.getContainerOf(element));
-      List<CodeElement>? containerList = containerOfContainer?.contentElements;
+      var container = layoutBundle!.getContainerOf(element);
+      List<CodeElement>? containerList = container?.contentElements;
       containerList ??= layoutBundle.elements;
       containerList.addAll(element.contentElements);
 
-      if (containerList.isNotEmpty && containerOfContainer != null) {
+      if (containerList.isNotEmpty) {
         for (var e in containerList) {
-          e.layoutFileName = containerOfContainer.layoutFileName;
+          e.layoutFileName = container != null ? container.layoutFileName : MAIN_XML_FILE_NAME;
+          debugPrint("e.layoutFileName: ${e.layoutFileName}");
         }
       }
     }
@@ -805,7 +864,6 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         var elementId = e.elementId;
         debugPrint("elementId: $elementId");
         var viewId = _getViewId(e);
-
         switch (e.selectedViewType) {
           case ViewType.text:
             result += """
