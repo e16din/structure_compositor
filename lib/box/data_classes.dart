@@ -43,12 +43,6 @@ class LayoutBundle {
 
   LayoutBundle(this.name);
 
-  void sortElements() {
-    elements.sort((a, b) {
-      return a.area.topLeft.dy.compareTo(b.area.topLeft.dy);
-    });
-  }
-
   List<CodeAction> _getAllActionsFrom(List<CodeAction> actions) {
     List<CodeAction> result = [];
     result.addAll(actions);
@@ -162,6 +156,21 @@ class ElementNode {
       }
       _addNodesToListWhere(result, n, condition);
     }
+  }
+
+  void sortElementsByY() {
+    contentNodes.sort((a, b) {
+      return a.element.area.topLeft.dy.compareTo(b.element.area.topLeft.dy);
+    });
+    for(var n in contentNodes){
+      _sortElementsByY(n);
+    }
+  }
+
+  void _sortElementsByY(ElementNode n) {
+    n.contentNodes.sort((a, b) {
+      return a.element.area.topLeft.dy.compareTo(b.element.area.topLeft.dy);
+    });
   }
 }
 

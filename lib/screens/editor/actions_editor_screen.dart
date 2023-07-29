@@ -537,7 +537,6 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 
     var layout = getLayoutBundle()!;
     List<CodeFile> files = layout.layoutFiles;
-    layout.sortElements();
 
     for (var file in files) {
       String xmlLayoutText =
@@ -877,6 +876,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     layout.layoutFiles.clear();
 
     var rootNode = ElementsTreeBuilder.buildTree(layout.elements);
+    rootNode.sortElementsByY();
+    
     CodeFile rootFile = CodeFile(CodeLanguage.xml, MAIN_XML_FILE_NAME,
         CodeController(language: xml, text: ""), rootNode);
     layout.layoutFiles.add(rootFile);
