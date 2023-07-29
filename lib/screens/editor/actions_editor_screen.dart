@@ -9,7 +9,6 @@ import 'package:code_text_field/code_text_field.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:highlight/languages/xml.dart';
-import 'package:highlight/languages/kotlin.dart';
 import 'package:flutter_highlight/themes/monokai-sublime.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -275,20 +274,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                 ),
                 isSelected: _editorTypeSelectorState,
                 onPressed: (int index) {
-                  _updateXmlCode();
-
-                  setState(() {
-                    for (int i = 0; i < _editorTypeSelectorState.length; i++) {
-                      _editorTypeSelectorState[i] = i == index;
-                    }
-                    if (_editorTypeSelectorState[0]) {
-                      _selectedEditor = EditorType.actionsEditor;
-                    } else if (_editorTypeSelectorState[1]) {
-                      _selectedEditor = EditorType.codeEditor;
-                    } else {
-                      _selectedEditor = EditorType.layoutEditor;
-                    }
-                  });
+                  _onEditorTabChanged(index);
                 },
                 children: const [
                   Text("Actions"),
@@ -300,6 +286,24 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         ],
       ),
     );
+  }
+
+  void _onEditorTabChanged(int index) {
+    _updateFiles();
+    _updateXmlCode();
+
+    setState(() {
+      for (int i = 0; i < _editorTypeSelectorState.length; i++) {
+        _editorTypeSelectorState[i] = i == index;
+      }
+      if (_editorTypeSelectorState[0]) {
+        _selectedEditor = EditorType.actionsEditor;
+      } else if (_editorTypeSelectorState[1]) {
+        _selectedEditor = EditorType.codeEditor;
+      } else {
+        _selectedEditor = EditorType.layoutEditor;
+      }
+    });
   }
 
   Container _buildCodeFilesWidgets(List<CodeFile> files) {
@@ -458,19 +462,6 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       var layout = resultScreens.first;
       appFruits.selectedProject!.selectedLayout = layout;
 
-      if (layout.codeFiles.isEmpty == true) {
-        var file = CodeFile(CodeLanguage.kotlin, "main.kt",
-            CodeController(language: kotlin, text: "main.kt"));
-        layout.codeFiles.add(file);
-      }
-
-      // var xmlLayoutText = await _generateXmlLayout(getLayoutBundle()!);
-      if (layout.layoutFiles.isEmpty == true) {
-        var file = CodeFile(CodeLanguage.xml, MAIN_XML_FILE_NAME,
-            CodeController(language: xml, text: MAIN_XML_FILE_NAME));
-        layout.layoutFiles.add(file);
-      }
-
       setState(() {});
     }
   }
@@ -504,54 +495,20 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       var newElement = CodeElement(
           areasEditorFruit.lastElementId!, areasEditorFruit.lastColor!)
         ..area = areasEditorFruit.lastRect!
-        ..layoutFileName = layout.layoutFiles.first.fileName
         ..elementId = areasEditorFruit.lastElementId!;
 
       layout.activeElement = newElement;
       layout.activeElement?.actions.add(newAction);
       layout.elements.add(newElement);
 
-      debugPrint("Here! 2");
       var viewTypes = _getViewTypesByAction(newAction);
       newElement.viewTypes = viewTypes;
       if (viewTypes.isNotEmpty) {
         newElement.selectedViewType = viewTypes.first;
       }
 
-      // check containers
-      List<CodeElement> allContainers = [];
-      for (var e in layout.getAllElements()) {
-        if (e.area.contains(newElement.area.topLeft) &&
-            e.area.contains(newElement.area.bottomRight)) {
-          allContainers.add(e);
-        }
-      }
-      if (allContainers.isNotEmpty) {
-        removeElement(newElement);
-
-        var containerElement = allContainers.last;
-
-        newElement.layoutFileName = containerElement.layoutFileName;
-        debugPrint("newElement.layoutFileName: ${newElement.layoutFileName}");
-        containerElement.contentElements.add(newElement);
-      }
-
-      // check content items
-      List<CodeElement> contentElements = [];
-      for (var e in layout.getAllElements()) {
-        if (newElement.area.contains(e.area.topLeft) &&
-            newElement.area.contains(e.area.bottomRight)) {
-          if (!contentElements.any((ce) =>
-              ce.area.contains(e.area.topLeft) &&
-              ce.area.contains(e.area.bottomRight))) {
-            contentElements.add(e);
-          }
-        }
-      }
-
-      newElement.contentElements.addAll(contentElements);
-
       if (_editorTypeSelectorState[2]) {
+        _updateFiles();
         _updateXmlCode();
       }
 
@@ -565,43 +522,13 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     }
 
     var layout = getLayoutBundle()!;
+    List<CodeFile> files = layout.layoutFiles;
     layout.sortElements();
 
-    var mainLayoutFile = layout.layoutFiles.firstOrNull;
-    if (mainLayoutFile != null) {
-      // items
-      for (var element in layout.getAllElements()) {
-        if (element.selectedViewType == ViewType.list) {
-          for (var contentElement in element.contentElements) {
-            var fileName = "${contentElement.elementId}.xml";
-            debugPrint("fileName: $fileName");
-            contentElement.updateLayoutFileName(fileName);
-
-            var text = _generateXmlViewsByElements(
-                contentElement.contentElements, true);
-            if (layout.layoutFiles
-                    .firstWhereOrNull((f) => f.fileName == fileName) ==
-                null) {
-              debugPrint("createFile: $fileName");
-              var file = CodeFile(CodeLanguage.xml, fileName,
-                  CodeController(language: xml, text: text));
-              layout.layoutFiles.add(file);
-            } else {
-              var file =
-                  layout.layoutFiles.firstWhere((f) => f.fileName == fileName);
-              file.codeController.text = text;
-            }
-          }
-        }
-      }
-
-      // main
-      var mainElements = layout.elements
-          .where(
-              (e) => e.layoutFileName == layout.elements.first.layoutFileName)
-          .toList();
-      String xmlLayoutText = _generateXmlViewsByElements(mainElements, true);
-      mainLayoutFile.codeController.text = xmlLayoutText;
+    for (var file in files) {
+      String xmlLayoutText =
+          _generateXmlViewsByElements(file.elementNode, true);
+      file.codeController.text = xmlLayoutText;
     }
   }
 
@@ -625,7 +552,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     setState(() {
       var commonElementId = getLayoutBundle()!.activeElement?.elementId;
 
-      for (var element in getLayoutBundle()!.getAllElements()) {
+      for (var element in getLayoutBundle()!.elements) {
         if (element.elementId == commonElementId) {
           element.elementId = newElementId;
         }
@@ -700,7 +627,6 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       innerActionWidgets.add(innerActionWidget);
     }
 
-    debugPrint("Here! 1");
     Map<String, ViewType> viewTypesMap = {};
     for (var viewType in element.viewTypes) {
       viewTypesMap[viewType.viewName] = viewType;
@@ -776,15 +702,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                       padding: const EdgeInsets.all(16),
                       child: IconButton(
                           onPressed: () {
-                            setState(() {
-                              var layout = getLayoutBundle();
-                              removeElement(element);
-                              layout?.resetActiveElement();
-                              layout?.resetActiveAction();
-                              layout?.removeEmptyFiles();
-
-                              _updateXmlCode();
-                            });
+                            _onRemoveActionClick(element);
                           },
                           icon: const Icon(Icons.remove_circle)),
                     )
@@ -810,28 +728,21 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     );
   }
 
-  void removeElement(CodeElement element) {
-    var layoutBundle = getLayoutBundle();
-    if (element.contentElements.isNotEmpty) {
-      var container = layoutBundle!.getContainerOf(element);
-      List<CodeElement>? containerList = container?.contentElements;
-      containerList ??= layoutBundle.elements;
-      containerList.addAll(element.contentElements);
+  void _onRemoveActionClick(CodeElement element) {
+    setState(() {
+      var layout = getLayoutBundle();
+      layout?.elements.remove(element);
+      layout?.resetActiveElement();
+      layout?.resetActiveAction();
 
-      if (containerList.isNotEmpty) {
-        for (var e in containerList) {
-          e.layoutFileName = container != null ? container.layoutFileName : MAIN_XML_FILE_NAME;
-          debugPrint("e.layoutFileName: ${e.layoutFileName}");
-        }
-      }
-    }
-    layoutBundle?.removeElement(element);
+      _updateFiles();
+      _updateXmlCode();
+    });
   }
 
-  String _generateXmlViewsByElements(List<CodeElement> elements, bool isRoot) {
-    String result = "";
-    if (isRoot) {
-      result = """<?xml version="1.0" encoding="utf-8"?>
+  String _generateXmlViewsByElements(ElementNode node, bool isRoot) {
+    CodeElement rootElement = node.element;
+    String result = """<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 \txmlns:app="http://schemas.android.com/apk/res-auto"
 \txmlns:tools="http://schemas.android.com/tools"
@@ -839,13 +750,11 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 \tandroid:layout_height="match_parent"
 \tandroid:orientation="vertical">
       """;
-    }
-    for (var e in elements) {
-      var needToAddContainer =
-          e.isContainer() && e.selectedViewType != ViewType.list;
-      if (needToAddContainer) {
+
+    for (var n in node.contentNodes) {
+      if (n.isContainer()) {
         var containerViewId =
-            "@+id/${e.elementId}${e.selectedViewType.viewName.removeAllWhitespace}";
+            "@+id/${n.element.elementId}${n.element.selectedViewType.viewName.removeAllWhitespace}";
         result += """
         <LinearLayout
               android:id="$containerViewId"
@@ -855,16 +764,16 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
               >
         """;
         debugPrint("elementId!!!");
-        result += _generateXmlViewsByElements(e.contentElements, false);
+        result += _generateXmlViewsByElements(n, false);
         result += """
 
         </LinearLayout>
         """;
       } else {
-        var elementId = e.elementId;
+        var elementId = n.element.elementId;
         debugPrint("elementId: $elementId");
-        var viewId = _getViewId(e);
-        switch (e.selectedViewType) {
+        var viewId = _getViewId(n.element);
+        switch (n.element.selectedViewType) {
           case ViewType.text:
             result += """
 
@@ -942,12 +851,109 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       }
     }
 
-    if (isRoot) {
-      result += "\n</LinearLayout>";
-    }
+    result += "\n</LinearLayout>";
     return result;
   }
 
   String _getViewId(CodeElement e) =>
       "@+id/${e.elementId}${e.selectedViewType.viewName.removeAllWhitespace}";
+
+  ElementNode _createNodeFor(ElementNode? containerNode, CodeElement element) {
+    var result = ElementNode(element);
+    containerNode?.containerNode = containerNode;
+
+    var layout = getLayoutBundle()!;
+
+    List<ElementNode> allNodes = [];
+
+    for (var e in layout.elements) {
+      var node = ElementNode(e);
+      allNodes.add(node);
+    }
+
+    for (var nodeContent in allNodes) {
+      List<ElementNode> containers = [];
+      for (var nodeContainer in allNodes) {
+        if (nodeContainer.element.area
+                .contains(nodeContent.element.area.topLeft) &&
+            nodeContainer.element.area
+                .contains(nodeContent.element.area.bottomRight)) {
+          containers.add(nodeContainer);
+        }
+      }
+
+      if (containers.isNotEmpty) {
+        containers.sort((a, b) {
+          return (a.element.area.topLeft - nodeContent.element.area.topLeft)
+              .distance
+              .compareTo(
+                  (b.element.area.topLeft - nodeContent.element.area.topLeft)
+                      .distance);
+        });
+
+        var nearestContainer = containers.first;
+        nearestContainer.contentNodes.add(nodeContent);
+        nodeContent.containerNode = nearestContainer;
+      }
+    }
+
+    return result;
+  }
+
+  void _updateFiles() {
+    var mainElement = CodeElement("rootContainer", Colors.white)
+      ..viewTypes = [ViewType.otherView]
+      ..selectedViewType = ViewType.otherView
+      ..area = Rect.largest;
+
+    List<ElementNode> rootNodes = [];
+    var mainNode = _createNodeFor(null, mainElement);
+    rootNodes.add(mainNode);
+
+    List<CodeFile> files = [];
+    var mainFile = CodeFile(CodeLanguage.xml, MAIN_XML_FILE_NAME,
+        CodeController(language: xml, text: ""), mainNode);
+    files.add(mainFile);
+
+    var layout = getLayoutBundle()!;
+    for (var element in layout.elements) {
+      List<CodeElement> containers = [];
+      for (var elementContainer in layout.elements) {
+        if (element.elementId == elementContainer.elementId) {
+          continue;
+        }
+
+        if (elementContainer.area.contains(element.area.topLeft) &&
+            elementContainer.area.contains(element.area.bottomRight)) {
+          debugPrint("Add container element: ${elementContainer.elementId}");
+          containers.add(elementContainer);
+        }
+      }
+      if (containers.isNotEmpty) {
+        containers.sort((a, b) {
+          return (a.area.topLeft - element.area.topLeft)
+              .distance
+              .compareTo((b.area.topLeft - element.area.topLeft).distance);
+        });
+
+        var nearestContainerElement = containers.first;
+        if (nearestContainerElement.selectedViewType == ViewType.list) {
+          var node = _createNodeFor(null, element);
+          rootNodes.add(node);
+
+          var file = CodeFile(
+              CodeLanguage.xml,
+              "item_${element.elementId}.xml",
+              CodeController(language: xml, text: ""),
+              node);
+
+          debugPrint("Add file: ${file.fileName}");
+          files.add(file);
+        }
+      }
+    }
+
+    layout.layoutFiles.clear();
+    layout.layoutFiles.addAll(files);
+  }
 }

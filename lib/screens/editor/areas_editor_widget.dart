@@ -66,7 +66,7 @@ class AreasEditorState extends State<AreasEditorWidget> {
       areasEditorFruit.lastRect =
           Rect.fromPoints(event.localPosition, event.localPosition);
       areasEditorFruit.lastColor =
-          getNextColor(getLayoutBundle()?.getAllElements().length);
+          getNextColor(getLayoutBundle()?.elements.length);
       areasEditorFruit.lastElementId = _nextElementId();
     });
   }
@@ -94,5 +94,5 @@ class AreasEditorState extends State<AreasEditorWidget> {
   }
 
   String _nextElementId() =>
-      'element${getLayoutBundle()!.getAllElements().length + 1}';
+      'element${getLayoutBundle()!.elements.length + 1}';
 }

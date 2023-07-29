@@ -86,7 +86,7 @@ class ActionsPainter extends CustomPainter {
       paint.color = lastColor!;
       canvas.drawRect(lastRect!, paint);
     }
-    for (var element in layout.getAllElements()) {
+    for (var element in layout.elements) {
       if (layout.activeElement == element) {
         paint.strokeWidth = 5;
         paint.color = element.elementColor;

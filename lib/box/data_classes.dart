@@ -49,28 +49,6 @@ class LayoutBundle {
     });
   }
 
-  void removeElement(CodeElement element) {
-    _removeElement(element, elements);
-  }
-
-  void _removeElement(CodeElement element, List<CodeElement> elements) {
-    elements.remove(element);
-
-    for (var e in elements) {
-      _removeElement(element, e.contentElements);
-    }
-  }
-
-  List<CodeAction> getAllActions() {
-    List<CodeAction> result = [];
-    List<CodeElement> allElements = getAllElements();
-    for (var e in allElements) {
-      result.addAll(e.actions);
-    }
-
-    return result;
-  }
-
   List<CodeAction> _getAllActionsFrom(List<CodeAction> actions) {
     List<CodeAction> result = [];
     result.addAll(actions);
@@ -81,7 +59,7 @@ class LayoutBundle {
   }
 
   CodeElement? getElementByAction(CodeAction action) {
-    List<CodeElement> allElements = getAllElements();
+    List<CodeElement> allElements = elements;
 
     return allElements.firstWhereOrNull((element) {
       var actions = _getAllActionsFrom(element.actions);
@@ -97,43 +75,12 @@ class LayoutBundle {
     activeAction = elements.firstOrNull?.actions.firstOrNull;
   }
 
-  List<CodeElement> getAllElements() {
-    return _getAllElementsFrom(elements);
-  }
-
-  List<CodeElement> _getAllElementsFrom(List<CodeElement> elements) {
-    List<CodeElement> result = [];
-    result.addAll(elements);
-    for (var e in elements) {
-      result.addAll(_getAllElementsFrom(e.contentElements));
+  List<CodeAction> getAllActions() {
+    List<CodeAction> result = [];
+    for(var element in elements){
+      result.addAll(element.actions);
     }
     return result;
-  }
-
-  CodeElement? getContainerOf(CodeElement? element) {
-    if (element == null) {
-      return null;
-    }
-
-    return getAllElements()
-        .firstWhereOrNull((e) => e.contentElements.contains(element));
-  }
-
-  void removeEmptyFiles() {
-    List<CodeFile> emptyFiles = [];
-    for (var file in layoutFiles) {
-      if(!getAllElements().any((e) => e.layoutFileName == file.fileName)){
-        debugPrint("add emptyFiles: ${file.fileName}");
-        emptyFiles.add(file);
-      }
-    }
-
-    debugPrint("On delete List element (assert: emptyFiles.isNotEmpty) | ${emptyFiles.isNotEmpty}");
-
-    for (var f in emptyFiles) {
-      debugPrint("removeFile: ${f.fileName}");
-      layoutFiles.remove(f);
-    }
   }
 }
 
@@ -173,8 +120,22 @@ class CodeFile {
   CodeLanguage language;
 
   CodeController codeController;
+  ElementNode elementNode;
 
-  CodeFile(this.language, this.fileName, this.codeController);
+  CodeFile(this.language, this.fileName, this.codeController, this.elementNode);
+}
+
+class ElementNode {
+  CodeElement element;
+
+  ElementNode? containerNode;
+  List<ElementNode> contentNodes = [];
+
+  ElementNode(this.element);
+
+  bool isContainer() {
+    return contentNodes.isNotEmpty;
+  }
 }
 
 class CodeElement {
@@ -186,25 +147,10 @@ class CodeElement {
 
   Rect area = _defaultArea;
 
-  List<CodeElement> contentElements = [];
   List<CodeAction> actions = [];
-
-  late String layoutFileName; // list of elementId
-
-  bool isContainer() => contentElements.isNotEmpty;
 
   CodeElement(this.elementId, this.elementColor);
 
-  void updateLayoutFileName(String fileName) {
-    _updateLayoutFileName(this, fileName);
-  }
-
-  void _updateLayoutFileName(CodeElement element, String fileName) {
-    element.layoutFileName = fileName;
-    for (var contentElement in element.contentElements) {
-      _updateLayoutFileName(contentElement, fileName);
-    }
-  }
 }
 
 final Rect _defaultArea =
