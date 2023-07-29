@@ -77,7 +77,7 @@ class LayoutBundle {
 
   List<CodeAction> getAllActions() {
     List<CodeAction> result = [];
-    for(var element in elements){
+    for (var element in elements) {
       result.addAll(element.actions);
     }
     return result;
@@ -136,6 +136,33 @@ class ElementNode {
   bool isContainer() {
     return contentNodes.isNotEmpty;
   }
+
+  void addContent(ElementNode content) {
+    content.containerNode = this;
+    contentNodes.add(content);
+  }
+
+  List<ElementNode> getNodesWhere(bool Function(ElementNode node) condition) {
+    List<ElementNode> nodes = [];
+    if (condition.call(this)) {
+      nodes.add(this);
+    }
+
+    for (var n in contentNodes) {
+      _addNodesToListWhere(nodes, n, condition);
+    }
+    return nodes;
+  }
+
+  void _addNodesToListWhere(List<ElementNode> result, ElementNode node,
+      bool Function(ElementNode node) condition) {
+    for (var n in node.contentNodes) {
+      if (condition.call(n)) {
+        result.add(n);
+      }
+      _addNodesToListWhere(result, n, condition);
+    }
+  }
 }
 
 class CodeElement {
@@ -151,6 +178,10 @@ class CodeElement {
 
   CodeElement(this.elementId, this.elementColor);
 
+  bool contains(CodeElement elementContent) {
+    return area.contains(elementContent.area.topLeft) &&
+        area.contains(elementContent.area.bottomRight);
+  }
 }
 
 final Rect _defaultArea =
@@ -187,7 +218,6 @@ enum ViewType {
   image("Image"),
   selector("Selector"),
   list("List"),
-  listItem("List Item"),
   otherView("Other View"),
   ;
 

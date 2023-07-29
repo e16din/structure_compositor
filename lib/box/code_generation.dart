@@ -179,13 +179,6 @@ class App: Application() {
               />
          <!-- Value: ${e.value} -->
     """,
-        ViewType.listItem => """
-      <View 
-          android:id="$viewId"
-          android:layout_width="match_parent"
-          android:layout_height="match_parent"
-          />
-""",
         ViewType.otherView => """
       <View 
           android:id="$viewId"
@@ -350,8 +343,6 @@ $actionCode
 \t}
 """;
           break;
-        case ViewType.listItem:
-          break;
         case ViewType.otherView:
           break;
       }
@@ -467,7 +458,6 @@ class ${name}DataSource {
       //   result = "LinearLayout";
       //   break;
       ViewType.list => "RecyclerView",
-      ViewType.listItem => "ListItem",
       ViewType.otherView => "OtherView",
     };
     return result;
