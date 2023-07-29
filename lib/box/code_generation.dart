@@ -151,7 +151,7 @@ class App: Application() {
               android:layout_height="wrap_content"
               app:compatSrc="${e.value}" />
     """,
-        ViewType.selector => """
+        ViewType.switcher => """
           <Switch
               android:id="$viewId"
               android:layout_width="wrap_content"
@@ -263,7 +263,7 @@ $actionCode
         case ViewType.image:
           // do nothing
           break;
-        case ViewType.selector:
+        case ViewType.switcher:
           result +=
               """\n\t\t$valName.setOnCheckedChangeListener { v, isChecked -> 
 \t\t\tTODO("Not yet implemented")
@@ -453,7 +453,7 @@ class ${name}DataSource {
       ViewType.field => "EditText",
       ViewType.button => "Button",
       ViewType.image => "ImageView",
-      ViewType.selector => "Switch",
+      ViewType.switcher => "Switch",
       // case ViewType.combine:
       //   result = "LinearLayout";
       //   break;

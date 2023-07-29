@@ -67,6 +67,9 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         type: CodeActionType.doOnClick, name: "doOnClick", isContainer: true)
       ..actionColor = Colors.deepPurpleAccent.withOpacity(0.7),
     CodeAction(
+        type: CodeActionType.doOnSwitch, name: "doOnSwitch", isContainer: true)
+      ..actionColor = Colors.deepPurpleAccent.withOpacity(0.7),
+    CodeAction(
         type: CodeActionType.doOnTextChanged,
         name: "doOnTextChanged",
         isContainer: true)
@@ -114,6 +117,9 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       case CodeActionType.doOnTextChanged:
         result.add(ViewType.field);
         break;
+      case CodeActionType.doOnSwitch:
+        result.add(ViewType.switcher);
+        break;
       default:
         //do nothing
         break;
@@ -130,6 +136,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         case CodeActionType.showList:
           result.add(ViewType.list);
           break;
+
         default:
           break;
       }
@@ -830,7 +837,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
               app:compatSrc="todo" />
     """;
             break;
-          case ViewType.selector:
+          case ViewType.switcher:
             result += """
 
           <Switch
@@ -877,7 +884,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 
     var rootNode = ElementsTreeBuilder.buildTree(layout.elements);
     rootNode.sortElementsByY();
-    
+
     CodeFile rootFile = CodeFile(CodeLanguage.xml, MAIN_XML_FILE_NAME,
         CodeController(language: xml, text: ""), rootNode);
     layout.layoutFiles.add(rootFile);

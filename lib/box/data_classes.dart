@@ -90,6 +90,7 @@ enum CodeActionType {
   // Containers
   doOnInit,
   doOnClick,
+  doOnSwitch,
   doOnTextChanged,
   // View
   nothing,
@@ -225,7 +226,7 @@ enum ViewType {
   text("Text"),
   field("Field"),
   image("Image"),
-  selector("Selector"),
+  switcher("Switcher"),
   list("List"),
   otherView("Other View"),
   ;

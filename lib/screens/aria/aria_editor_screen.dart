@@ -687,7 +687,7 @@ class _AriaEditorPageState extends State<AriaEditorPage> {
             element.listeners.add(ListenerCodeBlock(ListenerCodeType.onClick));
           }
           break;
-        case ViewType.selector:
+        case ViewType.switcher:
           if (!element.listeners.any((element) =>
               element.listenerType == ListenerCodeType.onItemSelected)) {
             element.listeners
