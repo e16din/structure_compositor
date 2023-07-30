@@ -34,12 +34,13 @@ class LayoutBundle {
   List<CodeElement> elements = [];
   List<CodeFile> layoutFiles = [];
   List<CodeFile> codeFiles = [];
+  List<CodeFile> taskFiles = [];
 
   CodeAction? activeAction;
   CodeElement? activeElement;
 
   Map<LayoutElement, List<LayoutElement>> listLinkListItemsMap =
-      {}; // todo: move it
+      {};
 
   LayoutBundle(this.name);
 
@@ -106,9 +107,9 @@ enum CodeActionType {
   note,
 }
 
-enum EditorType { actionsEditor, codeEditor, layoutEditor }
+enum EditorType { actionsEditor, taskEditor, codeEditor, layoutEditor }
 
-enum CodeLanguage { unknown, xml, kotlin }
+enum CodeLanguage { unknown, markdown, xml, kotlin }
 
 class CodeFile {
   String fileName;

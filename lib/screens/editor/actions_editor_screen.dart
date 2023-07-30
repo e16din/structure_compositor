@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:highlight/languages/xml.dart';
 import 'package:flutter_highlight/themes/monokai-sublime.dart';
+import 'package:highlight/languages/markdown.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:structure_compositor/screens/editor/areas_editor_widget.dart';
@@ -56,8 +57,9 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   final _editorTypeSelectorState = [
     true,
     false,
+    false,
     false
-  ]; // Action 0 | Code 1 | Layout 2
+  ]; // Action 0 | Task 1 | Code 2 | Layout 3
 
   final List<CodeAction> _actionsCodeBlocks = [
     CodeAction(
@@ -156,6 +158,11 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     areasEditorFruit.onNewArea = () {
       _selectActions(true);
     };
+
+    areasEditorFruit.onSelectLayout = () {
+      setState(() {
+      });
+    };
   }
 
   @override
@@ -252,6 +259,11 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
           ),
         );
         break;
+      case EditorType.taskEditor:
+        if (layout != null) {
+          content = _buildCodeFilesWidgets(layout.taskFiles);
+        }
+        break;
       case EditorType.codeEditor:
         if (layout != null) {
           content = _buildCodeFilesWidgets(layout.codeFiles);
@@ -289,6 +301,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                 },
                 children: const [
                   Text("Actions"),
+                  Text("Task"),
                   Text("Code"),
                   Text("Layout"),
                 ]),
@@ -300,8 +313,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   }
 
   void _onEditorTabChanged(int index) {
-    _updateFiles();
-    _updateXmlCode();
+    _updateAllFiles(getLayoutBundle()!);
 
     setState(() {
       for (int i = 0; i < _editorTypeSelectorState.length; i++) {
@@ -310,6 +322,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       if (_editorTypeSelectorState[0]) {
         _selectedEditor = EditorType.actionsEditor;
       } else if (_editorTypeSelectorState[1]) {
+        _selectedEditor = EditorType.taskEditor;
+      } else if (_editorTypeSelectorState[2]) {
         _selectedEditor = EditorType.codeEditor;
       } else {
         _selectedEditor = EditorType.layoutEditor;
@@ -470,21 +484,34 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       }
 
       appFruits.selectedProject!.layouts.addAll(resultScreens);
-      var layout = resultScreens.first;
-      appFruits.selectedProject!.selectedLayout = layout;
+      appFruits.selectedProject!.selectedLayout = resultScreens.first;
 
-      var rootElement = CodeElement("rootContainer", Colors.white)
-        ..viewTypes = [ViewType.otherView]
-        ..selectedViewType = ViewType.otherView
-        ..area = Rect.largest;
+      for (var layout in resultScreens) {
+        var rootElement = CodeElement("rootContainer", Colors.white)
+          ..viewTypes = [ViewType.otherView]
+          ..selectedViewType = ViewType.otherView
+          ..area = Rect.largest;
 
-      layout.elements.add(rootElement);
-
-      _updateFiles();
-      _updateXmlCode();
+        layout.elements.add(rootElement);
+        _updateAllFiles(layout);
+      }
 
       setState(() {});
     }
+  }
+
+  void _updateAllFiles(LayoutBundle layout) {
+    var rootNode = ElementsTreeBuilder.buildTree(layout.elements);
+    _updateTaskFiles(rootNode);
+    _updateXmlFiles(rootNode);
+    _updateXmlCode();
+  }
+
+  void _updateTaskFiles(ElementNode rootNode) {
+    var layout = getLayoutBundle()!;
+    layout.taskFiles.clear();
+    var taskController = CodeController(language: markdown, text: "");
+    layout.taskFiles.add(CodeFile(CodeLanguage.markdown, "${layout.name}_task.txt", taskController, rootNode));
   }
 
   void _onActionTypeSelected(
@@ -528,8 +555,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         newElement.selectedViewType = viewTypes.first;
       }
 
-      _updateFiles();
-      _updateXmlCode();
+      _updateAllFiles(getLayoutBundle()!);
 
       areasEditorFruit.resetData();
     });
@@ -755,8 +781,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       layout?.resetActiveElement();
       layout?.resetActiveAction();
 
-      _updateFiles();
-      _updateXmlCode();
+      _updateAllFiles(getLayoutBundle()!);
     });
   }
 
@@ -878,12 +903,9 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   String _getViewId(CodeElement e) =>
       "@+id/${e.elementId}${e.selectedViewType.viewName.removeAllWhitespace}";
 
-  void _updateFiles() {
+  void _updateXmlFiles(ElementNode rootNode) {
     var layout = getLayoutBundle()!;
     layout.layoutFiles.clear();
-
-    var rootNode = ElementsTreeBuilder.buildTree(layout.elements);
-    rootNode.sortElementsByY();
 
     CodeFile rootFile = CodeFile(CodeLanguage.xml, MAIN_XML_FILE_NAME,
         CodeController(language: xml, text: ""), rootNode);
@@ -913,6 +935,8 @@ class ElementsTreeBuilder {
     for (var i = 1; i < elements.length; i++) {
       _addContent(root, ElementNode(elements[i]));
     }
+
+    root.sortElementsByY();
     return root;
   }
 

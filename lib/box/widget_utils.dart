@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 
 import 'data_classes.dart';
 
-const double SCREEN_IMAGE_WIDTH = 520;
+const double SCREEN_IMAGE_WIDTH = 580;
 
 //     showDialog(
 //         context: context,
