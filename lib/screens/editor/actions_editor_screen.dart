@@ -190,7 +190,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       body: Row(
         children: [
           _buildActionsEditorWidget(),
-          _buildActionsListWidget(),
+          // _buildActionsListWidget(),
           AreasEditorWidget() // ATTENTION: do not add 'const'!
         ],
       ),
@@ -388,77 +388,77 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     );
   }
 
-  Widget _buildActionsListWidget() {
-    return SingleChildScrollView(
-      child: Container(
-          padding: const EdgeInsets.only(bottom: 280),
-          color: Colors.orangeAccent,
-          width: 180,
-          child: Column(children: _buildDraggableActionsList())),
-    );
-  }
+  // Widget _buildActionsListWidget() {
+  //   return SingleChildScrollView(
+  //     child: Container(
+  //         padding: const EdgeInsets.only(bottom: 280),
+  //         color: Colors.orangeAccent,
+  //         width: 180,
+  //         child: Column(children: _buildDraggableActionsList())),
+  //   );
+  // }
 
-  List<Widget> _buildDraggableActionsList() {
-    List<Widget> widgets = [];
-    for (var codeBlock in _actionsCodeBlocks) {
-      widgets.add(_buildDraggableActionWidget(codeBlock));
-    }
+  // List<Widget> _buildDraggableActionsList() {
+  //   List<Widget> widgets = [];
+  //   for (var codeBlock in _actionsCodeBlocks) {
+  //     widgets.add(_buildDraggableActionWidget(codeBlock));
+  //   }
+  //
+  //   return widgets;
+  // }
 
-    return widgets;
-  }
+  // Container _buildDraggableActionWidget(CodeAction codeBlock) {
+  //   var name = codeBlock.name;
+  //   if (codeBlock.isContainer) {
+  //     name += " { }";
+  //   } else if (codeBlock.withComment) {
+  //     name += "";
+  //   } else {
+  //     name += "()";
+  //   }
+  //   return Container(
+  //     padding: const EdgeInsets.only(left: 18, right: 8, top: 16),
+  //     alignment: Alignment.topLeft,
+  //     child: Draggable(
+  //       feedback: FilledButton(
+  //           style: ButtonStyle(
+  //               backgroundColor:
+  //                   MaterialStateProperty.all(codeBlock.actionColor)),
+  //           onPressed: () {},
+  //           child: Text(name,
+  //               style: const TextStyle(fontSize: 12),
+  //               textAlign: TextAlign.center)),
+  //       onDragEnd: (details) {
+  //         _onActionButtonMovingEnd(details, codeBlock);
+  //       },
+  //       child: FilledButton(
+  //           style: ButtonStyle(
+  //               backgroundColor:
+  //                   MaterialStateProperty.all(codeBlock.actionColor)),
+  //           onPressed: () {},
+  //           child: Text(name,
+  //               style: const TextStyle(fontSize: 12),
+  //               textAlign: TextAlign.center)),
+  //     ),
+  //   );
+  // }
 
-  Container _buildDraggableActionWidget(CodeAction codeBlock) {
-    var name = codeBlock.name;
-    if (codeBlock.isContainer) {
-      name += " { }";
-    } else if (codeBlock.withComment) {
-      name += "";
-    } else {
-      name += "()";
-    }
-    return Container(
-      padding: const EdgeInsets.only(left: 18, right: 8, top: 16),
-      alignment: Alignment.topLeft,
-      child: Draggable(
-        feedback: FilledButton(
-            style: ButtonStyle(
-                backgroundColor:
-                    MaterialStateProperty.all(codeBlock.actionColor)),
-            onPressed: () {},
-            child: Text(name,
-                style: const TextStyle(fontSize: 12),
-                textAlign: TextAlign.center)),
-        onDragEnd: (details) {
-          _onActionButtonMovingEnd(details, codeBlock);
-        },
-        child: FilledButton(
-            style: ButtonStyle(
-                backgroundColor:
-                    MaterialStateProperty.all(codeBlock.actionColor)),
-            onPressed: () {},
-            child: Text(name,
-                style: const TextStyle(fontSize: 12),
-                textAlign: TextAlign.center)),
-      ),
-    );
-  }
-
-  void _onActionButtonMovingEnd(details, CodeAction action) {
-    var activeAction = getLayoutBundle()!.activeAction;
-    if (activeAction!.isContainer == true) {
-      setState(() {
-        var newAction = CodeAction(
-            type: action.type,
-            name: action.name,
-            isContainer: action.isContainer)
-          ..actionId = activeAction.actionId
-          ..withComment = action.withComment
-          ..withDataSource = action.withDataSource;
-
-        activeAction.innerActions.add(newAction);
-      });
-    }
-  }
+  // void _onActionButtonMovingEnd(details, CodeAction action) {
+  //   var activeAction = getLayoutBundle()!.activeAction;
+  //   if (activeAction!.isContainer == true) {
+  //     setState(() {
+  //       var newAction = CodeAction(
+  //           type: action.type,
+  //           name: action.name,
+  //           isContainer: action.isContainer)
+  //         ..actionId = activeAction.actionId
+  //         ..withComment = action.withComment
+  //         ..withDataSource = action.withDataSource;
+  //
+  //       activeAction.innerActions.add(newAction);
+  //     });
+  //   }
+  // }
 
   Future<void> _onAddLayoutPressed() async {
     FilePickerResult? result = await FilePicker.platform
@@ -469,10 +469,11 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       for (var f in result.files) {
         var layoutBytes = f.bytes;
 
-        int index =
-            appFruits.selectedProject!.layouts.length + resultScreens.length;
+        int index = appFruits.selectedProject!.layouts.length;
         ScreenBundle screenBundle = ScreenBundle("New Screen ${index + 1}")
           ..isLauncher = index == 0;
+
+        debugPrint("Add screen: ${screenBundle.name}");
 
         if (layoutBytes != null) {
           screenBundle.layoutBytes = layoutBytes;
@@ -481,9 +482,9 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         }
 
         resultScreens.add(screenBundle);
+        appFruits.selectedProject!.layouts.add(screenBundle);
       }
 
-      appFruits.selectedProject!.layouts.addAll(resultScreens);
       appFruits.selectedProject!.selectedLayout = resultScreens.first;
 
       for (var layout in resultScreens) {
@@ -678,11 +679,12 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       viewTypesMap[viewType.viewName] = viewType;
     }
     return InkWell(
+
       onHover: (focused) {
         if (focused) {
-          setState(() {
-            getLayoutBundle()!.activeAction = action;
-          });
+          // setState(() {
+          //   getLayoutBundle()!.activeAction = action;
+          // });
         }
       },
 
