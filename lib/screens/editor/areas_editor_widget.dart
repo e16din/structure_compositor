@@ -19,7 +19,7 @@ class AreasEditorFruit {
   String? lastElementId;
 
   var onNewArea = () {};
-  var onSelectLayout = () {};
+  var onSelectLayout = (LayoutBundle? layout) {};
 
   void resetData() {
     lastRect = null;
@@ -46,7 +46,8 @@ class AreasEditorState extends State<AreasEditorWidget> {
           children: [
             Container(
               alignment: Alignment.topLeft,
-              width: 180,
+              padding: const EdgeInsets.only(left: 64),
+              width: 240,
               child: TextFormField(
                   key: Key("${selectedLayout?.name.toString()}"),
                   initialValue: selectedLayout?.name,
@@ -67,12 +68,13 @@ class AreasEditorState extends State<AreasEditorWidget> {
                               getLayoutBundle()!,
                               areasEditorFruit.lastRect,
                               areasEditorFruit.lastColor),
-                        ))),
-                Container(
-                    alignment: Alignment.topRight,
-                    child: _buildLayoutsListWidget()),
+                        )))
               ]),
             ),
+            Container(
+                padding: const EdgeInsets.only(top: 12, bottom: 12),
+                alignment: Alignment.topRight,
+                child: _buildLayoutsListWidget())
           ],
         ),
       );
@@ -136,19 +138,34 @@ class AreasEditorState extends State<AreasEditorWidget> {
           var borderColor = appFruits.selectedProject?.selectedLayout == layout
               ? Colors.indigoAccent
               : Colors.transparent;
-          return InkWell(
-            child: Container(
-                decoration: BoxDecoration(
-                    border: Border.all(color: borderColor, width: 4)),
-                width: 50,
-                child: Image.memory(layout.layoutBytes!, fit: BoxFit.contain)),
-            onTap: () {
-              setState(() {
-                appFruits.selectedProject?.selectedLayout = layout;
-                areasEditorFruit.onSelectLayout.call();
-              });
-            },
-          );
+          return Container(
+              decoration: BoxDecoration(
+                  border: Border.all(color: borderColor, width: 4)),
+              width: 50,
+              child: Stack(
+                children: [
+                  InkWell(
+                    child:
+                        Image.memory(layout.layoutBytes!, fit: BoxFit.contain),
+                    onTap: () {
+                      appFruits.selectedProject?.selectedLayout = layout;
+                      areasEditorFruit.onSelectLayout.call(layout);
+                    },
+                  ),
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: IconButton(
+                        onPressed: () {
+                          appFruits.selectedProject?.layouts.remove(layout);
+                          appFruits.selectedProject?.selectedLayout =
+                              appFruits.selectedProject!.layouts.firstOrNull;
+
+                          areasEditorFruit.onSelectLayout.call(appFruits.selectedProject?.selectedLayout);
+                        },
+                        icon: const Icon(Icons.remove_circle)),
+                  )
+                ],
+              ));
         },
       ),
     );

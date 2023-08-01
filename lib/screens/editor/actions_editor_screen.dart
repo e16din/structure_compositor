@@ -52,6 +52,8 @@ class ActionsEditorPage extends StatefulWidget {
 }
 
 class _ActionsEditorPageState extends State<ActionsEditorPage> {
+  var taskController = CodeController(language: markdown, text: "");
+
   EditorType _selectedEditor = EditorType.actionsEditor;
 
   final _editorTypeSelectorState = [
@@ -159,8 +161,11 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       _selectActions(true);
     };
 
-    areasEditorFruit.onSelectLayout = () {
+    areasEditorFruit.onSelectLayout = (layout) {
       setState(() {
+        if (layout != null) {
+          _updateAllFiles(layout);
+        }
       });
     };
   }
@@ -176,6 +181,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         file.codeController.dispose();
       }
     }
+
+    taskController.dispose();
 
     super.dispose();
   }
@@ -261,7 +268,45 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         break;
       case EditorType.taskEditor:
         if (layout != null) {
-          content = _buildCodeFilesWidgets(layout.taskFiles);
+          content = Container(
+            width: 640,
+            child: Column(
+              children: [
+                Row(
+                  // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                        width: 120,
+                        child: TextFormField(initialValue: "task.txt")),
+                    FilledButton(
+                        style: ButtonStyle(
+                            backgroundColor:
+                                MaterialStateProperty.all(Colors.blueAccent)),
+                        onPressed: () {
+                          String codeText = taskController.text;
+                          Clipboard.setData(ClipboardData(text: codeText))
+                              .then((_) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content:
+                                        Text('Copied to your clipboard!')));
+                          });
+                        },
+                        child: const Text("Copy It",
+                            style: TextStyle(fontSize: 12),
+                            textAlign: TextAlign.center)),
+                  ],
+                ),
+                CodeTheme(
+                  data: const CodeThemeData(styles: monokaiSublimeTheme),
+                  child: CodeField(
+                    controller: taskController,
+                    textStyle: const TextStyle(fontFamily: 'SourceCode'),
+                  ),
+                ),
+              ],
+            ),
+          );
         }
         break;
       case EditorType.codeEditor:
@@ -313,7 +358,9 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   }
 
   void _onEditorTabChanged(int index) {
-    _updateAllFiles(getLayoutBundle()!);
+    if (getLayoutBundle() != null) {
+      _updateAllFiles(getLayoutBundle()!);
+    }
 
     setState(() {
       for (int i = 0; i < _editorTypeSelectorState.length; i++) {
@@ -511,8 +558,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   void _updateTaskFiles(ElementNode rootNode) {
     var layout = getLayoutBundle()!;
     layout.taskFiles.clear();
-    var taskController = CodeController(language: markdown, text: "");
-    layout.taskFiles.add(CodeFile(CodeLanguage.markdown, "${layout.name}_task.txt", taskController, rootNode));
+    layout.taskFiles.add(CodeFile(CodeLanguage.markdown,
+        "${layout.name}_task.txt", taskController, rootNode));
   }
 
   void _onActionTypeSelected(
@@ -679,7 +726,6 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       viewTypesMap[viewType.viewName] = viewType;
     }
     return InkWell(
-
       onHover: (focused) {
         if (focused) {
           // setState(() {
