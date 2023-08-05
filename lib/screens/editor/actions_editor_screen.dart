@@ -51,6 +51,138 @@ class ActionsEditorPage extends StatefulWidget {
   State<ActionsEditorPage> createState() => _ActionsEditorPageState();
 }
 
+class CodeActionFabric {
+  static CodeAction create(CodeActionType type) {
+    switch (type) {
+      // Containers:
+      case CodeActionType.doOnInit:
+        return CodeAction(
+            actionId: "emptyId",
+            type: CodeActionType.doOnInit,
+            name: "doOnInit",
+            isContainer: true);
+      case CodeActionType.doOnClick:
+        return CodeAction(
+            actionId: "emptyId",
+            type: CodeActionType.doOnClick,
+            name: "doOnClick",
+            isContainer: true);
+      case CodeActionType.doOnTextChanged:
+        return CodeAction(
+            actionId: "emptyId",
+            type: CodeActionType.doOnTextChanged,
+            name: "doOnTextChanged",
+            isContainer: true);
+      case CodeActionType.doOnSwitch:
+        return CodeAction(
+            actionId: "emptyId",
+            type: CodeActionType.doOnSwitch,
+            name: "doOnSwitch",
+            isContainer: true);
+      // Other:
+      case CodeActionType.showText:
+        return CodeAction(
+            actionId: "emptyId",
+            type: CodeActionType.showText,
+            name: "showText",
+            isContainer: false);
+      case CodeActionType.showImage:
+        return CodeAction(
+            actionId: "emptyId",
+            type: CodeActionType.showImage,
+            name: "showImage",
+            isContainer: false);
+      case CodeActionType.showList:
+        return CodeAction(
+            actionId: "emptyId",
+            type: CodeActionType.showList,
+            name: "showList",
+            isContainer: false)
+          ..withDataSource = true;
+      case CodeActionType.updateDataSource:
+        return CodeAction(
+            actionId: "emptyId",
+            type: CodeActionType.updateDataSource,
+            name: "updateDataSource",
+            isContainer: false)
+          ..withDataSource = true;
+      case CodeActionType.moveToNextScreen:
+        return CodeAction(
+            actionId: "emptyId",
+            type: CodeActionType.moveToNextScreen,
+            name: "moveToNextScreen",
+            isContainer: false)
+          ..actionColor = Colors.green;
+      case CodeActionType.moveToBackScreen:
+        return CodeAction(
+            actionId: "emptyId",
+            type: CodeActionType.moveToBackScreen,
+            name: "moveToBackScreen",
+            isContainer: false)
+          ..actionColor = Colors.green;
+      case CodeActionType.todo:
+        return CodeAction(
+            actionId: "emptyId",
+            type: CodeActionType.todo,
+            name: "TODO()",
+            isContainer: false)
+          ..actionColor = Colors.redAccent
+          ..withComment = true;
+      case CodeActionType.nothing:
+        return CodeAction(
+            actionId: "emptyId",
+            type: CodeActionType.nothing,
+            name: "nothing",
+            isContainer: false);
+      case CodeActionType.note:
+        return CodeAction(
+            actionId: "emptyId",
+            type: CodeActionType.note,
+            name: "// NOTE:",
+            isContainer: false)
+          ..actionColor = Colors.redAccent
+          ..withComment = true;
+    }
+  }
+
+  static List<CodeAction> getCodeContainers() {
+    return CodeActionFabric.getContainerTypes()
+        .map((type) => CodeActionFabric.create(type))
+        .toList();
+  }
+
+  static List<CodeAction> getCodeContent() {
+    return CodeActionFabric.getNotContainersTypes()
+        .map((type) => CodeActionFabric.create(type))
+        .toList();
+  }
+
+  static List<CodeActionType> getContainerTypes() {
+    List<CodeActionType> result = [
+      CodeActionType.doOnInit,
+      CodeActionType.doOnClick,
+      CodeActionType.doOnSwitch,
+      CodeActionType.doOnTextChanged,
+    ];
+    return result;
+  }
+
+  static List<CodeActionType> getNotContainersTypes() {
+    List<CodeActionType> result = [
+      CodeActionType.showImage,
+      CodeActionType.showList,
+      CodeActionType.showText,
+      CodeActionType.updateDataSource,
+      CodeActionType.moveToNextScreen,
+      CodeActionType.moveToBackScreen,
+      CodeActionType.note,
+      CodeActionType.nothing,
+      CodeActionType.todo,
+    ];
+    return result;
+  }
+}
+
 class _ActionsEditorPageState extends State<ActionsEditorPage> {
   var taskController = CodeController(language: markdown, text: "");
 
@@ -62,53 +194,6 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     false,
     false
   ]; // Action 0 | Task 1 | Code 2 | Layout 3
-
-  final List<CodeAction> _actionsCodeBlocks = [
-    CodeAction(
-        type: CodeActionType.doOnInit, name: "doOnInit", isContainer: true)
-      ..actionColor = Colors.deepPurpleAccent.withOpacity(0.7),
-    CodeAction(
-        type: CodeActionType.doOnClick, name: "doOnClick", isContainer: true)
-      ..actionColor = Colors.deepPurpleAccent.withOpacity(0.7),
-    CodeAction(
-        type: CodeActionType.doOnSwitch, name: "doOnSwitch", isContainer: true)
-      ..actionColor = Colors.deepPurpleAccent.withOpacity(0.7),
-    CodeAction(
-        type: CodeActionType.doOnTextChanged,
-        name: "doOnTextChanged",
-        isContainer: true)
-      ..actionColor = Colors.deepPurpleAccent.withOpacity(0.7),
-    CodeAction(
-        type: CodeActionType.nothing, name: "nothing", isContainer: false),
-    CodeAction(
-        type: CodeActionType.showText, name: "showText", isContainer: false),
-    CodeAction(
-        type: CodeActionType.showImage, name: "showImage", isContainer: false),
-    CodeAction(
-        type: CodeActionType.showList, name: "showList", isContainer: false)
-      ..withDataSource = true,
-    CodeAction(
-        type: CodeActionType.updateDataSource,
-        name: "updateDataSource",
-        isContainer: false)
-      ..withDataSource = true,
-    CodeAction(
-        type: CodeActionType.moveToNextScreen,
-        name: "moveToNextScreen",
-        isContainer: false)
-      ..actionColor = Colors.green,
-    CodeAction(
-        type: CodeActionType.moveToBackScreen,
-        name: "moveToBackScreen",
-        isContainer: false)
-      ..actionColor = Colors.green,
-    CodeAction(type: CodeActionType.todo, name: "TODO()", isContainer: false)
-      ..actionColor = Colors.redAccent
-      ..withComment = true,
-    CodeAction(type: CodeActionType.note, name: "// NOTE:", isContainer: false)
-      ..actionColor = Colors.redAccent
-      ..withComment = true,
-  ];
 
   String MAIN_XML_FILE_NAME = "main.xml";
 
@@ -216,25 +301,25 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 
   void _selectActions(bool isNewElement) {
     Map<String, CodeAction> containerActionsMap = {};
-    var containerActions =
-        _actionsCodeBlocks.where((element) => element.isContainer);
+    var containerActions = CodeActionFabric.getCodeContainers();
+
     for (var action in containerActions) {
       containerActionsMap["${action.name} { }"] = action;
     }
-    var otherActions =
-        _actionsCodeBlocks.where((element) => !element.isContainer);
+    var otherActions = CodeActionFabric.getCodeContent();
+
     Map<String, CodeAction> otherActionsMap = {};
     for (var action in otherActions) {
       otherActionsMap["${action.name}()"] = action;
     }
     showMenuDialog(context, "Select action container:", containerActionsMap,
         (selectedContainer) {
-      showMenuDialog(
-          context,
-          "Select action:",
-          otherActionsMap,
-          (selected) =>
-              _onActionTypeSelected(selectedContainer, selected, isNewElement));
+      showMenuDialog(context, "Select action:", otherActionsMap, (selected) {
+        CodeAction innerAction = selected;
+        innerAction.actionId = _nextActionId();
+        return _onActionTypeSelected(
+            selectedContainer, innerAction, isNewElement);
+      });
     });
   }
 
@@ -566,14 +651,15 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       CodeAction action, CodeAction innerAction, bool isNewElement) {
     setState(() {
       var newAction = CodeAction(
+          actionId: _nextActionId(),
           type: CodeActionType.doOnInit,
           name: "unknownAction {}",
           isContainer: true)
-        ..actionId = _nextActionId()
         ..isActive = true
         ..name = action.name
         ..type = action.type
         ..isContainer = action.isContainer;
+      debugPrint("1!!!action.actionId: ${newAction.actionId}");
 
       var layout = getLayoutBundle()!;
       layout.activeAction = action;
@@ -585,6 +671,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         innerAction
           ..dataSourceId = 'dataSource${layout.getAllActions().length + 1}'
           ..actionId = _nextActionId();
+
+        debugPrint("2!!!action.actionId: ${innerAction.actionId}");
       }
       newAction.innerActions.add(innerAction);
 
@@ -674,11 +762,37 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       ));
     }
 
+    if (innerAction.type == CodeActionType.moveToNextScreen) {
+      var screenName = nextScreensMap[innerAction.actionId]?.name;
+      screenName ??= "Select Screen";
+
+      Map<String, LayoutBundle> itemsMap = {};
+      for (var element in appFruits.selectedProject!.layouts) {
+        itemsMap[element.name] = element;
+      }
+
+      widgets.add(Container(
+        child: FilledButton(
+            onPressed: () {
+              showMenuDialog(context, "Select Screen:", itemsMap, (selected) {
+                setState(() {
+                  debugPrint("selected: ${innerAction.actionId}");
+                  nextScreensMap[innerAction.actionId] = selected;
+                  debugPrint("nextScreensMap: ${nextScreensMap.toString()}");
+                });
+              });
+            },
+            child: Text(screenName)),
+      ));
+    }
+
     return Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: widgets);
   }
+
+  Map<String, LayoutBundle> nextScreensMap = {};
 
   Widget _buildEditorActionWidget(CodeElement element, CodeAction action) {
     List<Widget> innerActionWidgets = [];
@@ -708,6 +822,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                         onPressed: () {
                           setState(() {
                             action.innerActions.remove(innerAction);
+                            nextScreensMap.remove(innerAction.actionId);
                           });
                         },
                         icon: const Icon(Icons.remove_circle)),
@@ -770,11 +885,13 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                       padding: const EdgeInsets.all(8),
                       child: IconButton(
                           onPressed: () {
+                            debugPrint(
+                                "0!!!action.actionId: ${action.actionId}");
                             var activeAction = CodeAction(
+                                actionId: action.actionId,
                                 type: action.type,
                                 name: action.name,
                                 isContainer: action.isContainer)
-                              ..actionId = action.actionId
                               ..withComment = action.withComment
                               ..withDataSource = action.withDataSource
                               ..isActive = true;
@@ -826,6 +943,10 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     setState(() {
       var layout = getLayoutBundle();
       layout?.elements.remove(element);
+      for (var action in element.actions) {
+        nextScreensMap.remove(action.actionId);
+      }
+
       layout?.resetActiveElement();
       layout?.resetActiveAction();
 
@@ -859,7 +980,6 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
               android:orientation="vertical"
               >
         """;
-        debugPrint("elementId!!!");
         result += _generateXmlViewsByElements(n, false);
         result += """
 
@@ -867,7 +987,6 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         """;
       } else {
         var elementId = n.element.elementId;
-        debugPrint("elementId: $elementId");
         var viewId = _getViewId(n.element);
         switch (n.element.selectedViewType) {
           case ViewType.text:

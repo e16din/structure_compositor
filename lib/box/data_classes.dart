@@ -199,7 +199,7 @@ final Rect _defaultArea =
     Rect.fromCenter(center: const Offset(100, 100), width: 100, height: 100);
 
 class CodeAction {
-  late String actionId;
+  String actionId;
 
   String? dataSourceId;
   String? comment;
@@ -211,13 +211,14 @@ class CodeAction {
   bool isContainer = false;
   bool withComment = false;
   bool withDataSource = false;
+  bool withNextScreen = false;
 
   List<CodeAction> innerActions = [];
 
   bool isActive = false;
 
   CodeAction(
-      {required this.type, required this.name, required this.isContainer});
+      {required this.actionId, required this.type, required this.name, required this.isContainer});
 }
 
 // ===============
