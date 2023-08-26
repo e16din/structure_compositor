@@ -45,6 +45,7 @@ dependencies:
   file_saver: ^0.2.4
   get: ^4.6.5
   code_text_field: ^1.1.0
+  easy_debounce: ^2.0.3
 
 dev_dependencies:
   flutter_test:

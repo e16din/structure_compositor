@@ -1,8 +1,11 @@
+import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter/material.dart';
+import 'package:get/state_manager.dart';
 import 'package:structure_compositor/box/data_classes.dart';
 
 import '../../box/app_utils.dart';
 import '../../box/widget_utils.dart';
+import 'fruits.dart';
 
 class AreasEditorWidget extends StatefulWidget {
   const AreasEditorWidget({super.key});
@@ -13,23 +16,6 @@ class AreasEditorWidget extends StatefulWidget {
   }
 }
 
-class AreasEditorFruit {
-  Rect? lastRect;
-  Color? lastColor;
-  String? lastElementId;
-
-  var onNewArea = () {};
-  var onSelectLayout = (LayoutBundle? layout) {};
-
-  void resetData() {
-    lastRect = null;
-    lastColor = null;
-    lastElementId = null;
-  }
-}
-
-var areasEditorFruit = AreasEditorFruit();
-
 class AreasEditorState extends State<AreasEditorWidget> {
   @override
   void initState() {
@@ -38,25 +24,53 @@ class AreasEditorState extends State<AreasEditorWidget> {
 
   @override
   Widget build(BuildContext context) {
-    var selectedLayout = appFruits.selectedProject!.selectedLayout;
-    if (selectedLayout?.layoutBytes != null) {
+    var layout = appFruits.selectedProject!.selectedLayout;
+    if (layout?.layoutBytes != null) {
       return Container(
         width: SCREEN_IMAGE_WIDTH,
         child: Stack(
           children: [
-            Container(
-              alignment: Alignment.topLeft,
-              padding: const EdgeInsets.only(left: 64),
-              width: 240,
-              child: TextFormField(
-                  key: Key("${selectedLayout?.name.toString()}"),
-                  initialValue: selectedLayout?.name,
-                  decoration: const InputDecoration(labelText: "Layout Name")),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  alignment: Alignment.topLeft,
+                  padding: const EdgeInsets.only(left: 64),
+                  width: 240,
+                  child: TextFormField(
+                    autofocus: true,
+                    key: Key("${layout?.name.toString()}"),
+                    initialValue: layout?.name,
+                    decoration: const InputDecoration(labelText: "Layout Name"),
+                    onChanged: (text) {
+                      EasyDebounce.debounce(
+                          'Layout Name', const Duration(milliseconds: 500), () {
+                        layout?.name = text;
+                        areasEditorFruit.onSelectedLayoutChanged.call(layout);
+                      });
+                    },
+                  ),
+                ),
+                Container(
+                  alignment: Alignment.topRight,
+                  padding: const EdgeInsets.only(top: 12, right: 96),
+                  child: IconButton(
+                      onPressed: () {
+                        appFruits.selectedProject?.layouts.remove(layout);
+                        appFruits.selectedProject?.selectedLayout =
+                            appFruits.selectedProject!.layouts.firstOrNull;
+
+                        areasEditorFruit.onSelectedLayoutChanged
+                            .call(appFruits.selectedProject?.selectedLayout);
+                      },
+                      icon: const Icon(Icons.delete_forever)),
+                )
+              ],
             ),
             Container(
               padding: const EdgeInsets.only(top: 64, bottom: 24),
               child: Stack(fit: StackFit.expand, children: [
-                Image.memory(selectedLayout!.layoutBytes!, fit: BoxFit.contain),
+                Image.memory(layout!.layoutBytes!, fit: BoxFit.contain),
                 Listener(
                     onPointerDown: _onPointerDown,
                     onPointerUp: _onPointerUp,
@@ -149,21 +163,9 @@ class AreasEditorState extends State<AreasEditorWidget> {
                         Image.memory(layout.layoutBytes!, fit: BoxFit.contain),
                     onTap: () {
                       appFruits.selectedProject?.selectedLayout = layout;
-                      areasEditorFruit.onSelectLayout.call(layout);
+                      areasEditorFruit.onSelectedLayoutChanged.call(layout);
                     },
                   ),
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: IconButton(
-                        onPressed: () {
-                          appFruits.selectedProject?.layouts.remove(layout);
-                          appFruits.selectedProject?.selectedLayout =
-                              appFruits.selectedProject!.layouts.firstOrNull;
-
-                          areasEditorFruit.onSelectLayout.call(appFruits.selectedProject?.selectedLayout);
-                        },
-                        icon: const Icon(Icons.remove_circle)),
-                  )
                 ],
               ));
         },

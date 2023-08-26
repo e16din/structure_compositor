@@ -15,6 +15,8 @@ class AppDataFruits {
 class Project {
   String name = "";
 
+  SystemType systemType = SystemType.android;
+
   List<LayoutBundle> layouts = [];
 
   LayoutBundle? selectedLayout;
@@ -32,15 +34,18 @@ class LayoutBundle {
   List<LayoutElement> elementsMain = [];
 
   List<CodeElement> elements = [];
-  List<CodeFile> layoutFiles = [];
-  List<CodeFile> codeFiles = [];
   List<CodeFile> taskFiles = [];
+  List<CodeFile> pseudoFiles = [];
+
+  List<CodeFile> layoutFiles = [];
+  List<CodeFile> logicFiles = [];
+  List<CodeFile> settingsFiles = [];
+  List<CodeFile> dataFiles = [];
 
   CodeAction? activeAction;
   CodeElement? activeElement;
 
-  Map<LayoutElement, List<LayoutElement>> listLinkListItemsMap =
-      {};
+  Map<LayoutElement, List<LayoutElement>> listLinkListItemsMap = {};
 
   LayoutBundle(this.name);
 
@@ -107,7 +112,28 @@ enum CodeActionType {
   note,
 }
 
-enum EditorType { actionsEditor, taskEditor, codeEditor, layoutEditor }
+enum SystemType {
+  android("Android"), ios("iOS"), flutter("Flutter");
+
+  const SystemType(this.title);
+
+  final String title;
+}
+
+enum ActionsEditModeType {
+  none,
+  actions, // NOTE: actions editor
+  task, // NOTE: human language
+  pseudo, // NOTE: pseudo code
+}
+
+enum PlatformEditModeType {
+  none,
+  settings, // NOTE: Manifest, ..
+  logic, // NOTE: Activity, Adapter, ..
+  layout, // NOTE: xml, Compose, ..
+  data // NOTE: DataSource, ..
+}
 
 enum CodeLanguage { unknown, markdown, xml, kotlin }
 
@@ -164,7 +190,7 @@ class ElementNode {
     contentNodes.sort((a, b) {
       return a.element.area.topLeft.dy.compareTo(b.element.area.topLeft.dy);
     });
-    for(var n in contentNodes){
+    for (var n in contentNodes) {
       _sortElementsByY(n);
     }
   }
@@ -202,7 +228,7 @@ class CodeAction {
   String actionId;
 
   String? dataSourceId;
-  String? comment;
+  String description = "";
 
   CodeActionType type;
 
@@ -218,7 +244,10 @@ class CodeAction {
   bool isActive = false;
 
   CodeAction(
-      {required this.actionId, required this.type, required this.name, required this.isContainer});
+      {required this.actionId,
+      required this.type,
+      required this.name,
+      required this.isContainer});
 }
 
 // ===============

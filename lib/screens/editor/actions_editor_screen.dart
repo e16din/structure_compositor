@@ -6,6 +6,7 @@
 // import 'dart:typed_data';
 
 import 'package:code_text_field/code_text_field.dart';
+import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:highlight/languages/xml.dart';
@@ -14,6 +15,7 @@ import 'package:highlight/languages/markdown.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:structure_compositor/screens/editor/areas_editor_widget.dart';
+import 'package:structure_compositor/screens/editor/files_editor_widget.dart';
 
 // import 'package:shared_preferences/shared_preferences.dart';
 // import 'dart:developer' as developer;
@@ -21,6 +23,7 @@ import 'package:structure_compositor/screens/editor/areas_editor_widget.dart';
 import '../../box/app_utils.dart';
 import '../../box/data_classes.dart';
 import '../../box/widget_utils.dart';
+import 'fruits.dart';
 
 /// * Elements - actions editor elements & areas elements
 /// * Files - code editor files
@@ -186,16 +189,18 @@ class CodeActionFabric {
 class _ActionsEditorPageState extends State<ActionsEditorPage> {
   var taskController = CodeController(language: markdown, text: "");
 
-  EditorType _selectedEditor = EditorType.actionsEditor;
+  final _actionsEditorTypeSelectorState = [
+    true, // Action 0
+    false, // Task 1
+    false, // Pseudo 2
+  ];
 
-  final _editorTypeSelectorState = [
-    true,
-    false,
-    false,
-    false
-  ]; // Action 0 | Task 1 | Code 2 | Layout 3
-
-  String MAIN_XML_FILE_NAME = "main.xml";
+  final _platformEditorTypeSelectorState = [
+    false, // Settings 0
+    false, // Logic 1
+    false, // Layout 2
+    false, // Data 3
+  ];
 
   List<ViewType> _getViewTypesByAction(CodeAction action) {
     List<ViewType> result = [];
@@ -246,7 +251,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       _selectActions(true);
     };
 
-    areasEditorFruit.onSelectLayout = (layout) {
+    areasEditorFruit.onSelectedLayoutChanged = (layout) {
       setState(() {
         if (layout != null) {
           _updateAllFiles(layout);
@@ -257,12 +262,14 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 
   @override
   void dispose() {
+    EasyDebounce.cancelAll();
+
     var layout = getLayoutBundle();
     if (layout != null) {
       for (var file in layout.layoutFiles) {
         file.codeController.dispose();
       }
-      for (var file in layout.codeFiles) {
+      for (var file in layout.logicFiles) {
         file.codeController.dispose();
       }
     }
@@ -330,8 +337,11 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 
     Widget content = Container(width: 640);
     var allActions = layout?.getAllActions();
-    switch (_selectedEditor) {
-      case EditorType.actionsEditor:
+    switch (actionsEditorFruit.selectedActionsEditMode) {
+      case ActionsEditModeType.none:
+        // do nothing
+        break;
+      case ActionsEditModeType.actions:
         content = Container(
           width: 640,
           padding: const EdgeInsets.only(bottom: 110),
@@ -346,12 +356,12 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
             itemBuilder: (BuildContext context, int index) {
               var action = allActions?[index];
               var element = layout!.getElementByAction(action!)!;
-              return _buildEditorActionWidget(element, action);
+              return _buildEditorActionListItem(element, action);
             },
           ),
         );
         break;
-      case EditorType.taskEditor:
+      case ActionsEditModeType.task:
         if (layout != null) {
           content = Container(
             width: 640,
@@ -394,16 +404,16 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
           );
         }
         break;
-      case EditorType.codeEditor:
+      case ActionsEditModeType.pseudo:
         if (layout != null) {
-          content = _buildCodeFilesWidgets(layout.codeFiles);
+          content = Container(width: 640);
         }
         break;
-      case EditorType.layoutEditor:
-        if (layout != null) {
-          content = _buildCodeFilesWidgets(layout.layoutFiles);
-        }
-        break;
+    }
+
+    if (platformFilesEditorFruit.selectedPlatformEditMode !=
+        PlatformEditModeType.none) {
+      content = PlatformFilesEditorWidget();
     }
 
     return IntrinsicWidth(
@@ -425,16 +435,59 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                   minHeight: 28.0,
                   minWidth: 80.0,
                 ),
-                isSelected: _editorTypeSelectorState,
+                isSelected: _actionsEditorTypeSelectorState,
                 onPressed: (int index) {
-                  _onEditorTabChanged(index);
+                  _onActionsEditorTabChanged(index);
                 },
-                children: const [
-                  Text("Actions"),
-                  Text("Task"),
-                  Text("Code"),
-                  Text("Layout"),
-                ]),
+                children: _buildActionsEditorTabs()),
+          ),
+          Container(
+            alignment: Alignment.topRight,
+            padding: const EdgeInsets.only(right: 16, top: 4, bottom: 2),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Container(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: FilledButton(
+                      onPressed: () {
+                        Map<String, SystemType> itemsMap = {};
+                        for (var system in SystemType.values) {
+                          itemsMap[system.title] = system;
+                        }
+                        showMenuDialog(context, "Select System", itemsMap,
+                            (selected) {
+                          setState(() {
+                            appFruits.selectedProject!.systemType = selected;
+                          });
+                        });
+                      },
+                      child: Text(appFruits.selectedProject!.systemType.title)),
+                ),
+                ToggleButtons(
+                    direction: Axis.horizontal,
+                    borderRadius: const BorderRadius.all(Radius.circular(8)),
+                    selectedBorderColor: Colors.green[700],
+                    selectedColor: Colors.white,
+                    fillColor: Colors.green[200],
+                    color: Colors.green[400],
+                    constraints: const BoxConstraints(
+                      minHeight: 28.0,
+                      minWidth: 80.0,
+                    ),
+                    isSelected: _platformEditorTypeSelectorState,
+                    onPressed: (int index) {
+                      _onPlatformEditorTabChanged(index);
+                    },
+                    children: _buildPlatformEditorTabs()),
+                IconButton(
+                    onPressed: () {
+                      _downloadAllProjectFiles();
+                    },
+                    color: Colors.green,
+                    icon: const Icon(Icons.get_app))
+              ],
+            ),
           ),
           Expanded(child: content),
         ],
@@ -442,155 +495,66 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     );
   }
 
-  void _onEditorTabChanged(int index) {
+  List<Widget> _buildActionsEditorTabs() {
+    return [
+      Text("Actions"),
+      Text("Task"),
+      Text("Pseudo"),
+    ];
+  }
+
+  List<Widget> _buildPlatformEditorTabs() {
+    return [
+      Text("Settings"),
+      Text("Logic"),
+      Text("Layout"),
+      Text("Data"),
+    ];
+  }
+
+  void _onActionsEditorTabChanged(int index) {
     if (getLayoutBundle() != null) {
       _updateAllFiles(getLayoutBundle()!);
     }
 
+    platformFilesEditorFruit.selectedPlatformEditMode =
+        PlatformEditModeType.none;
+    for (int i = 0; i < _platformEditorTypeSelectorState.length; i++) {
+      _platformEditorTypeSelectorState[i] = false;
+    }
+
     setState(() {
-      for (int i = 0; i < _editorTypeSelectorState.length; i++) {
-        _editorTypeSelectorState[i] = i == index;
+      for (int i = 0; i < _actionsEditorTypeSelectorState.length; i++) {
+        _actionsEditorTypeSelectorState[i] = i == index;
       }
-      if (_editorTypeSelectorState[0]) {
-        _selectedEditor = EditorType.actionsEditor;
-      } else if (_editorTypeSelectorState[1]) {
-        _selectedEditor = EditorType.taskEditor;
-      } else if (_editorTypeSelectorState[2]) {
-        _selectedEditor = EditorType.codeEditor;
-      } else {
-        _selectedEditor = EditorType.layoutEditor;
-      }
+      actionsEditorFruit.selectedActionsEditMode = ActionsEditModeType.values[
+          _actionsEditorTypeSelectorState.indexWhere((element) => element) + 1];
+      debugPrint("selected: ${actionsEditorFruit.selectedActionsEditMode}");
     });
   }
 
-  Container _buildCodeFilesWidgets(List<CodeFile> files) {
-    return Container(
-      width: 640,
-      child: ListView.separated(
-        separatorBuilder: (context, index) => const Divider(
-          height: 1,
-          indent: 16,
-          endIndent: 24,
-        ),
-        scrollDirection: Axis.vertical,
-        itemCount: files.length,
-        itemBuilder: (BuildContext context, int index) {
-          return Container(
-            color: Colors.black45,
-            child: Column(
-              children: [
-                Row(
-                  // mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                        width: 120,
-                        child:
-                            TextFormField(initialValue: files[index].fileName)),
-                    FilledButton(
-                        style: ButtonStyle(
-                            backgroundColor:
-                                MaterialStateProperty.all(Colors.blueAccent)),
-                        onPressed: () {
-                          String codeText = files[index].codeController.text;
-                          Clipboard.setData(ClipboardData(text: codeText))
-                              .then((_) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content:
-                                        Text('Copied to your clipboard!')));
-                          });
-                        },
-                        child: const Text("Copy It",
-                            style: TextStyle(fontSize: 12),
-                            textAlign: TextAlign.center)),
-                  ],
-                ),
-                CodeTheme(
-                  data: const CodeThemeData(styles: monokaiSublimeTheme),
-                  child: CodeField(
-                    controller: files[index].codeController,
-                    textStyle: const TextStyle(fontFamily: 'SourceCode'),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
+  void _onPlatformEditorTabChanged(int index) {
+    if (getLayoutBundle() != null) {
+      _updateAllFiles(getLayoutBundle()!);
+    }
+
+    actionsEditorFruit.selectedActionsEditMode = ActionsEditModeType.none;
+    for (int i = 0; i < _actionsEditorTypeSelectorState.length; i++) {
+      _actionsEditorTypeSelectorState[i] = false;
+    }
+
+    setState(() {
+      for (int i = 0; i < _platformEditorTypeSelectorState.length; i++) {
+        _platformEditorTypeSelectorState[i] = i == index;
+      }
+      platformFilesEditorFruit.selectedPlatformEditMode = PlatformEditModeType
+              .values[
+          _platformEditorTypeSelectorState.indexWhere((element) => element) +
+              1];
+      debugPrint(
+          "selected: ${platformFilesEditorFruit.selectedPlatformEditMode}");
+    });
   }
-
-  // Widget _buildActionsListWidget() {
-  //   return SingleChildScrollView(
-  //     child: Container(
-  //         padding: const EdgeInsets.only(bottom: 280),
-  //         color: Colors.orangeAccent,
-  //         width: 180,
-  //         child: Column(children: _buildDraggableActionsList())),
-  //   );
-  // }
-
-  // List<Widget> _buildDraggableActionsList() {
-  //   List<Widget> widgets = [];
-  //   for (var codeBlock in _actionsCodeBlocks) {
-  //     widgets.add(_buildDraggableActionWidget(codeBlock));
-  //   }
-  //
-  //   return widgets;
-  // }
-
-  // Container _buildDraggableActionWidget(CodeAction codeBlock) {
-  //   var name = codeBlock.name;
-  //   if (codeBlock.isContainer) {
-  //     name += " { }";
-  //   } else if (codeBlock.withComment) {
-  //     name += "";
-  //   } else {
-  //     name += "()";
-  //   }
-  //   return Container(
-  //     padding: const EdgeInsets.only(left: 18, right: 8, top: 16),
-  //     alignment: Alignment.topLeft,
-  //     child: Draggable(
-  //       feedback: FilledButton(
-  //           style: ButtonStyle(
-  //               backgroundColor:
-  //                   MaterialStateProperty.all(codeBlock.actionColor)),
-  //           onPressed: () {},
-  //           child: Text(name,
-  //               style: const TextStyle(fontSize: 12),
-  //               textAlign: TextAlign.center)),
-  //       onDragEnd: (details) {
-  //         _onActionButtonMovingEnd(details, codeBlock);
-  //       },
-  //       child: FilledButton(
-  //           style: ButtonStyle(
-  //               backgroundColor:
-  //                   MaterialStateProperty.all(codeBlock.actionColor)),
-  //           onPressed: () {},
-  //           child: Text(name,
-  //               style: const TextStyle(fontSize: 12),
-  //               textAlign: TextAlign.center)),
-  //     ),
-  //   );
-  // }
-
-  // void _onActionButtonMovingEnd(details, CodeAction action) {
-  //   var activeAction = getLayoutBundle()!.activeAction;
-  //   if (activeAction!.isContainer == true) {
-  //     setState(() {
-  //       var newAction = CodeAction(
-  //           type: action.type,
-  //           name: action.name,
-  //           isContainer: action.isContainer)
-  //         ..actionId = activeAction.actionId
-  //         ..withComment = action.withComment
-  //         ..withDataSource = action.withDataSource;
-  //
-  //       activeAction.innerActions.add(newAction);
-  //     });
-  //   }
-  // }
 
   Future<void> _onAddLayoutPressed() async {
     FilePickerResult? result = await FilePicker.platform
@@ -636,8 +600,8 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   void _updateAllFiles(LayoutBundle layout) {
     var rootNode = ElementsTreeBuilder.buildTree(layout.elements);
     _updateTaskFiles(rootNode);
-    _updateXmlFiles(rootNode);
-    _updateXmlCode();
+    platformFilesEditorFruit.layoutGenerator.updateLayoutFiles(rootNode);
+    platformFilesEditorFruit.logicGenerator.updateLogicFiles(rootNode);
   }
 
   void _updateTaskFiles(ElementNode rootNode) {
@@ -697,30 +661,16 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     });
   }
 
-  void _updateXmlCode() {
-    if (getLayoutBundle() == null) {
-      return;
-    }
-
-    debugPrint("_updateXmlCode()");
-
-    var layout = getLayoutBundle()!;
-    List<CodeFile> files = layout.layoutFiles;
-
-    for (var file in files) {
-      String xmlLayoutText =
-          _generateXmlViewsByElements(file.elementNode, true);
-      file.codeController.text = xmlLayoutText;
-    }
-  }
-
   _elementIdWidget(CodeElement element) {
     final Widget result;
     if (getLayoutBundle()!.activeElement == element) {
       result = TextFormField(
         initialValue: element.elementId,
         onChanged: (text) {
-          _onElementIdChanged(text);
+          EasyDebounce.debounce('ElementId', const Duration(milliseconds: 500),
+              () {
+            _onElementIdChanged(text);
+          });
         },
       );
     } else {
@@ -794,7 +744,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 
   Map<String, LayoutBundle> nextScreensMap = {};
 
-  Widget _buildEditorActionWidget(CodeElement element, CodeAction action) {
+  Widget _buildEditorActionListItem(CodeElement element, CodeAction action) {
     List<Widget> innerActionWidgets = [];
     for (var innerAction in action.innerActions) {
       String innerActionName;
@@ -860,6 +810,21 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
+            Container(
+                color: Colors.green.withOpacity(0.42),
+                padding: const EdgeInsets.only(
+                    left: 16, right: 16, top: 12, bottom: 8),
+                child: TextFormField(
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration:
+                      const InputDecoration(labelText: "// Description"),
+                  onChanged: (text) {
+                    EasyDebounce.debounce(
+                        'Description', const Duration(milliseconds: 500), () {
+                      action.description = text;
+                    });
+                  },
+                )),
             Container(
                 alignment: Alignment.topLeft,
                 padding: const EdgeInsets.only(left: 16, top: 12, bottom: 4),
@@ -954,141 +919,13 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     });
   }
 
-  String _generateXmlViewsByElements(ElementNode node, bool isRoot) {
-    String result = """<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-\txmlns:app="http://schemas.android.com/apk/res-auto"
-\txmlns:tools="http://schemas.android.com/tools"
-\tandroid:layout_width="match_parent"
-\tandroid:layout_height="match_parent"
-\tandroid:orientation="vertical">
-      """;
-
-    debugPrint(
-        "id: ${node.element.elementId} | Nodes count: ${node.contentNodes.length}");
-    for (var n in node.contentNodes) {
-      debugPrint("Node: ${n.element.elementId}");
-
-      if (n.isContainer()) {
-        var containerViewId =
-            "@+id/${n.element.elementId}${n.element.selectedViewType.viewName.removeAllWhitespace}";
-        result += """
-        <LinearLayout
-              android:id="$containerViewId"
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
-              android:orientation="vertical"
-              >
-        """;
-        result += _generateXmlViewsByElements(n, false);
-        result += """
-
-        </LinearLayout>
-        """;
-      } else {
-        var elementId = n.element.elementId;
-        var viewId = _getViewId(n.element);
-        switch (n.element.selectedViewType) {
-          case ViewType.text:
-            result += """
-
-          <TextView
-              android:id="$viewId"
-              android:layout_width="wrap_content"
-              android:layout_height="wrap_content"
-              android:text="todo" />
-    """;
-            break;
-          case ViewType.field:
-            result += """
-
-          <EditText
-              android:id="$viewId"
-              android:layout_width="wrap_content"
-              android:layout_height="wrap_content"
-              android:hint="todo" />
-    """;
-            break;
-          case ViewType.button:
-            result += """
-
-          <Button
-              android:id="$viewId"
-              android:layout_width="wrap_content"
-              android:layout_height="wrap_content"
-              android:text="todo" />
-    """;
-            break;
-          case ViewType.image:
-            result += """
-
-          <ImageView
-              android:id="$viewId"
-              android:layout_width="wrap_content"
-              android:layout_height="wrap_content"
-              app:compatSrc="todo" />
-    """;
-            break;
-          case ViewType.switcher:
-            result += """
-
-          <Switch
-              android:id="$viewId"
-              android:layout_width="wrap_content"
-              android:layout_height="wrap_content"
-              android:checked="todo" />
-    """;
-            break;
-          case ViewType.list:
-            result += """
-
-         <androidx.recyclerview.widget.RecyclerView
-              android:id="$viewId"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              />
-    """;
-            break;
-          case ViewType.otherView:
-            result += """
-
-         <View
-              android:id="$viewId"
-              android:layout_width="200dp"
-              android:layout_height="200dp"
-              />
-    """;
-            break;
-        }
-      }
-    }
-
-    result += "\n</LinearLayout>";
-    return result;
+  void _updateLogicFiles(ElementNode rootNode) {
+    var layout = getLayoutBundle()!;
+    layout.logicFiles.clear(); // todo:
   }
 
-  String _getViewId(CodeElement e) =>
-      "@+id/${e.elementId}${e.selectedViewType.viewName.removeAllWhitespace}";
-
-  void _updateXmlFiles(ElementNode rootNode) {
-    var layout = getLayoutBundle()!;
-    layout.layoutFiles.clear();
-
-    CodeFile rootFile = CodeFile(CodeLanguage.xml, MAIN_XML_FILE_NAME,
-        CodeController(language: xml, text: ""), rootNode);
-    layout.layoutFiles.add(rootFile);
-
-    var itemNodes = rootNode.getNodesWhere((node) =>
-        node.containerNode?.element.selectedViewType == ViewType.list);
-    for (var node in itemNodes) {
-      node.containerNode?.contentNodes.remove(node);
-      CodeFile itemFile = CodeFile(
-          CodeLanguage.xml,
-          "item_${node.element.elementId}.xml",
-          CodeController(language: xml, text: ""),
-          node);
-      layout.layoutFiles.add(itemFile);
-    }
+  void _downloadAllProjectFiles() {
+    // todo:
   }
 }
 
