@@ -79,46 +79,53 @@ class PlatformFilesEditorState extends State<PlatformFilesEditorWidget> {
         itemCount: files.length,
         itemBuilder: (BuildContext context, int index) {
           return Container(
-            color: Colors.black45,
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IntrinsicWidth(
-                        child: Container(
-                      constraints: const BoxConstraints(minWidth: 180),
-                      child: TextFormField(
-                          key: Key("${files[index].fileName.toString()}.name"),
-                          initialValue: files[index].fileName),
-                    )),
-                    IconButton(
-                        icon: const Icon(
-                          Icons.copy,
-                          size: 16,
-                        ),
-                        onPressed: () {
-                          String codeText = files[index].codeController.text;
-                          Clipboard.setData(ClipboardData(text: codeText))
-                              .then((_) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content:
-                                        Text('Copied to your clipboard!')));
-                          });
-                        })
-                  ],
+            padding: EdgeInsets.only(top:12, left: 8, right: 8),
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Colors.green,
+                  style: BorderStyle.solid,
+                  width: 0.6,
                 ),
-                CodeTheme(
-                  data: const CodeThemeData(styles: androidstudioTheme),
-                  // androidstudio, xcode, vs, monokai-sublime
-                  child: CodeField(
-                    key: Key(files[index].fileName.toString()),
-                    controller: files[index].codeController,
-                    textStyle: const TextStyle(fontFamily: 'SourceCode'),
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                          padding: const EdgeInsets.only(left: 16),
+                          child: Text(files[index].fileName)),
+                      IconButton(
+                          icon: const Icon(
+                            Icons.copy,
+                            size: 16,
+                          ),
+                          onPressed: () {
+                            String codeText = files[index].codeController.text;
+                            Clipboard.setData(ClipboardData(text: codeText))
+                                .then((_) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content:
+                                          Text('Copied to your clipboard!')));
+                            });
+                          })
+                    ],
                   ),
-                ),
-              ],
+                  CodeTheme(
+                    data: const CodeThemeData(styles: androidstudioTheme),
+                    // androidstudio, xcode, vs, monokai-sublime
+                    child: CodeField(
+                      key: Key(files[index].fileName.toString()),
+                      controller: files[index].codeController,
+                      textStyle: const TextStyle(fontFamily: 'SourceCode'),
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },
