@@ -40,11 +40,10 @@ class SettingsCodeGenerator {
         continue;
       }
 
-      activities += """
-        <activity android:name=".screens.${makeActivityName(screen)}"
-            android:exported="false"
-            android:screenOrientation="fullSensor"/>
-      """;
+      activities +=
+      """\n\n${tab}${tab}<activity android:name=".screens.${makeActivityName(screen)}"
+${tab}${tab}${tab}android:exported="false"
+${tab}${tab}${tab}android:screenOrientation="fullSensor"/>""";
     }
 
     var launcherScreen = appFruits.selectedProject?.layouts
@@ -52,31 +51,31 @@ class SettingsCodeGenerator {
     var result = """
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+${tab}xmlns:tools="http://schemas.android.com/tools">
 
-    <application
-        android:name=".App"
-        android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.MyApplication"
-        tools:targetApi="31">
-        <activity
-            android:name=".screens.${makeActivityName(launcherScreen as ScreenBundle)}"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+${tab}<application
+${tab}${tab}android:name=".App"
+${tab}${tab}android:allowBackup="true"
+${tab}${tab}android:dataExtractionRules="@xml/data_extraction_rules"
+${tab}${tab}android:fullBackupContent="@xml/backup_rules"
+${tab}${tab}android:icon="@mipmap/ic_launcher"
+${tab}${tab}android:label="@string/app_name"
+${tab}${tab}android:roundIcon="@mipmap/ic_launcher_round"
+${tab}${tab}android:supportsRtl="true"
+${tab}${tab}android:theme="@style/Theme.MyApplication"
+${tab}${tab}tools:targetApi="31">
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        
+${tab}${tab}<activity
+${tab}${tab}${tab}android:name=".screens.${makeActivityName(launcherScreen as ScreenBundle)}"
+${tab}${tab}${tab}android:exported="true">
+${tab}${tab}${tab}<intent-filter>
+${tab}${tab}${tab}${tab}<action android:name="android.intent.action.MAIN" />
+
+${tab}${tab}${tab}${tab}<category android:name="android.intent.category.LAUNCHER" />
+${tab}${tab}${tab}</intent-filter>
+${tab}${tab}</activity> 
 $activities
-    </application>
+${tab}</application>
 
 </manifest>
     """;

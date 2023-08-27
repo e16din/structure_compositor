@@ -204,6 +204,7 @@ class ElementNode {
 }
 
 class CodeElement {
+  int widgetId;
   String elementId;
   Color elementColor;
 
@@ -214,7 +215,7 @@ class CodeElement {
 
   List<CodeAction> actions = [];
 
-  CodeElement(this.elementId, this.elementColor);
+  CodeElement(this.widgetId, this.elementId, this.elementColor);
 
   bool contains(CodeElement elementContent) {
     return area.contains(elementContent.area.topLeft) &&

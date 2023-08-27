@@ -11,6 +11,8 @@ import '../../../box/data_classes.dart';
 
 import 'package:highlight/languages/kotlin.dart';
 
+String tab = "      "; // 6 spaces
+
 String makeActivityName(ScreenBundle screen) {
   var parts = screen.name.split(" ");
   var result = "";
@@ -18,6 +20,10 @@ String makeActivityName(ScreenBundle screen) {
     result += p.capitalizeFirst!;
   }
   return "${result}Activity";
+}
+
+String makeLayoutName(ScreenBundle screen) {
+  return "activity_${screen.name.toLowerCase().replaceAll(" ", "_")}";
 }
 
 class LogicCodeGenerator {
@@ -29,7 +35,8 @@ class LogicCodeGenerator {
     }
     screen.logicFiles.clear();
 
-    CodeFile rootFile = CodeFile(CodeLanguage.kotlin, makeActivityName(screen),
+    var fileName = "${makeActivityName(screen)}.kt";
+    CodeFile rootFile = CodeFile(CodeLanguage.kotlin, fileName,
         CodeController(language: kotlin, text: ""), rootNode);
     screen.logicFiles.add(rootFile);
     // var itemNodes = rootNode.getNodesWhere((node) =>
@@ -49,8 +56,6 @@ class LogicCodeGenerator {
       file.codeController.text = screenLogicText;
     }
   }
-
-  String _tab = "      "; // 6 spaces
 
   String _makeActivityClass(ElementNode rootNode, ScreenBundle screen) {
     var package = _getPackage();
@@ -82,37 +87,41 @@ import $package.R
 
 
 class ${activityName} : AppCompatActivity() {
-${_tab}override fun onCreate(savedInstanceState: Bundle?) {
-${_tab}${_tab}super.onCreate(savedInstanceState)
-${_tab}${_tab}setContentView(R.layout.${_makeLayoutName(screen)})""";
+${tab}override fun onCreate(savedInstanceState: Bundle?) {
+${tab}${tab}super.onCreate(savedInstanceState)
+${tab}${tab}setContentView(R.layout.${makeLayoutName(screen)})""";
 
     for (var e in screen.elements) {
+
       var valName = _makeViewId(e);
       result +=
-          "\n${_tab}${_tab}val $valName = findViewById<${_makeViewClassName(e)}>(R.id.$valName)";
+          "\n${tab}${tab}val $valName = findViewById<${_makeViewClassName(e)}>(R.id.$valName)";
+
+      for (var action in e.actions) {
+        result += _generateActionCode(e, action);
+      }
+
       switch (e.selectedViewType) {
         case ViewType.text:
           // do nothing
           break;
         case ViewType.field:
-          result += """\n${_tab}${_tab}$valName.doAfterTextChanged { text ->
-${_tab}${_tab}${_tab}TODO("Not yet implemented")
-${_tab}${_tab}}""";
+          result += """\n${tab}${tab}$valName.doAfterTextChanged { text ->
+${tab}${tab}${tab}TODO("Not yet implemented")
+${tab}${tab}}""";
 
           break;
         case ViewType.button:
-          for (var action in e.actions) {
-            result += _generateActionCode(e, action);
-          }
+
           break;
         case ViewType.image:
           // do nothing
           break;
         case ViewType.switcher:
           result +=
-              """\n${_tab}${_tab}$valName.setOnCheckedChangeListener { v, isChecked -> 
-${_tab}${_tab}${_tab}TODO("Not yet implemented")
-${_tab}${_tab}}""";
+              """\n${tab}${tab}$valName.setOnCheckedChangeListener { v, isChecked -> 
+${tab}${tab}${tab}TODO("Not yet implemented")
+${tab}${tab}}""";
           break;
         case ViewType.list:
         case ViewType.grid:
@@ -126,71 +135,71 @@ ${_tab}${_tab}}""";
           }
 
           result += """\n
-${_tab}${_tab}val layoutManager = ${layoutManager}
-${_tab}${_tab}layoutManager.orientation = RecyclerView.VERTICAL
-${_tab}${_tab}$valName.layoutManager = layoutManager
-${_tab}${_tab}$valName.itemAnimator = DefaultItemAnimator()
-${_tab}${_tab}// val dividerDrawable = ContextCompat.getDrawable(this, R.drawable.divider_drawable)
-${_tab}${_tab}// $valName.addItemDecoration(DividerItemDecoration(dividerDrawable))
-${_tab}${_tab}val adapter = ${e.elementId.capitalizeFirst}Adapter(
-${_tab}${_tab}${_tab}items = AppDataState.${e.elementId}DataSource.get(), 
-${_tab}${_tab}${_tab}onItemClickListener = { position, viewType ->""";
+${tab}${tab}val layoutManager = ${layoutManager}
+${tab}${tab}layoutManager.orientation = RecyclerView.VERTICAL
+${tab}${tab}$valName.layoutManager = layoutManager
+${tab}${tab}$valName.itemAnimator = DefaultItemAnimator()
+${tab}${tab}// val dividerDrawable = ContextCompat.getDrawable(this, R.drawable.divider_drawable)
+${tab}${tab}// $valName.addItemDecoration(DividerItemDecoration(dividerDrawable))
+${tab}${tab}val adapter = ${e.elementId.capitalizeFirst}Adapter(
+${tab}${tab}${tab}items = AppDataState.${e.elementId}DataSource.get(), 
+${tab}${tab}${tab}onItemClickListener = { position, viewType ->""";
           result += "\n$actionCode\n";
-          result += """${_tab}${_tab}${_tab}}
-${_tab}${_tab})
+          result += """${tab}${tab}${tab}}
+${tab}${tab})
           
-${_tab}${_tab}$valName.adapter = adapter
+${tab}${tab}$valName.adapter = adapter
           
-${_tab}${_tab}AppDataState.${e.elementId}DataSource.onDataChanged = { newData ->
-${_tab}${_tab}${_tab}adapter.update(newData)
-${_tab}${_tab}}
+${tab}${tab}AppDataState.${e.elementId}DataSource.onDataChanged = { newData ->
+${tab}${tab}${tab}adapter.update(newData)
+${tab}${tab}}
 """;
 
           result += "\n\n";
           addToEndCodeList += """
-${_tab}class ${e.elementId.capitalizeFirst}Adapter(
-${_tab}${_tab}var items: List<${e.elementId.capitalizeFirst}DataSource.Data>,
-${_tab}${_tab}var onItemClickListener: (position: Int, viewType: Int) -> Unit
-${_tab}) : RecyclerView.Adapter<${e.elementId.capitalizeFirst}Adapter.${e.elementId.capitalizeFirst}ViewHolder>() {
+${tab}class ${e.elementId.capitalizeFirst}Adapter(
+${tab}${tab}var items: List<${e.elementId.capitalizeFirst}DataSource.Data>,
+${tab}${tab}var onItemClickListener: (position: Int, viewType: Int) -> Unit
+${tab}) : RecyclerView.Adapter<${e.elementId.capitalizeFirst}Adapter.${e.elementId.capitalizeFirst}ViewHolder>() {
 
-${_tab}${_tab}enum class ViewType {
-${_tab}${_tab}${_tab}Default,
-${_tab}${_tab}}
+${tab}${tab}enum class ViewType {
+${tab}${tab}${tab}Default,
+${tab}${tab}}
 
-${_tab}${_tab}inner class ${e.elementId.capitalizeFirst}ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-${_tab}${_tab}${_tab}init {
-${_tab}${_tab}${_tab}${_tab}view.setOnClickListener {
-${_tab}${_tab}${_tab}${_tab}${_tab}val position = adapterPosition
-${_tab}${_tab}${_tab}${_tab}${_tab}onItemClickListener.invoke(position, getItemViewType(position))
-${_tab}${_tab}${_tab}${_tab}}
-${_tab}${_tab}${_tab}}
-${_tab}${_tab}}
+${tab}${tab}inner class ${e.elementId.capitalizeFirst}ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+${tab}${tab}${tab}init {
+${tab}${tab}${tab}${tab}view.setOnClickListener {
+${tab}${tab}${tab}${tab}${tab}val position = adapterPosition
+${tab}${tab}${tab}${tab}${tab}onItemClickListener.invoke(position, getItemViewType(position))
+${tab}${tab}${tab}${tab}}
+${tab}${tab}${tab}}
+${tab}${tab}}
 
-${_tab}${_tab}override fun getItemViewType(position: Int): Int {
-${_tab}${_tab}${_tab}return when (items[position]) {
-${_tab}${_tab}${_tab}${_tab}else -> ViewType.Default.ordinal
-${_tab}${_tab}${_tab}}
-${_tab}${_tab}}
+${tab}${tab}override fun getItemViewType(position: Int): Int {
+${tab}${tab}${tab}return when (items[position]) {
+${tab}${tab}${tab}${tab}else -> ViewType.Default.ordinal
+${tab}${tab}${tab}}
+${tab}${tab}}
 
-${_tab}${_tab}override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ${e.elementId.capitalizeFirst}ViewHolder {
-${_tab}${_tab}${_tab}val inflater = LayoutInflater.from(parent.context)
-${_tab}${_tab}${_tab}val holderView = inflater.inflate(R.layout.$itemLayoutName, parent, false)
-${_tab}${_tab}${_tab}return ${e.elementId.capitalizeFirst}ViewHolder(holderView)
-${_tab}${_tab}}
+${tab}${tab}override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ${e.elementId.capitalizeFirst}ViewHolder {
+${tab}${tab}${tab}val inflater = LayoutInflater.from(parent.context)
+${tab}${tab}${tab}val holderView = inflater.inflate(R.layout.$itemLayoutName, parent, false)
+${tab}${tab}${tab}return ${e.elementId.capitalizeFirst}ViewHolder(holderView)
+${tab}${tab}}
 
-${_tab}${_tab}override fun getItemCount(): Int {
-${_tab}${_tab}${_tab}return items.size
-${_tab}${_tab}}
+${tab}${tab}override fun getItemCount(): Int {
+${tab}${tab}${tab}return items.size
+${tab}${tab}}
 
-${_tab}${_tab}override fun onBindViewHolder(holder: ${e.elementId.capitalizeFirst}ViewHolder, position: Int) {
-${_tab}${_tab}${_tab}TODO("Not yet implemented")
-${_tab}${_tab}}
+${tab}${tab}override fun onBindViewHolder(holder: ${e.elementId.capitalizeFirst}ViewHolder, position: Int) {
+${tab}${tab}${tab}TODO("Not yet implemented")
+${tab}${tab}}
 
-${_tab}${_tab}fun update(items: List<${e.elementId.capitalizeFirst}DataSource.Data>) {
-${_tab}${_tab}${_tab}this.items = items
-${_tab}${_tab}${_tab}notifyDataSetChanged()
-${_tab}${_tab}}
-${_tab}}
+${tab}${tab}fun update(items: List<${e.elementId.capitalizeFirst}DataSource.Data>) {
+${tab}${tab}${tab}this.items = items
+${tab}${tab}${tab}notifyDataSetChanged()
+${tab}${tab}}
+${tab}}
 """;
           break;
         case ViewType.otherView:
@@ -198,7 +207,7 @@ ${_tab}}
       }
     }
 
-    result += "\n${_tab}}";
+    result += "\n${tab}}";
 
     result += "\n";
     result += addToEndCodeList;
@@ -211,12 +220,8 @@ ${_tab}}
     return platformFilesEditorFruit.package;
   }
 
-  String _makeLayoutName(ScreenBundle screen) {
-    return "activity_${screen.name.toLowerCase().replaceAll(" ", "_")}";
-  }
-
   String _makeViewId(CodeElement e) {
-    return "${e.elementId}${e.selectedViewType.name}";
+    return "${e.elementId}${e.selectedViewType.name.capitalizeFirst}";
   }
 
   String _makeViewClassName(CodeElement e) {
@@ -237,7 +242,7 @@ ${_tab}}
   }
 
   String _getActionCode(CodeElement e) {
-    // var onButtonClick = """${_tab}${_tab}${_tab}TODO("Not yet implemented")""";
+    // var onButtonClick = """${tab}${tab}${tab}TODO("Not yet implemented")""";
     //
     // var openNextScreenBlock = e.listeners.firstWhereOrNull((listener) =>
     //     listener.actions.any((action) =>
@@ -247,39 +252,42 @@ ${_tab}}
     //       .firstWhereOrNull((action) => action is OpenNextScreenBlock)
     //   as OpenNextScreenBlock?;
     //   onButtonClick = """
-    // ${_tab}${_tab}${_tab}startActivity(
-    // ${_tab}${_tab}${_tab}${_tab}Intent(this, ${_makeActivityName(action!.nextScreenBundle!)}::class.java)
-    // ${_tab}${_tab}${_tab})""";
+    // ${tab}${tab}${tab}startActivity(
+    // ${tab}${tab}${tab}${tab}Intent(this, ${_makeActivityName(action!.nextScreenBundle!)}::class.java)
+    // ${tab}${tab}${tab})""";
     // } // else {
     //
     // var backToPrevBlock = e.listeners.firstWhereOrNull((listener) =>
     //     listener.actions.any((action) =>
     //     action.actionType == ActionCodeTypeMain.backToPrevious));
     // if (backToPrevBlock != null) {
-    //   onButtonClick = "${_tab}${_tab}${_tab}onBackPressedDispatcher.onBackPressed()";
+    //   onButtonClick = "${tab}${tab}${tab}onBackPressedDispatcher.onBackPressed()";
     // }
     // return onButtonClick;
     return "// todo: replace stub;";
   }
 
-  String _generateActionCode(CodeElement element, action) {
+  String _generateActionCode(CodeElement element, CodeAction action) {
     String result = "";
 
     var valName = _makeViewId(element);
 
     if (action.description.isNotEmpty) {
-      result += "\n${_tab}${_tab}/**"
-          "\n${_tab}${_tab}Description: ${action.description}"
-          "\n${_tab}${_tab}*/";
+      result += "\n${tab}${tab}/**"
+          "\n * ${tab}${tab}Description: ${action.description}"
+          "\n${tab}${tab}*/";
     }
 
     switch (action.type) {
       case CodeActionType.doOnClick:
         var actionCode = _getActionCode(element);
-        result += """\n${_tab}${_tab}$valName.setOnClickListener { 
+        result += """\n${tab}${tab}$valName.setOnClickListener { 
 $actionCode
-${_tab}${_tab}}""";
+${tab}${tab}}""";
         //todo:
+        break;
+      default:
+        // do nothing
         break;
     }
 

@@ -1,12 +1,12 @@
 import 'package:code_text_field/code_text_field.dart';
 import 'package:get/get.dart';
+import 'package:structure_compositor/screens/editor/generator/logic_code_generator.dart';
 
 import '../../../box/app_utils.dart';
 import '../../../box/data_classes.dart';
 import 'package:highlight/languages/xml.dart';
 
 class LayoutCodeGenerator {
-  String MAIN_XML_FILE_NAME = "main.xml";
 
   void updateFiles(ElementNode rootNode) {
     var layout = getLayoutBundle()!;
@@ -15,7 +15,8 @@ class LayoutCodeGenerator {
     }
     layout.layoutFiles.clear();
 
-    CodeFile rootFile = CodeFile(CodeLanguage.xml, MAIN_XML_FILE_NAME,
+    String fileName = "${makeLayoutName(layout as ScreenBundle)}.xml";
+    CodeFile rootFile = CodeFile(CodeLanguage.xml, fileName,
         CodeController(language: xml, text: ""), rootNode);
     layout.layoutFiles.add(rootFile);
 

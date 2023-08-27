@@ -589,10 +589,11 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       appFruits.selectedProject!.selectedLayout = resultScreens.first;
 
       for (var layout in resultScreens) {
-        var rootElement = CodeElement("rootContainer", Colors.white)
-          ..viewTypes = [ViewType.otherView]
-          ..selectedViewType = ViewType.otherView
-          ..area = Rect.largest;
+        var rootElement =
+            CodeElement(layout.elements.length, "rootContainer", Colors.white)
+              ..viewTypes = [ViewType.otherView]
+              ..selectedViewType = ViewType.otherView
+              ..area = Rect.largest;
 
         layout.elements.add(rootElement);
         _updateAllFiles(layout);
@@ -646,7 +647,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       }
       newAction.innerActions.add(innerAction);
 
-      var newElement = CodeElement(
+      var newElement = CodeElement(layout.elements.length,
           areasEditorFruit.lastElementId!, areasEditorFruit.lastColor!)
         ..area = areasEditorFruit.lastRect!
         ..elementId = areasEditorFruit.lastElementId!;
@@ -671,7 +672,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     final Widget result;
     if (getLayoutBundle()!.activeElement == element) {
       result = TextFormField(
-        key: Key(element.elementId.toString()),
+        key: Key("${element.widgetId}.elementId"),
         initialValue: element.elementId,
         onChanged: (text) {
           EasyDebounce.debounce('ElementId', const Duration(milliseconds: 500),
@@ -687,31 +688,25 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     return result;
   }
 
-  _onElementIdChanged(String newElementId) {
-    setState(() {
-      var commonElementId = getLayoutBundle()!.activeElement?.elementId;
+  void _onElementIdChanged(String newElementId) {
+    var layout = getLayoutBundle()!;
 
-      for (var element in getLayoutBundle()!.elements) {
+    setState(() {
+      var commonElementId = layout.activeElement?.elementId;
+
+      for (var element in layout.elements) {
         if (element.elementId == commonElementId) {
           element.elementId = newElementId;
         }
       }
+
+      _updateAllFiles(layout);
     });
   }
 
   Widget _buildAdditionActionWidgets(CodeElement element, CodeAction action,
       CodeAction innerAction, String innerActionName) {
     List<Widget> widgets = [];
-
-    if (innerAction.withComment) {
-      widgets.add(SizedBox(
-          width: double.infinity,
-          child: TextFormField(
-            key: Key(innerAction.actionId.toString()),
-            decoration:
-                InputDecoration(labelText: "Enter $innerActionName comment"),
-          )));
-    }
 
     if (innerAction.withDataSource) {
       widgets.add(Container(
@@ -801,9 +796,10 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     return InkWell(
       onHover: (focused) {
         if (focused) {
-          // setState(() {
-          //   getLayoutBundle()!.activeAction = action;
-          // });
+          setState(() {
+            getLayoutBundle()!.activeElement = element;
+            getLayoutBundle()!.activeAction = action;
+          });
         }
       },
 
@@ -822,18 +818,28 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                 color: Colors.green.withOpacity(0.42),
                 padding: const EdgeInsets.only(
                     left: 16, right: 16, top: 12, bottom: 8),
-                child: TextFormField(
-                  key: Key("${action.actionId.toString()}.Description"),
-                  textCapitalization: TextCapitalization.sentences,
-                  decoration:
-                      const InputDecoration(labelText: "// Description"),
-                  onChanged: (text) {
-                    EasyDebounce.debounce(
-                        'Description', const Duration(milliseconds: 500), () {
-                      action.description = text;
-                    });
-                  },
-                )),
+                child: action != getLayoutBundle()!.activeAction
+                    ? Container(
+                        padding: const EdgeInsets.only(top: 16, bottom: 16),
+                        alignment: Alignment.topLeft,
+                        child: Text("// Description: ${action.description}"))
+                    : TextFormField(
+                        key: Key("${action.actionId.toString()}.Description"),
+                        initialValue: action.description,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration:
+                            const InputDecoration(labelText: "// Description"),
+                        onChanged: (text) {
+                          EasyDebounce.debounce(
+                              'Description', const Duration(milliseconds: 500),
+                              () {
+                            setState(() {
+                              action.description = text;
+                              _updateAllFiles(getLayoutBundle()!);
+                            });
+                          });
+                        },
+                      )),
             Container(
                 alignment: Alignment.topLeft,
                 padding: const EdgeInsets.only(left: 16, top: 12, bottom: 4),
@@ -926,11 +932,6 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
 
       _updateAllFiles(getLayoutBundle()!);
     });
-  }
-
-  void _updateLogicFiles(ElementNode rootNode) {
-    var layout = getLayoutBundle()!;
-    layout.logicFiles.clear(); // todo:
   }
 
   void _downloadAllProjectFiles() {
