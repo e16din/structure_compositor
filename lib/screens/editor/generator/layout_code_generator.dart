@@ -10,6 +10,9 @@ class LayoutCodeGenerator {
 
   void updateLayoutFiles(ElementNode rootNode) {
     var layout = getLayoutBundle()!;
+    for(var f in layout.layoutFiles){
+      f.codeController.dispose();
+    }
     layout.layoutFiles.clear();
 
     CodeFile rootFile = CodeFile(CodeLanguage.xml, MAIN_XML_FILE_NAME,

@@ -372,7 +372,9 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                   children: [
                     Container(
                         width: 120,
-                        child: TextFormField(initialValue: "task.txt")),
+                        child: TextFormField(
+                            key: Key("${layout.name}.task"),
+                            initialValue: "task.txt")),
                     FilledButton(
                         style: ButtonStyle(
                             backgroundColor:
@@ -513,10 +515,6 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   }
 
   void _onActionsEditorTabChanged(int index) {
-    if (getLayoutBundle() != null) {
-      _updateAllFiles(getLayoutBundle()!);
-    }
-
     platformFilesEditorFruit.selectedPlatformEditMode =
         PlatformEditModeType.none;
     for (int i = 0; i < _platformEditorTypeSelectorState.length; i++) {
@@ -534,10 +532,6 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   }
 
   void _onPlatformEditorTabChanged(int index) {
-    if (getLayoutBundle() != null) {
-      _updateAllFiles(getLayoutBundle()!);
-    }
-
     actionsEditorFruit.selectedActionsEditMode = ActionsEditModeType.none;
     for (int i = 0; i < _actionsEditorTypeSelectorState.length; i++) {
       _actionsEditorTypeSelectorState[i] = false;
@@ -665,6 +659,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     final Widget result;
     if (getLayoutBundle()!.activeElement == element) {
       result = TextFormField(
+        key: Key(element.elementId.toString()),
         initialValue: element.elementId,
         onChanged: (text) {
           EasyDebounce.debounce('ElementId', const Duration(milliseconds: 500),
@@ -700,6 +695,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       widgets.add(SizedBox(
           width: double.infinity,
           child: TextFormField(
+            key: Key(innerAction.actionId.toString()),
             decoration:
                 InputDecoration(labelText: "Enter $innerActionName comment"),
           )));
@@ -815,6 +811,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                 padding: const EdgeInsets.only(
                     left: 16, right: 16, top: 12, bottom: 8),
                 child: TextFormField(
+                  key: Key("${action.actionId.toString()}.Description"),
                   textCapitalization: TextCapitalization.sentences,
                   decoration:
                       const InputDecoration(labelText: "// Description"),

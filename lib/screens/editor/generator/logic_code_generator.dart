@@ -23,12 +23,14 @@ class LogicCodeGenerator {
 
   void updateLogicFiles(ElementNode rootNode) {
     ScreenBundle screen = getLayoutBundle()! as ScreenBundle;
+    for(var f in screen.logicFiles){
+      f.codeController.dispose();
+    }
     screen.logicFiles.clear();
 
     CodeFile rootFile = CodeFile(CodeLanguage.kotlin, _makeActivityName(screen),
         CodeController(language: kotlin, text: ""), rootNode);
     screen.logicFiles.add(rootFile);
-    debugPrint("=== add new | count: ${screen.logicFiles.length}");
     // var itemNodes = rootNode.getNodesWhere((node) =>
     // node.containerNode?.element.selectedViewType == ViewType.list);
     // for (var node in itemNodes) {

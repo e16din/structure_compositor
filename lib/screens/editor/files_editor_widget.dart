@@ -42,12 +42,13 @@ class PlatformFilesEditorState extends State<PlatformFilesEditorWidget> {
         break;
       case PlatformEditModeType.logic:
         if (layout != null) {
-          debugPrint("=== logic");
+          debugPrint("init === logic");
           return _buildEditorWidget(layout.logicFiles);
         }
         break;
       case PlatformEditModeType.layout:
         if (layout != null) {
+          debugPrint("init === layout");
           return _buildEditorWidget(layout.layoutFiles);
         }
         break;
@@ -63,7 +64,6 @@ class PlatformFilesEditorState extends State<PlatformFilesEditorWidget> {
   }
 
   Widget _buildEditorWidget(List<CodeFile> files) {
-    debugPrint("=== files size: ${files.length}");
     return Container(
       width: 640,
       child: ListView.separated(
@@ -85,7 +85,9 @@ class PlatformFilesEditorState extends State<PlatformFilesEditorWidget> {
                     Container(
                         width: 120,
                         child:
-                            TextFormField(initialValue: files[index].fileName)),
+                            TextFormField(
+                                key: Key("${files[index].fileName.toString()}.name"),
+                                initialValue: files[index].fileName)),
                     FilledButton(
                         style: ButtonStyle(
                             backgroundColor:
@@ -106,8 +108,9 @@ class PlatformFilesEditorState extends State<PlatformFilesEditorWidget> {
                   ],
                 ),
                 CodeTheme(
-                  data: const CodeThemeData(styles: monokaiSublimeTheme),
+                  data:  const CodeThemeData(styles: monokaiSublimeTheme),
                   child: CodeField(
+                    key: Key(files[index].fileName.toString()),
                     controller: files[index].codeController,
                     textStyle: const TextStyle(fontFamily: 'SourceCode'),
                   ),
