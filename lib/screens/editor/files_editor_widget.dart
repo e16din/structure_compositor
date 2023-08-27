@@ -40,7 +40,8 @@ class PlatformFilesEditorState extends State<PlatformFilesEditorWidget> {
         break;
       case PlatformEditModeType.settings:
         if (layout != null) {
-          return Container(width: 640);
+          debugPrint("init === settings");
+          return _buildEditorWidget(layout.settingsFiles);
         }
         break;
       case PlatformEditModeType.logic:
@@ -79,7 +80,7 @@ class PlatformFilesEditorState extends State<PlatformFilesEditorWidget> {
         itemCount: files.length,
         itemBuilder: (BuildContext context, int index) {
           return Container(
-            padding: EdgeInsets.only(top:12, left: 8, right: 8),
+            padding: const EdgeInsets.only(top:12, left: 8, right: 8),
             child: Container(
               decoration: BoxDecoration(
                 border: Border.all(

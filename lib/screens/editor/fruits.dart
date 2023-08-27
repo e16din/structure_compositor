@@ -4,6 +4,7 @@ import 'package:structure_compositor/screens/editor/generator/layout_code_genera
 import 'package:structure_compositor/screens/editor/generator/logic_code_generator.dart';
 
 import '../../box/data_classes.dart';
+import 'generator/settings_code_generator.dart';
 
 var areasEditorFruit = AreasEditorFruit();
 var platformFilesEditorFruit = PlatformFilesEditorFruit();
@@ -29,6 +30,7 @@ class PlatformFilesEditorFruit {
 
   LayoutCodeGenerator layoutGenerator = LayoutCodeGenerator();
   LogicCodeGenerator logicGenerator = LogicCodeGenerator();
+  SettingsCodeGenerator settingsGenerator = SettingsCodeGenerator();
 
   PlatformEditModeType selectedPlatformEditMode = PlatformEditModeType.none;
 }

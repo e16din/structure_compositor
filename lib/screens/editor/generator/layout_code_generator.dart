@@ -8,7 +8,7 @@ import 'package:highlight/languages/xml.dart';
 class LayoutCodeGenerator {
   String MAIN_XML_FILE_NAME = "main.xml";
 
-  void updateLayoutFiles(ElementNode rootNode) {
+  void updateFiles(ElementNode rootNode) {
     var layout = getLayoutBundle()!;
     for(var f in layout.layoutFiles){
       f.codeController.dispose();
@@ -35,7 +35,7 @@ class LayoutCodeGenerator {
 
     for (var file in layout.layoutFiles) {
       String xmlLayoutText =
-      _generateXmlViewsByElements(file.elementNode, true);
+      _generateXmlViewsByElements(file.elementNode!, true);
       file.codeController.text = xmlLayoutText;
     }
   }

@@ -143,7 +143,7 @@ class CodeFile {
   CodeLanguage language;
 
   CodeController codeController;
-  ElementNode elementNode;
+  ElementNode? elementNode;
 
   CodeFile(this.language, this.fileName, this.codeController, this.elementNode);
 }

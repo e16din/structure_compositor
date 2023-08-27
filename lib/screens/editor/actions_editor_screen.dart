@@ -605,8 +605,9 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   void _updateAllFiles(LayoutBundle layout) {
     var rootNode = ElementsTreeBuilder.buildTree(layout.elements);
     _updateTaskFiles(rootNode);
-    platformFilesEditorFruit.layoutGenerator.updateLayoutFiles(rootNode);
-    platformFilesEditorFruit.logicGenerator.updateLogicFiles(rootNode);
+    platformFilesEditorFruit.layoutGenerator.updateFiles(rootNode);
+    platformFilesEditorFruit.logicGenerator.updateFiles(rootNode);
+    platformFilesEditorFruit.settingsGenerator.updateFiles(rootNode);
   }
 
   void _updateTaskFiles(ElementNode rootNode) {

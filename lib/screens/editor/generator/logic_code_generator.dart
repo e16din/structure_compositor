@@ -11,24 +11,25 @@ import '../../../box/data_classes.dart';
 
 import 'package:highlight/languages/kotlin.dart';
 
-class LogicCodeGenerator {
-  String _makeActivityName(ScreenBundle screen) {
-    var parts = screen.name.split(" ");
-    var result = "";
-    for (var p in parts) {
-      result += p.capitalizeFirst!;
-    }
-    return "${result}Activity";
+String makeActivityName(ScreenBundle screen) {
+  var parts = screen.name.split(" ");
+  var result = "";
+  for (var p in parts) {
+    result += p.capitalizeFirst!;
   }
+  return "${result}Activity";
+}
 
-  void updateLogicFiles(ElementNode rootNode) {
+class LogicCodeGenerator {
+
+  void updateFiles(ElementNode rootNode) {
     ScreenBundle screen = getLayoutBundle()! as ScreenBundle;
     for(var f in screen.logicFiles){
       f.codeController.dispose();
     }
     screen.logicFiles.clear();
 
-    CodeFile rootFile = CodeFile(CodeLanguage.kotlin, _makeActivityName(screen),
+    CodeFile rootFile = CodeFile(CodeLanguage.kotlin, makeActivityName(screen),
         CodeController(language: kotlin, text: ""), rootNode);
     screen.logicFiles.add(rootFile);
     // var itemNodes = rootNode.getNodesWhere((node) =>
@@ -44,7 +45,7 @@ class LogicCodeGenerator {
     // }
 
     for (var file in screen.logicFiles) {
-      String screenLogicText = _makeActivityClass(file.elementNode, screen);
+      String screenLogicText = _makeActivityClass(file.elementNode!, screen);
       file.codeController.text = screenLogicText;
     }
   }
@@ -55,7 +56,7 @@ class LogicCodeGenerator {
     var package = _getPackage();
     var addToEndCodeList = "";
 
-    var activityName = _makeActivityName(screen);
+    var activityName = makeActivityName(screen);
     var result = """
 package $package.screens
 

@@ -53,12 +53,42 @@ class AreasEditorState extends State<AreasEditorWidget> {
                 ),
                 Container(
                   alignment: Alignment.topRight,
+                  padding: const EdgeInsets.only(top: 17, right: 8),
+                  child: Row(
+                    children: [
+                      const Text("isLauncher"),
+                      Checkbox(
+                          value: (layout as ScreenBundle).isLauncher,
+                          onChanged: layout.isLauncher
+                              ? null
+                              : (checked) {
+                                  for (var layout
+                                      in appFruits.selectedProject!.layouts) {
+                                    (layout as ScreenBundle).isLauncher = false;
+                                  }
+                                  layout.isLauncher = checked!;
+
+                                  areasEditorFruit.onSelectedLayoutChanged.call(
+                                      appFruits
+                                          .selectedProject?.selectedLayout);
+                                }),
+                    ],
+                  ),
+                ),
+                Container(
+                  alignment: Alignment.topRight,
                   padding: const EdgeInsets.only(top: 12, right: 96),
                   child: IconButton(
                       onPressed: () {
                         appFruits.selectedProject?.layouts.remove(layout);
                         appFruits.selectedProject?.selectedLayout =
                             appFruits.selectedProject!.layouts.firstOrNull;
+
+                        if (layout.isLauncher) {
+                          (appFruits.selectedProject?.selectedLayout
+                                  as ScreenBundle)
+                              .isLauncher = true;
+                        }
 
                         areasEditorFruit.onSelectedLayoutChanged
                             .call(appFruits.selectedProject?.selectedLayout);
