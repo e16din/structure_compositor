@@ -114,12 +114,18 @@ ${_tab}${_tab}${_tab}TODO("Not yet implemented")
 ${_tab}${_tab}}""";
           break;
         case ViewType.list:
+        case ViewType.grid:
           var itemLayoutName = "item_${e.elementId.toLowerCase()}";
 
           var actionCode = _getActionCode(e);
 
+          var layoutManager = "LinearLayoutManager(this)";
+          if(e.selectedViewType == ViewType.grid){
+            layoutManager = "GridLayoutManager(this, 2)";
+          }
+
           result += """\n
-${_tab}${_tab}val layoutManager = LinearLayoutManager(this)
+${_tab}${_tab}val layoutManager = ${layoutManager}
 ${_tab}${_tab}layoutManager.orientation = RecyclerView.VERTICAL
 ${_tab}${_tab}$valName.layoutManager = layoutManager
 ${_tab}${_tab}$valName.itemAnimator = DefaultItemAnimator()
@@ -223,6 +229,7 @@ ${_tab}}
       //   result = "LinearLayout";
       //   break;
       ViewType.list => "RecyclerView",
+      ViewType.grid => "RecyclerView",
       ViewType.otherView => "View",
     };
     return result;

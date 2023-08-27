@@ -10,6 +10,9 @@ import 'fruits.dart';
 
 import 'package:highlight/languages/xml.dart';
 import 'package:flutter_highlight/themes/monokai-sublime.dart';
+import 'package:flutter_highlight/themes/androidstudio.dart';
+import 'package:flutter_highlight/themes/vs.dart';
+import 'package:flutter_highlight/themes/xcode.dart';
 import 'package:highlight/languages/markdown.dart';
 
 class PlatformFilesEditorWidget extends StatefulWidget {
@@ -80,18 +83,20 @@ class PlatformFilesEditorState extends State<PlatformFilesEditorWidget> {
             child: Column(
               children: [
                 Row(
-                  // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                        width: 120,
-                        child:
-                            TextFormField(
-                                key: Key("${files[index].fileName.toString()}.name"),
-                                initialValue: files[index].fileName)),
-                    FilledButton(
-                        style: ButtonStyle(
-                            backgroundColor:
-                                MaterialStateProperty.all(Colors.blueAccent)),
+                    IntrinsicWidth(
+                        child: Container(
+                      constraints: const BoxConstraints(minWidth: 180),
+                      child: TextFormField(
+                          key: Key("${files[index].fileName.toString()}.name"),
+                          initialValue: files[index].fileName),
+                    )),
+                    IconButton(
+                        icon: const Icon(
+                          Icons.copy,
+                          size: 16,
+                        ),
                         onPressed: () {
                           String codeText = files[index].codeController.text;
                           Clipboard.setData(ClipboardData(text: codeText))
@@ -101,14 +106,12 @@ class PlatformFilesEditorState extends State<PlatformFilesEditorWidget> {
                                     content:
                                         Text('Copied to your clipboard!')));
                           });
-                        },
-                        child: const Text("Copy It",
-                            style: TextStyle(fontSize: 12),
-                            textAlign: TextAlign.center)),
+                        })
                   ],
                 ),
                 CodeTheme(
-                  data:  const CodeThemeData(styles: monokaiSublimeTheme),
+                  data: const CodeThemeData(styles: androidstudioTheme),
+                  // androidstudio, xcode, vs, monokai-sublime
                   child: CodeField(
                     key: Key(files[index].fileName.toString()),
                     controller: files[index].codeController,

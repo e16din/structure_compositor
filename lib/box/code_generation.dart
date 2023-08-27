@@ -171,7 +171,7 @@ class App: Application() {
         //      </LinearLayout>
         // """;
         //       break;
-        ViewType.list => """
+        ViewType.list || ViewType.grid => """
          <androidx.recyclerview.widget.RecyclerView 
               android:id="$viewId"
               android:layout_width="match_parent"
@@ -270,13 +270,19 @@ $actionCode
 \t\t}""";
           break;
         case ViewType.list:
+        case ViewType.grid:
           var itemLayoutName = "item_${e.name.toLowerCase()}";
           await _generateListItemXml(itemLayoutName);
 
           var actionCode = _getActionCode(e);
 
+          var layoutManager = "LinearLayoutManager(this)";
+          if(e.viewType == ViewType.grid){
+            layoutManager = "GridLayoutManager(this, 2)";
+          }
+
           result += """\n
-\t\tval layoutManager = LinearLayoutManager(this)
+\t\tval layoutManager = ${layoutManager}
 \t\tlayoutManager.orientation = RecyclerView.VERTICAL
 \t\t$valName.layoutManager = layoutManager
 \t\t$valName.itemAnimator = DefaultItemAnimator()
@@ -458,6 +464,7 @@ class ${name}DataSource {
       //   result = "LinearLayout";
       //   break;
       ViewType.list => "RecyclerView",
+      ViewType.grid => "RecyclerView",
       ViewType.otherView => "OtherView",
     };
     return result;

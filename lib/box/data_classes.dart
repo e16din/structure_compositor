@@ -103,6 +103,7 @@ enum CodeActionType {
   showText,
   showImage,
   showList,
+  showGrid,
   updateDataSource,
   // Navigation
   moveToNextScreen,
@@ -259,6 +260,7 @@ enum ViewType {
   image("Image"),
   switcher("Switcher"),
   list("List"),
+  grid("Grid"),
   otherView("Other View"),
   ;
 
@@ -289,7 +291,7 @@ class LayoutElement {
   LayoutElement(this.functionalArea, this.color, this.isInEdit);
 
   bool hasDataSource() {
-    return viewType == ViewType.list; // todo: add data sources feature
+    return viewType == ViewType.list || viewType == ViewType.grid; // todo: add data sources feature
   }
 }
 

@@ -695,6 +695,7 @@ class _AriaEditorPageState extends State<AriaEditorPage> {
           }
           break;
         case ViewType.list:
+        case ViewType.grid:
           getLayoutBundle()!
               .listLinkListItemsMap
               .putIfAbsent(element, () => []);

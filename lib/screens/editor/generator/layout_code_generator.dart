@@ -20,7 +20,9 @@ class LayoutCodeGenerator {
     layout.layoutFiles.add(rootFile);
 
     var itemNodes = rootNode.getNodesWhere((node) =>
-    node.containerNode?.element.selectedViewType == ViewType.list);
+    node.containerNode?.element.selectedViewType == ViewType.list ||
+    node.containerNode?.element.selectedViewType == ViewType.grid
+    );
     for (var node in itemNodes) {
       node.containerNode?.contentNodes.remove(node);
       CodeFile itemFile = CodeFile(
@@ -120,6 +122,7 @@ class LayoutCodeGenerator {
     """;
             break;
           case ViewType.list:
+          case ViewType.grid:
             result += """
 
          <androidx.recyclerview.widget.RecyclerView

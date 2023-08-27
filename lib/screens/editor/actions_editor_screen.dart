@@ -102,6 +102,13 @@ class CodeActionFabric {
             name: "showList",
             isContainer: false)
           ..withDataSource = true;
+      case CodeActionType.showGrid:
+        return CodeAction(
+            actionId: "emptyId",
+            type: CodeActionType.showGrid,
+            name: "showGrid",
+            isContainer: false)
+          ..withDataSource = true;
       case CodeActionType.updateDataSource:
         return CodeAction(
             actionId: "emptyId",
@@ -174,6 +181,7 @@ class CodeActionFabric {
     List<CodeActionType> result = [
       CodeActionType.showImage,
       CodeActionType.showList,
+      CodeActionType.showGrid,
       CodeActionType.showText,
       CodeActionType.updateDataSource,
       CodeActionType.moveToNextScreen,
@@ -229,6 +237,9 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
           break;
         case CodeActionType.showList:
           result.add(ViewType.list);
+          break;
+        case CodeActionType.showGrid:
+          result.add(ViewType.grid);
           break;
 
         default:
