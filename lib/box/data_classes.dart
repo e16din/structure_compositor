@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:code_text_field/code_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:structure_compositor/screens/editor/fruits.dart';
 
 class AppDataFruits {
   List<Project> projects = [];
@@ -189,7 +190,7 @@ class ElementNode {
 
   void sortElementsByY() {
     contentNodes.sort((a, b) {
-      return a.element.area.topLeft.dy.compareTo(b.element.area.topLeft.dy);
+      return a.element.area.rect.topLeft.dy.compareTo(b.element.area.rect.topLeft.dy);
     });
     for (var n in contentNodes) {
       _sortElementsByY(n);
@@ -198,7 +199,7 @@ class ElementNode {
 
   void _sortElementsByY(ElementNode n) {
     n.contentNodes.sort((a, b) {
-      return a.element.area.topLeft.dy.compareTo(b.element.area.topLeft.dy);
+      return a.element.area.rect.topLeft.dy.compareTo(b.element.area.rect.topLeft.dy);
     });
   }
 }
@@ -211,20 +212,17 @@ class CodeElement {
   List<ViewType> viewTypes = [];
   ViewType selectedViewType = ViewType.otherView;
 
-  Rect area = _defaultArea;
+  late AreaBundle area;
 
   List<CodeAction> actions = [];
 
   CodeElement(this.widgetId, this.elementId, this.elementColor);
 
   bool contains(CodeElement elementContent) {
-    return area.contains(elementContent.area.topLeft) &&
-        area.contains(elementContent.area.bottomRight);
+    return area.rect.contains(elementContent.area.rect.topLeft) &&
+        area.rect.contains(elementContent.area.rect.bottomRight);
   }
 }
-
-final Rect _defaultArea =
-    Rect.fromCenter(center: const Offset(100, 100), width: 100, height: 100);
 
 class CodeAction {
   String actionId;

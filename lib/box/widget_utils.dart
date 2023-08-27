@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../screens/editor/fruits.dart';
 import 'data_classes.dart';
 
 const double SCREEN_IMAGE_WIDTH = 580;
@@ -72,19 +73,18 @@ class ElementPainter extends CustomPainter {
 
 class ActionsPainter extends CustomPainter {
   LayoutBundle layout;
-  Rect? lastRect;
-  Color? lastColor;
+  AreaBundle? lastArea;
 
-  ActionsPainter(this.layout, this.lastRect, this.lastColor);
+  ActionsPainter(this.layout, this.lastArea);
 
   @override
   void paint(Canvas canvas, Size size) async {
     final paint = Paint()..style = PaintingStyle.stroke;
 
-    if (lastRect != null) {
+    if (lastArea != null) {
       paint.strokeWidth = 5;
-      paint.color = lastColor!;
-      canvas.drawRect(lastRect!, paint);
+      paint.color = lastArea!.color;
+      canvas.drawRect(lastArea!.rect, paint);
     }
     for (var element in layout.elements) {
       if (layout.activeElement == element) {
@@ -94,7 +94,7 @@ class ActionsPainter extends CustomPainter {
         paint.strokeWidth = 3;
         paint.color = element.elementColor.withOpacity(0.82);
       }
-      canvas.drawRect(element.area, paint);
+      canvas.drawRect(element.area.rect, paint);
     }
   }
 

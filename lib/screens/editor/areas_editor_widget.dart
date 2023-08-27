@@ -100,7 +100,7 @@ class AreasEditorState extends State<AreasEditorWidget> {
             Container(
               padding: const EdgeInsets.only(top: 64, bottom: 24),
               child: Stack(fit: StackFit.expand, children: [
-                Image.memory(layout!.layoutBytes!, fit: BoxFit.contain),
+                Image.memory(layout.layoutBytes!, fit: BoxFit.contain),
                 Listener(
                     onPointerDown: _onPointerDown,
                     onPointerUp: _onPointerUp,
@@ -109,9 +109,7 @@ class AreasEditorState extends State<AreasEditorWidget> {
                         cursor: SystemMouseCursors.precise,
                         child: CustomPaint(
                           painter: ActionsPainter(
-                              getLayoutBundle()!,
-                              areasEditorFruit.lastRect,
-                              areasEditorFruit.lastColor),
+                              getLayoutBundle()!, areasEditorFruit.lastArea),
                         )))
               ]),
             ),
@@ -129,33 +127,30 @@ class AreasEditorState extends State<AreasEditorWidget> {
 
   void _onPointerDown(PointerDownEvent event) {
     setState(() {
-      areasEditorFruit.lastRect =
-          Rect.fromPoints(event.localPosition, event.localPosition);
-      areasEditorFruit.lastColor =
-          getNextColor(getLayoutBundle()?.elements.length);
-      areasEditorFruit.lastElementId = _nextElementId();
+      areasEditorFruit.lastArea = AreaBundle(
+          Rect.fromPoints(event.localPosition, event.localPosition),
+          getNextColor(getLayoutBundle()?.elements.length),
+          _nextElementId());
     });
   }
 
   void _onPointerMove(PointerMoveEvent event) {
     setState(() {
       // var element = getLayoutBundle()!.getActiveElement();
-      areasEditorFruit.lastRect = Rect.fromPoints(
-          areasEditorFruit.lastRect!.topLeft, event.localPosition);
+      areasEditorFruit.lastArea?.rect = Rect.fromPoints(
+          areasEditorFruit.lastArea!.rect.topLeft, event.localPosition);
     });
   }
 
   void _onPointerUp(PointerUpEvent event) {
-    var area = areasEditorFruit.lastRect!;
-    if (area.left.floor() == area.right.floor() &&
-        area.top.floor() == area.bottom.floor()) {
+    var rect = areasEditorFruit.lastArea!.rect;
+    if (rect.left.floor() == rect.right.floor() &&
+        rect.top.floor() == rect.bottom.floor()) {
       setState(() {
-        areasEditorFruit.lastRect = null;
-        areasEditorFruit.lastColor = null;
-        areasEditorFruit.lastElementId = null;
+        areasEditorFruit.resetData();
       });
     } else {
-      areasEditorFruit.onNewArea.call();
+      areasEditorFruit.onNewArea.call(areasEditorFruit.lastArea!);
     }
   }
 

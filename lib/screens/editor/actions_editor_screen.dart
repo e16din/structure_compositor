@@ -54,85 +54,88 @@ class ActionsEditorPage extends StatefulWidget {
   State<ActionsEditorPage> createState() => _ActionsEditorPageState();
 }
 
+String nextActionId() =>
+    'action${getLayoutBundle()!.getAllActions().length + 1}';
+
 class CodeActionFabric {
   static CodeAction create(CodeActionType type) {
     switch (type) {
       // Containers:
       case CodeActionType.doOnInit:
         return CodeAction(
-            actionId: "emptyId",
+            actionId: nextActionId(),
             type: CodeActionType.doOnInit,
             name: "doOnInit",
             isContainer: true);
       case CodeActionType.doOnClick:
         return CodeAction(
-            actionId: "emptyId",
+            actionId: nextActionId(),
             type: CodeActionType.doOnClick,
             name: "doOnClick",
             isContainer: true);
       case CodeActionType.doOnTextChanged:
         return CodeAction(
-            actionId: "emptyId",
+            actionId: nextActionId(),
             type: CodeActionType.doOnTextChanged,
             name: "doOnTextChanged",
             isContainer: true);
       case CodeActionType.doOnSwitch:
         return CodeAction(
-            actionId: "emptyId",
+            actionId: nextActionId(),
             type: CodeActionType.doOnSwitch,
             name: "doOnSwitch",
             isContainer: true);
       // Other:
       case CodeActionType.showText:
         return CodeAction(
-            actionId: "emptyId",
+            actionId: nextActionId(),
             type: CodeActionType.showText,
             name: "showText",
             isContainer: false);
       case CodeActionType.showImage:
         return CodeAction(
-            actionId: "emptyId",
+            actionId: nextActionId(),
             type: CodeActionType.showImage,
             name: "showImage",
             isContainer: false);
       case CodeActionType.showList:
         return CodeAction(
-            actionId: "emptyId",
+            actionId: nextActionId(),
             type: CodeActionType.showList,
             name: "showList",
             isContainer: false)
           ..withDataSource = true;
       case CodeActionType.showGrid:
         return CodeAction(
-            actionId: "emptyId",
+            actionId: nextActionId(),
             type: CodeActionType.showGrid,
             name: "showGrid",
             isContainer: false)
           ..withDataSource = true;
       case CodeActionType.updateDataSource:
         return CodeAction(
-            actionId: "emptyId",
+            actionId: nextActionId(),
             type: CodeActionType.updateDataSource,
             name: "updateDataSource",
             isContainer: false)
           ..withDataSource = true;
       case CodeActionType.moveToNextScreen:
         return CodeAction(
-            actionId: "emptyId",
+            actionId: nextActionId(),
             type: CodeActionType.moveToNextScreen,
             name: "moveToNextScreen",
             isContainer: false)
           ..actionColor = Colors.green;
       case CodeActionType.moveToBackScreen:
         return CodeAction(
-            actionId: "emptyId",
+            actionId: nextActionId(),
             type: CodeActionType.moveToBackScreen,
             name: "moveToBackScreen",
             isContainer: false)
           ..actionColor = Colors.green;
       case CodeActionType.todo:
         return CodeAction(
-            actionId: "emptyId",
+            actionId: nextActionId(),
             type: CodeActionType.todo,
             name: "TODO()",
             isContainer: false)
@@ -140,13 +143,13 @@ class CodeActionFabric {
           ..withComment = true;
       case CodeActionType.nothing:
         return CodeAction(
-            actionId: "emptyId",
+            actionId: nextActionId(),
             type: CodeActionType.nothing,
             name: "nothing",
             isContainer: false);
       case CodeActionType.note:
         return CodeAction(
-            actionId: "emptyId",
+            actionId: nextActionId(),
             type: CodeActionType.note,
             name: "// NOTE:",
             isContainer: false)
@@ -155,17 +158,17 @@ class CodeActionFabric {
     }
   }
 
-  static List<CodeAction> getCodeContainers() {
-    return CodeActionFabric.getContainerTypes()
-        .map((type) => CodeActionFabric.create(type))
-        .toList();
-  }
+  // static List<CodeAction> getCodeContainers() {
+  //   return CodeActionFabric.getContainerTypes()
+  //       .map((type) => CodeActionFabric.create(type))
+  //       .toList();
+  // }
 
-  static List<CodeAction> getCodeContent() {
-    return CodeActionFabric.getNotContainersTypes()
-        .map((type) => CodeActionFabric.create(type))
-        .toList();
-  }
+  // static List<CodeAction> getCodeContent() {
+  //   return CodeActionFabric.getNotContainersTypes()
+  //       .map((type) => CodeActionFabric.create(type))
+  //       .toList();
+  // }
 
   static List<CodeActionType> getContainerTypes() {
     List<CodeActionType> result = [
@@ -258,8 +261,13 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
   void initState() {
     super.initState();
 
-    areasEditorFruit.onNewArea = () {
-      _selectActions(true);
+    areasEditorFruit.onNewArea = (area) {
+      var newElement = CodeElement(
+          getLayoutBundle()!.elements.length, area.elementId, area.color)
+        ..area = area
+        ..elementId = area.elementId;
+
+      _selectActions(newElement);
     };
 
     areasEditorFruit.onSelectedLayoutChanged = (layout) {
@@ -314,29 +322,25 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     );
   }
 
-  String _nextActionId() =>
-      'action${getLayoutBundle()!.getAllActions().length + 1}';
+  void _selectActions(CodeElement element) {
+    Map<String, CodeActionType> containerActionsMap = {};
 
-  void _selectActions(bool isNewElement) {
-    Map<String, CodeAction> containerActionsMap = {};
-    var containerActions = CodeActionFabric.getCodeContainers();
-
-    for (var action in containerActions) {
-      containerActionsMap["${action.name} { }"] = action;
+    for (var actionType in CodeActionFabric.getContainerTypes()) {
+      containerActionsMap["${actionType.name} { }"] = actionType;
     }
-    var otherActions = CodeActionFabric.getCodeContent();
 
-    Map<String, CodeAction> otherActionsMap = {};
-    for (var action in otherActions) {
-      otherActionsMap["${action.name}()"] = action;
+    Map<String, CodeActionType> otherActionsMap = {};
+    for (var actionType in CodeActionFabric.getNotContainersTypes()) {
+      otherActionsMap["${actionType.name}()"] = actionType;
     }
     showMenuDialog(context, "Select action container:", containerActionsMap,
-        (selectedContainer) {
-      showMenuDialog(context, "Select action:", otherActionsMap, (selected) {
-        CodeAction innerAction = selected;
-        innerAction.actionId = _nextActionId();
-        return _onActionTypeSelected(
-            selectedContainer, innerAction, isNewElement);
+        (selectedContainerType) {
+      showMenuDialog(context, "Select action:", otherActionsMap,
+          (selectedType) {
+        CodeAction innerAction = CodeActionFabric.create(selectedType);
+        innerAction.actionId = nextActionId();
+        return _onActionTypeSelected(element,
+            CodeActionFabric.create(selectedContainerType), innerAction);
       });
     });
   }
@@ -589,11 +593,12 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
       appFruits.selectedProject!.selectedLayout = resultScreens.first;
 
       for (var layout in resultScreens) {
-        var rootElement =
-            CodeElement(layout.elements.length, "rootContainer", Colors.white)
-              ..viewTypes = [ViewType.otherView]
-              ..selectedViewType = ViewType.otherView
-              ..area = Rect.largest;
+        var rootColor = Colors.white;
+        var rootId = "rootContainer";
+        var rootElement = CodeElement(layout.elements.length, rootId, rootColor)
+          ..viewTypes = [ViewType.otherView]
+          ..selectedViewType = ViewType.otherView
+          ..area = AreaBundle(Rect.largest, rootColor, rootId);
 
         layout.elements.add(rootElement);
         _updateAllFiles(layout);
@@ -618,48 +623,32 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
         "${layout.name}_task.txt", taskController, rootNode));
   }
 
-  void _onActionTypeSelected(
-      CodeAction action, CodeAction innerAction, bool isNewElement) {
+  void _onActionTypeSelected(CodeElement element /* may be reusable */,
+      CodeAction newAction, CodeAction newInnerAction) {
     setState(() {
-      var newAction = CodeAction(
-          actionId: _nextActionId(),
-          type: CodeActionType.doOnInit,
-          name: "unknownAction {}",
-          isContainer: true)
-        ..isActive = true
-        ..name = action.name
-        ..type = action.type
-        ..isContainer = action.isContainer;
-      debugPrint("1!!!action.actionId: ${newAction.actionId}");
+      newAction.isActive = true;
 
       var layout = getLayoutBundle()!;
-      layout.activeAction = action;
+      layout.activeAction = newAction;
 
-      // var activeAction = getLayoutBundle()!.activeAction;
-
-      if (innerAction.withDataSource) {
+      if (newInnerAction.withDataSource) {
         //todo: make copy of object
-        innerAction
+        newInnerAction
           ..dataSourceId = 'dataSource${layout.getAllActions().length + 1}'
-          ..actionId = _nextActionId();
-
-        debugPrint("2!!!action.actionId: ${innerAction.actionId}");
+          ..actionId = nextActionId();
       }
-      newAction.innerActions.add(innerAction);
+      newAction.innerActions.add(newInnerAction);
 
-      var newElement = CodeElement(layout.elements.length,
-          areasEditorFruit.lastElementId!, areasEditorFruit.lastColor!)
-        ..area = areasEditorFruit.lastRect!
-        ..elementId = areasEditorFruit.lastElementId!;
-
-      layout.activeElement = newElement;
+      layout.activeElement = element;
       layout.activeElement?.actions.add(newAction);
-      layout.elements.add(newElement);
+      if (!layout.elements.contains(element)) {
+        layout.elements.add(element);
+      }
 
       var viewTypes = _getViewTypesByAction(newAction);
-      newElement.viewTypes = viewTypes;
+      element.viewTypes = viewTypes;
       if (viewTypes.isNotEmpty) {
-        newElement.selectedViewType = viewTypes.first;
+        element.selectedViewType = viewTypes.first;
       }
 
       _updateAllFiles(getLayoutBundle()!);
@@ -865,18 +854,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                       padding: const EdgeInsets.all(8),
                       child: IconButton(
                           onPressed: () {
-                            debugPrint(
-                                "0!!!action.actionId: ${action.actionId}");
-                            var activeAction = CodeAction(
-                                actionId: action.actionId,
-                                type: action.type,
-                                name: action.name,
-                                isContainer: action.isContainer)
-                              ..withComment = action.withComment
-                              ..withDataSource = action.withDataSource
-                              ..isActive = true;
-                            getLayoutBundle()!.activeAction = activeAction;
-                            _selectActions(false);
+                            _selectActions(element);
                           },
                           icon: const Icon(Icons.add_box_rounded)),
                     ),
@@ -943,8 +921,8 @@ class ElementsTreeBuilder {
   const ElementsTreeBuilder();
 
   static ElementNode buildTree(List<CodeElement> elements) {
-    elements.sort((a, b) =>
-        (b.area.width * b.area.height).compareTo(a.area.width * a.area.height));
+    elements.sort((a, b) => (b.area.rect.width * b.area.rect.height)
+        .compareTo(a.area.rect.width * a.area.rect.height));
     var root = ElementNode(elements.first);
     for (var i = 1; i < elements.length; i++) {
       _addContent(root, ElementNode(elements[i]));

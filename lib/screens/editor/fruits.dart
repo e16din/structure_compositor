@@ -10,18 +10,22 @@ var areasEditorFruit = AreasEditorFruit();
 var platformFilesEditorFruit = PlatformFilesEditorFruit();
 var actionsEditorFruit = ActionsEditorFruit();
 
-class AreasEditorFruit {
-  Rect? lastRect;
-  Color? lastColor;
-  String? lastElementId;
+class AreaBundle {
+  Rect rect;
+  Color color;
+  String elementId;
 
-  var onNewArea = () {};
+  AreaBundle(this.rect, this.color, this.elementId);
+}
+
+class AreasEditorFruit {
+  AreaBundle? lastArea;
+
+  var onNewArea = (AreaBundle area) {};
   var onSelectedLayoutChanged = (LayoutBundle? layout) {};
 
   void resetData() {
-    lastRect = null;
-    lastColor = null;
-    lastElementId = null;
+    lastArea = null;
   }
 }
 
