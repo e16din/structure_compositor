@@ -84,7 +84,7 @@ class AreasEditorState extends State<AreasEditorWidget> {
                         appFruits.selectedProject?.selectedLayout =
                             appFruits.selectedProject!.layouts.firstOrNull;
 
-                        if (layout.isLauncher) {
+                        if (layout.isLauncher && appFruits.selectedProject?.selectedLayout != null) {
                           (appFruits.selectedProject?.selectedLayout
                                   as ScreenBundle)
                               .isLauncher = true;

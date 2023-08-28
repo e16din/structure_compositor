@@ -657,16 +657,19 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     });
   }
 
-  _elementIdWidget(CodeElement element) {
+  _elementIdWidget(CodeElement element, CodeAction action) {
     final Widget result;
-    if (getLayoutBundle()!.activeElement == element) {
+    if (getLayoutBundle()!.activeAction == action) {
       result = TextFormField(
-        key: Key("${element.widgetId}.elementId"),
+        key: Key("${element.widgetId}.${action.actionId}"),
         initialValue: element.elementId,
         onChanged: (text) {
           EasyDebounce.debounce('ElementId', const Duration(milliseconds: 500),
               () {
-            _onElementIdChanged(text);
+                setState(() {
+                  element.elementId = text;
+                  _updateAllFiles(getLayoutBundle()!);
+                });
           });
         },
       );
@@ -675,22 +678,6 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
     }
 
     return result;
-  }
-
-  void _onElementIdChanged(String newElementId) {
-    var layout = getLayoutBundle()!;
-
-    setState(() {
-      var commonElementId = layout.activeElement?.elementId;
-
-      for (var element in layout.elements) {
-        if (element.elementId == commonElementId) {
-          element.elementId = newElementId;
-        }
-      }
-
-      _updateAllFiles(layout);
-    });
   }
 
   Widget _buildAdditionActionWidgets(CodeElement element, CodeAction action,
@@ -835,7 +822,7 @@ class _ActionsEditorPageState extends State<ActionsEditorPage> {
                 child: Row(
                   // mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    SizedBox(width: ID_WIDTH, child: _elementIdWidget(element)),
+                    SizedBox(width: ID_WIDTH, child: _elementIdWidget(element, action)),
                     Container(
                       child: OutlinedButton(
                           child: Text(element.selectedViewType.viewName),
