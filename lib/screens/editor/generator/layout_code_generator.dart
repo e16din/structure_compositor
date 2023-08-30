@@ -1,4 +1,5 @@
 import 'package:code_text_field/code_text_field.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:structure_compositor/screens/editor/generator/logic_code_generator.dart';
 
@@ -25,6 +26,7 @@ class LayoutCodeGenerator {
     node.containerNode?.element.selectedViewType == ViewType.grid
     );
     for (var node in itemNodes) {
+      debugPrint("itemNodes node: ${node.containerNode!.element.elementId}");
       node.containerNode?.contentNodes.remove(node);
       CodeFile itemFile = CodeFile(
           CodeLanguage.xml,

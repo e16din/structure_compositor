@@ -27,16 +27,15 @@ String makeLayoutName(ScreenBundle screen) {
 }
 
 class LogicCodeGenerator {
-
   void updateFiles(ElementNode rootNode) {
     ScreenBundle screen = getLayoutBundle()! as ScreenBundle;
-    for(var f in screen.logicFiles){
+    for (var f in screen.logicFiles) {
       f.codeController.dispose();
     }
     screen.logicFiles.clear();
 
-    var fileName = "${makeActivityName(screen)}.kt";
-    CodeFile rootFile = CodeFile(CodeLanguage.kotlin, fileName,
+    var rootFileName = "${makeActivityName(screen)}.kt";
+    CodeFile rootFile = CodeFile(CodeLanguage.kotlin, rootFileName,
         CodeController(language: kotlin, text: ""), rootNode);
     screen.logicFiles.add(rootFile);
     // var itemNodes = rootNode.getNodesWhere((node) =>
@@ -51,10 +50,90 @@ class LogicCodeGenerator {
     //   screen.layoutFiles.add(itemFile);
     // }
 
-    for (var file in screen.logicFiles) {
-      String screenLogicText = _makeActivityClass(file.elementNode!, screen);
-      file.codeController.text = screenLogicText;
+    String screenLogicText = _makeActivityClass(rootFile.elementNode!, screen);
+    rootFile.codeController.text = screenLogicText;
+
+    var nodesWithListElement = rootNode.getNodesWhere((node) =>
+        node.element.selectedViewType == ViewType.list ||
+        node.element.selectedViewType == ViewType.grid);
+    for (var node in nodesWithListElement) {
+      var adapterClassName = "${node.element.elementId.capitalizeFirst}Adapter";
+      CodeFile adapterFile = CodeFile(
+          CodeLanguage.kotlin,
+          "$adapterClassName.kt",
+          CodeController(language: kotlin, text: ""),
+          node);
+      screen.logicFiles.add(adapterFile);
+      String adapterLogicText =
+          _makeAdapterClass(adapterFile.elementNode!, screen, adapterClassName);
+      adapterFile.codeController.text = adapterLogicText;
     }
+  }
+
+  String _makeAdapterClass(
+      ElementNode node, ScreenBundle screen, String adapterClassName) {
+    var package = _getPackage();
+    var e = node.element;
+    var itemLayoutName = "item_${e.elementId.toLowerCase()}";
+    var result = "";
+    result += """
+package $package.screens
+
+import android.view.LayoutInflater
+import android.view.View
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView.ViewHolder
+import $package.data.*
+import $package.*
+
+import $package.R
+
+
+class ${adapterClassName}(
+${tab}var items: List<${e.elementId.capitalizeFirst}DataSource.Data>,
+${tab}var onItemClickListener: (position: Int, viewType: Int) -> Unit
+) : RecyclerView.Adapter<${adapterClassName}.${e.elementId.capitalizeFirst}ViewHolder>() {
+
+${tab}enum class ViewType {
+${tab}${tab}Default,
+${tab}}
+
+${tab}inner class ${e.elementId.capitalizeFirst}ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+${tab}${tab}init {
+${tab}${tab}${tab}view.setOnClickListener {
+${tab}${tab}${tab}${tab}val position = adapterPosition
+${tab}${tab}${tab}${tab}onItemClickListener.invoke(position, getItemViewType(position))
+${tab}${tab}${tab}}
+${tab}${tab}}
+${tab}}
+
+${tab}override fun getItemViewType(position: Int): Int {
+${tab}${tab}return when (items[position]) {
+${tab}${tab}${tab}else -> ViewType.Default.ordinal
+${tab}${tab}}
+${tab}}
+
+${tab}override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ${e.elementId.capitalizeFirst}ViewHolder {
+${tab}${tab}val inflater = LayoutInflater.from(parent.context)
+${tab}${tab}val holderView = inflater.inflate(R.layout.$itemLayoutName, parent, false)
+${tab}${tab}return ${e.elementId.capitalizeFirst}ViewHolder(holderView)
+${tab}}
+
+${tab}override fun getItemCount(): Int {
+${tab}${tab}return items.size
+${tab}}
+
+${tab}override fun onBindViewHolder(holder: ${e.elementId.capitalizeFirst}ViewHolder, position: Int) {
+${tab}${tab}TODO("Not yet implemented")
+${tab}}
+
+${tab}fun update(items: List<${e.elementId.capitalizeFirst}DataSource.Data>) {
+${tab}${tab}this.items = items
+${tab}${tab}notifyDataSetChanged()
+${tab}}
+}
+""";
+    return result;
   }
 
   String _makeActivityClass(ElementNode rootNode, ScreenBundle screen) {
@@ -92,7 +171,6 @@ ${tab}${tab}super.onCreate(savedInstanceState)
 ${tab}${tab}setContentView(R.layout.${makeLayoutName(screen)})""";
 
     for (var e in screen.elements) {
-
       var valName = _makeViewId(e);
       result +=
           "\n${tab}${tab}val $valName = findViewById<${_makeViewClassName(e)}>(R.id.$valName)";
@@ -112,7 +190,6 @@ ${tab}${tab}}""";
 
           break;
         case ViewType.button:
-
           break;
         case ViewType.image:
           // do nothing
@@ -125,12 +202,10 @@ ${tab}${tab}}""";
           break;
         case ViewType.list:
         case ViewType.grid:
-          var itemLayoutName = "item_${e.elementId.toLowerCase()}";
-
           var actionCode = _getActionCode(e);
 
           var layoutManager = "LinearLayoutManager(this)";
-          if(e.selectedViewType == ViewType.grid){
+          if (e.selectedViewType == ViewType.grid) {
             layoutManager = "GridLayoutManager(this, 2)";
           }
 
@@ -153,53 +228,6 @@ ${tab}${tab}$valName.adapter = adapter
 ${tab}${tab}AppDataState.${e.elementId}DataSource.onDataChanged = { newData ->
 ${tab}${tab}${tab}adapter.update(newData)
 ${tab}${tab}}
-""";
-
-          result += "\n\n";
-          addToEndCodeList += """
-${tab}class ${e.elementId.capitalizeFirst}Adapter(
-${tab}${tab}var items: List<${e.elementId.capitalizeFirst}DataSource.Data>,
-${tab}${tab}var onItemClickListener: (position: Int, viewType: Int) -> Unit
-${tab}) : RecyclerView.Adapter<${e.elementId.capitalizeFirst}Adapter.${e.elementId.capitalizeFirst}ViewHolder>() {
-
-${tab}${tab}enum class ViewType {
-${tab}${tab}${tab}Default,
-${tab}${tab}}
-
-${tab}${tab}inner class ${e.elementId.capitalizeFirst}ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-${tab}${tab}${tab}init {
-${tab}${tab}${tab}${tab}view.setOnClickListener {
-${tab}${tab}${tab}${tab}${tab}val position = adapterPosition
-${tab}${tab}${tab}${tab}${tab}onItemClickListener.invoke(position, getItemViewType(position))
-${tab}${tab}${tab}${tab}}
-${tab}${tab}${tab}}
-${tab}${tab}}
-
-${tab}${tab}override fun getItemViewType(position: Int): Int {
-${tab}${tab}${tab}return when (items[position]) {
-${tab}${tab}${tab}${tab}else -> ViewType.Default.ordinal
-${tab}${tab}${tab}}
-${tab}${tab}}
-
-${tab}${tab}override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ${e.elementId.capitalizeFirst}ViewHolder {
-${tab}${tab}${tab}val inflater = LayoutInflater.from(parent.context)
-${tab}${tab}${tab}val holderView = inflater.inflate(R.layout.$itemLayoutName, parent, false)
-${tab}${tab}${tab}return ${e.elementId.capitalizeFirst}ViewHolder(holderView)
-${tab}${tab}}
-
-${tab}${tab}override fun getItemCount(): Int {
-${tab}${tab}${tab}return items.size
-${tab}${tab}}
-
-${tab}${tab}override fun onBindViewHolder(holder: ${e.elementId.capitalizeFirst}ViewHolder, position: Int) {
-${tab}${tab}${tab}TODO("Not yet implemented")
-${tab}${tab}}
-
-${tab}${tab}fun update(items: List<${e.elementId.capitalizeFirst}DataSource.Data>) {
-${tab}${tab}${tab}this.items = items
-${tab}${tab}${tab}notifyDataSetChanged()
-${tab}${tab}}
-${tab}}
 """;
           break;
         case ViewType.otherView:

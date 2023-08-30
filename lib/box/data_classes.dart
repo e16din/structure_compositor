@@ -95,7 +95,7 @@ class ScreenBundle extends LayoutBundle {
 
 enum CodeActionType {
   // Containers
-  doOnInit,
+  doOnDataChanged,
   doOnClick,
   doOnSwitch,
   doOnTextChanged,
@@ -168,9 +168,6 @@ class ElementNode {
 
   List<ElementNode> getNodesWhere(bool Function(ElementNode node) condition) {
     List<ElementNode> nodes = [];
-    if (condition.call(this)) {
-      nodes.add(this);
-    }
 
     for (var n in contentNodes) {
       _addNodesToListWhere(nodes, n, condition);
@@ -178,13 +175,14 @@ class ElementNode {
     return nodes;
   }
 
-  void _addNodesToListWhere(List<ElementNode> result, ElementNode node,
+  void _addNodesToListWhere(List<ElementNode> nodesResult, ElementNode node,
       bool Function(ElementNode node) condition) {
+    if (condition.call(node)) {
+      nodesResult.add(node);
+    }
+
     for (var n in node.contentNodes) {
-      if (condition.call(n)) {
-        result.add(n);
-      }
-      _addNodesToListWhere(result, n, condition);
+      _addNodesToListWhere(nodesResult, n, condition);
     }
   }
 

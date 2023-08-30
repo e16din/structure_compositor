@@ -61,11 +61,11 @@ class CodeActionFabric {
   static CodeAction create(CodeActionType type) {
     switch (type) {
       // Containers:
-      case CodeActionType.doOnInit:
+      case CodeActionType.doOnDataChanged:
         return CodeAction(
             actionId: nextActionId(),
-            type: CodeActionType.doOnInit,
-            name: "doOnInit",
+            type: CodeActionType.doOnDataChanged,
+            name: "doOnDataChanged",
             isContainer: true);
       case CodeActionType.doOnClick:
         return CodeAction(
@@ -172,7 +172,7 @@ class CodeActionFabric {
 
   static List<CodeActionType> getContainerTypes() {
     List<CodeActionType> result = [
-      CodeActionType.doOnInit,
+      CodeActionType.doOnDataChanged,
       CodeActionType.doOnClick,
       CodeActionType.doOnSwitch,
       CodeActionType.doOnTextChanged,
