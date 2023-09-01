@@ -15,7 +15,7 @@ import 'package:structure_compositor/box/widget_utils.dart';
 import '../box/app_utils.dart';
 import 'aria/aria_editor_screen.dart';
 import '../box/data_classes.dart';
-import 'editor/actions_editor_screen.dart';
+import 'editor/era_editor_screen.dart';
 
 class StartScreen extends StatelessWidget {
   const StartScreen({Key? key}) : super(key: key);
@@ -179,7 +179,7 @@ class _StartPageState extends State<StartPage> {
         Get.to(const AriaEditorScreen());
         break;
       case WayToCreateCode.elemental:
-        Get.to(const ActionsEditorScreen());
+        Get.to(const EraEditorScreen());
         break;
     }
   }

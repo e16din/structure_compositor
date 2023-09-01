@@ -26,11 +26,11 @@ class LayoutCodeGenerator {
     node.containerNode?.element.selectedViewType == ViewType.grid
     );
     for (var node in itemNodes) {
-      debugPrint("itemNodes node: ${node.containerNode!.element.elementId}");
+      debugPrint("itemNodes node: ${node.containerNode!.element.id}");
       node.containerNode?.contentNodes.remove(node);
       CodeFile itemFile = CodeFile(
           CodeLanguage.xml,
-          "item_${node.element.elementId}.xml",
+          "item_${node.element.id}.xml",
           CodeController(language: xml, text: ""),
           node);
       layout.layoutFiles.add(itemFile);
@@ -56,7 +56,7 @@ class LayoutCodeGenerator {
     for (var n in node.contentNodes) {
       if (n.isContainer()) {
         var containerViewId =
-            "@+id/${n.element.elementId}${n.element.selectedViewType.viewName.removeAllWhitespace}";
+            "@+id/${n.element.id}${n.element.selectedViewType.viewName.removeAllWhitespace}";
         result += """
         <LinearLayout
               android:id="$containerViewId"
@@ -71,7 +71,7 @@ class LayoutCodeGenerator {
         </LinearLayout>
         """;
       } else {
-        var elementId = n.element.elementId;
+        var elementId = n.element.id;
         var viewId = _getViewId(n.element);
         switch (n.element.selectedViewType) {
           case ViewType.text:
@@ -154,6 +154,6 @@ class LayoutCodeGenerator {
   }
 
   String _getViewId(CodeElement e) =>
-      "@+id/${e.elementId}${e.selectedViewType.viewName.removeAllWhitespace}";
+      "@+id/${e.id}${e.selectedViewType.viewName.removeAllWhitespace}";
 
 }

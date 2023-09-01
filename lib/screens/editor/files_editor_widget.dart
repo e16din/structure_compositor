@@ -99,6 +99,9 @@ class PlatformFilesEditorState extends State<PlatformFilesEditorWidget> {
                       Container(
                           padding: const EdgeInsets.only(left: 16),
                           child: Text(files[index].fileName)),
+                      IconButton(icon: const Icon(Icons.edit, size: 16), onPressed: (){
+                        // todo: show editor to edit single file template
+                      },),
                       IconButton(
                           icon: const Icon(
                             Icons.copy,

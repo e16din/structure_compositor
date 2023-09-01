@@ -35,6 +35,7 @@ class LayoutBundle {
   List<LayoutElement> elementsMain = [];
 
   List<CodeElement> elements = [];
+  
   List<CodeFile> taskFiles = [];
   List<CodeFile> pseudoFiles = [];
 
@@ -43,29 +44,19 @@ class LayoutBundle {
   List<CodeFile> settingsFiles = [];
   List<CodeFile> dataFiles = [];
 
-  CodeAction? activeAction;
+  CodeReceptor? activeReceptor;
   CodeElement? activeElement;
 
   Map<LayoutElement, List<LayoutElement>> listLinkListItemsMap = {};
 
   LayoutBundle(this.name);
 
-  List<CodeAction> _getAllActionsFrom(List<CodeAction> actions) {
+  List<CodeAction> _getAllActionsFrom(List<CodeReceptor> receptors) {
     List<CodeAction> result = [];
-    result.addAll(actions);
-    for (var a in actions) {
-      result.addAll(_getAllActionsFrom(a.innerActions));
+    for (var r in receptors) {
+      result.addAll(r.actions);
     }
     return result;
-  }
-
-  CodeElement? getElementByAction(CodeAction action) {
-    List<CodeElement> allElements = elements;
-
-    return allElements.firstWhereOrNull((element) {
-      var actions = _getAllActionsFrom(element.actions);
-      return actions.contains(action);
-    });
   }
 
   void resetActiveElement() {
@@ -73,13 +64,13 @@ class LayoutBundle {
   }
 
   void resetActiveAction() {
-    activeAction = elements.firstOrNull?.actions.firstOrNull;
+    activeReceptor = elements.firstOrNull?.receptors.firstOrNull;
   }
 
-  List<CodeAction> getAllActions() {
-    List<CodeAction> result = [];
+  List<CodeReceptor> getAllReceptors() {
+    List<CodeReceptor> result = [];
     for (var element in elements) {
-      result.addAll(element.actions);
+      result.addAll(element.receptors);
     }
     return result;
   }
@@ -93,12 +84,14 @@ class ScreenBundle extends LayoutBundle {
 
 // ============
 
-enum CodeActionType {
-  // Containers
+enum ReceptorType {
   doOnDataChanged,
   doOnClick,
   doOnSwitch,
-  doOnTextChanged,
+  doOnTextChanged
+}
+
+enum ActionType {
   // View
   nothing,
   showText,
@@ -115,7 +108,7 @@ enum CodeActionType {
 }
 
 enum SystemType {
-  android("Android"), ios("iOS"), flutter("Flutter");
+  android("Android"), ios("iOS"), flutter("Flutter"), addNew("Add New");
 
   const SystemType(this.title);
 
@@ -203,18 +196,20 @@ class ElementNode {
 }
 
 class CodeElement {
+
+  String id;
+  Color color;
+
   int widgetId;
-  String elementId;
-  Color elementColor;
 
   List<ViewType> viewTypes = [];
   ViewType selectedViewType = ViewType.otherView;
 
   late AreaBundle area;
 
-  List<CodeAction> actions = [];
+  List<CodeReceptor> receptors = [];
 
-  CodeElement(this.widgetId, this.elementId, this.elementColor);
+  CodeElement(this.widgetId, this.id, this.color);
 
   bool contains(CodeElement elementContent) {
     return area.rect.contains(elementContent.area.rect.topLeft) &&
@@ -222,30 +217,52 @@ class CodeElement {
   }
 }
 
-class CodeAction {
-  String actionId;
+class CodeReceptor {
+  String id;
 
-  String? dataSourceId;
   String description = "";
 
-  CodeActionType type;
+  ReceptorType type;
 
   String name;
-  Color actionColor = Colors.deepPurpleAccent;
-  bool isContainer = false;
-  bool withComment = false;
-  bool withDataSource = false;
-  bool withNextScreen = false;
+  Color color = Colors.deepPurpleAccent;
 
-  List<CodeAction> innerActions = [];
+  List<CodeAction> actions = [];
 
   bool isActive = false;
 
+  CodeReceptor({required this.id,
+        required this.type,
+        required this.name});
+}
+class CodeAction {
+  String id;
+
+  String? dataSourceId;
+
+  ActionType type;
+
+  String name;
+
+  bool withComment = false;
+  bool withDataSource = false;
+
+  NextScreenValue? nextScreenValue;
+
   CodeAction(
-      {required this.actionId,
+      {required this.id,
       required this.type,
-      required this.name,
-      required this.isContainer});
+      required this.name});
+}
+class ActionValue {
+  ActionType type;
+  ActionValue(this.type);
+}
+
+class NextScreenValue extends ActionValue {
+  ScreenBundle nextScreenBundle;
+
+  NextScreenValue(this.nextScreenBundle) : super(ActionType.moveToNextScreen);
 }
 
 // ===============

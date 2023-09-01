@@ -89,10 +89,10 @@ class ActionsPainter extends CustomPainter {
     for (var element in layout.elements) {
       if (layout.activeElement == element) {
         paint.strokeWidth = 5;
-        paint.color = element.elementColor;
+        paint.color = element.color;
       } else {
         paint.strokeWidth = 3;
-        paint.color = element.elementColor.withOpacity(0.82);
+        paint.color = element.color.withOpacity(0.82);
       }
       canvas.drawRect(element.area.rect, paint);
     }

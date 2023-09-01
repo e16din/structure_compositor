@@ -57,7 +57,7 @@ class LogicCodeGenerator {
         node.element.selectedViewType == ViewType.list ||
         node.element.selectedViewType == ViewType.grid);
     for (var node in nodesWithListElement) {
-      var adapterClassName = "${node.element.elementId.capitalizeFirst}Adapter";
+      var adapterClassName = "${node.element.id.capitalizeFirst}Adapter";
       CodeFile adapterFile = CodeFile(
           CodeLanguage.kotlin,
           "$adapterClassName.kt",
@@ -74,7 +74,7 @@ class LogicCodeGenerator {
       ElementNode node, ScreenBundle screen, String adapterClassName) {
     var package = _getPackage();
     var e = node.element;
-    var itemLayoutName = "item_${e.elementId.toLowerCase()}";
+    var itemLayoutName = "item_${e.id.toLowerCase()}";
     var result = "";
     result += """
 package $package.screens
@@ -90,15 +90,15 @@ import $package.R
 
 
 class ${adapterClassName}(
-${tab}var items: List<${e.elementId.capitalizeFirst}DataSource.Data>,
+${tab}var items: List<${e.id.capitalizeFirst}DataSource.Data>,
 ${tab}var onItemClickListener: (position: Int, viewType: Int) -> Unit
-) : RecyclerView.Adapter<${adapterClassName}.${e.elementId.capitalizeFirst}ViewHolder>() {
+) : RecyclerView.Adapter<${adapterClassName}.${e.id.capitalizeFirst}ViewHolder>() {
 
 ${tab}enum class ViewType {
 ${tab}${tab}Default,
 ${tab}}
 
-${tab}inner class ${e.elementId.capitalizeFirst}ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+${tab}inner class ${e.id.capitalizeFirst}ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
 ${tab}${tab}init {
 ${tab}${tab}${tab}view.setOnClickListener {
 ${tab}${tab}${tab}${tab}val position = adapterPosition
@@ -113,21 +113,21 @@ ${tab}${tab}${tab}else -> ViewType.Default.ordinal
 ${tab}${tab}}
 ${tab}}
 
-${tab}override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ${e.elementId.capitalizeFirst}ViewHolder {
+${tab}override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ${e.id.capitalizeFirst}ViewHolder {
 ${tab}${tab}val inflater = LayoutInflater.from(parent.context)
 ${tab}${tab}val holderView = inflater.inflate(R.layout.$itemLayoutName, parent, false)
-${tab}${tab}return ${e.elementId.capitalizeFirst}ViewHolder(holderView)
+${tab}${tab}return ${e.id.capitalizeFirst}ViewHolder(holderView)
 ${tab}}
 
 ${tab}override fun getItemCount(): Int {
 ${tab}${tab}return items.size
 ${tab}}
 
-${tab}override fun onBindViewHolder(holder: ${e.elementId.capitalizeFirst}ViewHolder, position: Int) {
+${tab}override fun onBindViewHolder(holder: ${e.id.capitalizeFirst}ViewHolder, position: Int) {
 ${tab}${tab}TODO("Not yet implemented")
 ${tab}}
 
-${tab}fun update(items: List<${e.elementId.capitalizeFirst}DataSource.Data>) {
+${tab}fun update(items: List<${e.id.capitalizeFirst}DataSource.Data>) {
 ${tab}${tab}this.items = items
 ${tab}${tab}notifyDataSetChanged()
 ${tab}}
@@ -175,8 +175,28 @@ ${tab}${tab}setContentView(R.layout.${makeLayoutName(screen)})""";
       result +=
           "\n${tab}${tab}val $valName = findViewById<${_makeViewClassName(e)}>(R.id.$valName)";
 
-      for (var action in e.actions) {
-        result += _generateActionCode(e, action);
+      for (var receptor in e.receptors) {
+        if (receptor.description.isNotEmpty) {
+          result += "\n${tab}${tab}/**"
+              "\n * ${tab}${tab}Description: ${receptor.description}"
+              "\n${tab}${tab}*/";
+        }
+
+        switch (receptor.type) {
+          case ReceptorType.doOnClick:
+            // if (e.selectedViewType != ViewType.list &&
+            //     e.selectedViewType != ViewType.grid) {
+              var actionCode = _getActionCode(receptor);
+              result += """\n${tab}${tab}$valName.setOnClickListener { 
+$actionCode
+${tab}${tab}}""";
+            // }
+
+            break;
+          default:
+            // do nothing
+            break;
+        }
       }
 
       switch (e.selectedViewType) {
@@ -202,8 +222,6 @@ ${tab}${tab}}""";
           break;
         case ViewType.list:
         case ViewType.grid:
-          var actionCode = _getActionCode(e);
-
           var layoutManager = "LinearLayoutManager(this)";
           if (e.selectedViewType == ViewType.grid) {
             layoutManager = "GridLayoutManager(this, 2)";
@@ -216,16 +234,21 @@ ${tab}${tab}$valName.layoutManager = layoutManager
 ${tab}${tab}$valName.itemAnimator = DefaultItemAnimator()
 ${tab}${tab}// val dividerDrawable = ContextCompat.getDrawable(this, R.drawable.divider_drawable)
 ${tab}${tab}// $valName.addItemDecoration(DividerItemDecoration(dividerDrawable))
-${tab}${tab}val adapter = ${e.elementId.capitalizeFirst}Adapter(
-${tab}${tab}${tab}items = AppDataState.${e.elementId}DataSource.get(), 
+${tab}${tab}val adapter = ${e.id.capitalizeFirst}Adapter(
+${tab}${tab}${tab}items = AppDataState.${e.id}DataSource.get(), 
 ${tab}${tab}${tab}onItemClickListener = { position, viewType ->""";
-          result += "\n$actionCode\n";
+
+          var receptor = e.receptors.firstWhereOrNull((r) => r.type == ReceptorType.doOnClick);
+          if(receptor!=null) {
+            var actionCode = _getActionCode(receptor);
+            result += "\n$actionCode\n";
+          }
           result += """${tab}${tab}${tab}}
 ${tab}${tab})
           
 ${tab}${tab}$valName.adapter = adapter
           
-${tab}${tab}AppDataState.${e.elementId}DataSource.onDataChanged = { newData ->
+${tab}${tab}AppDataState.${e.id}DataSource.onDataChanged = { newData ->
 ${tab}${tab}${tab}adapter.update(newData)
 ${tab}${tab}}
 """;
@@ -249,7 +272,7 @@ ${tab}${tab}}
   }
 
   String _makeViewId(CodeElement e) {
-    return "${e.elementId}${e.selectedViewType.name.capitalizeFirst}";
+    return "${e.id}${e.selectedViewType.name.capitalizeFirst}";
   }
 
   String _makeViewClassName(CodeElement e) {
@@ -269,56 +292,27 @@ ${tab}${tab}}
     return result;
   }
 
-  String _getActionCode(CodeElement e) {
-    // var onButtonClick = """${tab}${tab}${tab}TODO("Not yet implemented")""";
-    //
-    // var openNextScreenBlock = e.listeners.firstWhereOrNull((listener) =>
-    //     listener.actions.any((action) =>
-    //     action.actionType == ActionCodeTypeMain.openNextScreen));
-    // if (openNextScreenBlock != null) {
-    //   var action = openNextScreenBlock.actions
-    //       .firstWhereOrNull((action) => action is OpenNextScreenBlock)
-    //   as OpenNextScreenBlock?;
-    //   onButtonClick = """
-    // ${tab}${tab}${tab}startActivity(
-    // ${tab}${tab}${tab}${tab}Intent(this, ${_makeActivityName(action!.nextScreenBundle!)}::class.java)
-    // ${tab}${tab}${tab})""";
-    // } // else {
-    //
-    // var backToPrevBlock = e.listeners.firstWhereOrNull((listener) =>
+  String _getActionCode(CodeReceptor receptor) {
+    var onButtonClick = """${tab}${tab}${tab}TODO("Not yet implemented")""";
+
+    var nextScreenValue = receptor.actions
+        .firstWhereOrNull(
+            (action) => action.type == ActionType.moveToNextScreen)
+        ?.nextScreenValue;
+    debugPrint("nextScreenValue: ${nextScreenValue?.nextScreenBundle?.name}");
+    if (nextScreenValue != null) {
+      onButtonClick = """
+    ${tab}${tab}${tab}startActivity(
+    ${tab}${tab}${tab}${tab}Intent(this, ${makeActivityName(nextScreenValue.nextScreenBundle!)}::class.java)
+    ${tab}${tab}${tab})""";
+    } // else {
+// todo:
+    // var backToPrevBlock = receptor.firstWhereOrNull((listener) =>
     //     listener.actions.any((action) =>
     //     action.actionType == ActionCodeTypeMain.backToPrevious));
     // if (backToPrevBlock != null) {
     //   onButtonClick = "${tab}${tab}${tab}onBackPressedDispatcher.onBackPressed()";
     // }
-    // return onButtonClick;
-    return "// todo: replace stub;";
-  }
-
-  String _generateActionCode(CodeElement element, CodeAction action) {
-    String result = "";
-
-    var valName = _makeViewId(element);
-
-    if (action.description.isNotEmpty) {
-      result += "\n${tab}${tab}/**"
-          "\n * ${tab}${tab}Description: ${action.description}"
-          "\n${tab}${tab}*/";
-    }
-
-    switch (action.type) {
-      case CodeActionType.doOnClick:
-        var actionCode = _getActionCode(element);
-        result += """\n${tab}${tab}$valName.setOnClickListener { 
-$actionCode
-${tab}${tab}}""";
-        //todo:
-        break;
-      default:
-        // do nothing
-        break;
-    }
-
-    return result;
+    return onButtonClick;
   }
 }
