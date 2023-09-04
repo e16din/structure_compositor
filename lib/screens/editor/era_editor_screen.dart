@@ -869,14 +869,22 @@ class _EraEditorPageState extends State<EraEditorPage> {
       appFruits.selectedProject?.layouts.forEach((element) {
         element.settingsFiles.forEach((file) async {
           var path = "$selectedDirectory/src/main";
-          await Directory(path).create(recursive: true);
+          var directory = Directory(path);
+          try {
+            directory.deleteSync(recursive: true);
+          } catch(Exception) {}
+          await directory.create(recursive: true);
           await File("$path/${file.fileName}")
               .writeAsString(file.codeController.text);
         });
 
         element.layoutFiles.forEach((file) async {
           var path = "$selectedDirectory/src/main/res/layout";
-          await Directory(path).create(recursive: true);
+          var directory = Directory(path);
+          try {
+            directory.deleteSync(recursive: true);
+          } catch(Exception) {}
+          await directory.create(recursive: true);
           await File("$path/${file.fileName}")
               .writeAsString(file.codeController.text);
         });
@@ -884,7 +892,11 @@ class _EraEditorPageState extends State<EraEditorPage> {
         element.logicFiles.forEach((file) async {
           var package = file.package.replaceAll(".", "/");
           var path = "$selectedDirectory/src/main/java/$package/screens";
-          await Directory(path).create(recursive: true);
+          var directory = Directory(path);
+          try {
+            directory.deleteSync(recursive: true);
+          } catch(Exception) {}
+          await directory.create(recursive: true);
           await File("$path/${file.fileName}")
               .writeAsString(file.codeController.text);
         });
@@ -892,11 +904,19 @@ class _EraEditorPageState extends State<EraEditorPage> {
         element.dataFiles.forEach((file) async {
           var package = file.package.replaceAll(".", "/");
           var path = "$selectedDirectory/src/main/java/$package/data";
-          await Directory(path).create(recursive: true);
+          var directory = Directory(path);
+          try {
+            directory.deleteSync(recursive: true);
+          } catch(Exception) {}
+          await directory.create(recursive: true);
           await File("$path/${file.fileName}")
               .writeAsString(file.codeController.text);
         });
       });
+
+      var message = 'Code has been saved to the directory: $selectedDirectory';
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
     }
   }
 }
