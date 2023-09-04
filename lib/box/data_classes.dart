@@ -35,7 +35,7 @@ class LayoutBundle {
   List<LayoutElement> elementsMain = [];
 
   List<CodeElement> elements = [];
-  
+
   List<CodeFile> taskFiles = [];
   List<CodeFile> pseudoFiles = [];
 
@@ -84,12 +84,7 @@ class ScreenBundle extends LayoutBundle {
 
 // ============
 
-enum ReceptorType {
-  doOnDataChanged,
-  doOnClick,
-  doOnSwitch,
-  doOnTextChanged
-}
+enum ReceptorType { doOnDataChanged, doOnClick, doOnSwitch, doOnTextChanged }
 
 enum ActionType {
   // View
@@ -108,7 +103,10 @@ enum ActionType {
 }
 
 enum SystemType {
-  android("Android"), ios("iOS"), flutter("Flutter"), addNew("Add New");
+  android("Android"),
+  ios("iOS"),
+  flutter("Flutter"),
+  addNew("Add New");
 
   const SystemType(this.title);
 
@@ -138,6 +136,8 @@ class CodeFile {
 
   CodeController codeController;
   ElementNode? elementNode;
+
+  var package = "com.example";
 
   CodeFile(this.language, this.fileName, this.codeController, this.elementNode);
 }
@@ -181,7 +181,8 @@ class ElementNode {
 
   void sortElementsByY() {
     contentNodes.sort((a, b) {
-      return a.element.area.rect.topLeft.dy.compareTo(b.element.area.rect.topLeft.dy);
+      return a.element.area.rect.topLeft.dy
+          .compareTo(b.element.area.rect.topLeft.dy);
     });
     for (var n in contentNodes) {
       _sortElementsByY(n);
@@ -190,13 +191,13 @@ class ElementNode {
 
   void _sortElementsByY(ElementNode n) {
     n.contentNodes.sort((a, b) {
-      return a.element.area.rect.topLeft.dy.compareTo(b.element.area.rect.topLeft.dy);
+      return a.element.area.rect.topLeft.dy
+          .compareTo(b.element.area.rect.topLeft.dy);
     });
   }
 }
 
 class CodeElement {
-
   String id;
   Color color;
 
@@ -231,10 +232,9 @@ class CodeReceptor {
 
   bool isActive = false;
 
-  CodeReceptor({required this.id,
-        required this.type,
-        required this.name});
+  CodeReceptor({required this.id, required this.type, required this.name});
 }
+
 class CodeAction {
   String id;
 
@@ -249,13 +249,12 @@ class CodeAction {
 
   NextScreenValue? nextScreenValue;
 
-  CodeAction(
-      {required this.id,
-      required this.type,
-      required this.name});
+  CodeAction({required this.id, required this.type, required this.name});
 }
+
 class ActionValue {
   ActionType type;
+
   ActionValue(this.type);
 }
 
@@ -305,7 +304,8 @@ class LayoutElement {
   LayoutElement(this.functionalArea, this.color, this.isInEdit);
 
   bool hasDataSource() {
-    return viewType == ViewType.list || viewType == ViewType.grid; // todo: add data sources feature
+    return viewType == ViewType.list ||
+        viewType == ViewType.grid; // todo: add data sources feature
   }
 }
 

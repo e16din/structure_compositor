@@ -50,7 +50,7 @@ class LogicCodeGenerator {
     //   screen.layoutFiles.add(itemFile);
     // }
 
-    String screenLogicText = _makeActivityClass(rootFile.elementNode!, screen);
+    String screenLogicText = _makeActivityClass(rootFile.elementNode!, screen, rootFile);
     rootFile.codeController.text = screenLogicText;
 
     var nodesWithListElement = rootNode.getNodesWhere((node) =>
@@ -65,14 +65,14 @@ class LogicCodeGenerator {
           node);
       screen.logicFiles.add(adapterFile);
       String adapterLogicText =
-          _makeAdapterClass(adapterFile.elementNode!, screen, adapterClassName);
+          _makeAdapterClass(adapterFile.elementNode!, screen, adapterClassName, adapterFile);
       adapterFile.codeController.text = adapterLogicText;
     }
   }
 
   String _makeAdapterClass(
-      ElementNode node, ScreenBundle screen, String adapterClassName) {
-    var package = _getPackage();
+      ElementNode node, ScreenBundle screen, String adapterClassName, CodeFile file) {
+    var package = file.package;
     var e = node.element;
     var itemLayoutName = "item_${e.id.toLowerCase()}";
     var result = "";
@@ -136,8 +136,8 @@ ${tab}}
     return result;
   }
 
-  String _makeActivityClass(ElementNode rootNode, ScreenBundle screen) {
-    var package = _getPackage();
+  String _makeActivityClass(ElementNode rootNode, ScreenBundle screen, CodeFile file) {
+    var package = file.package;
     var addToEndCodeList = "";
 
     var activityName = makeActivityName(screen);
@@ -267,10 +267,6 @@ ${tab}${tab}}
     return result;
   }
 
-  _getPackage() {
-    return platformFilesEditorFruit.package;
-  }
-
   String _makeViewId(CodeElement e) {
     return "${e.id}${e.selectedViewType.name.capitalizeFirst}";
   }
@@ -299,11 +295,11 @@ ${tab}${tab}}
         .firstWhereOrNull(
             (action) => action.type == ActionType.moveToNextScreen)
         ?.nextScreenValue;
-    debugPrint("nextScreenValue: ${nextScreenValue?.nextScreenBundle?.name}");
+    debugPrint("nextScreenValue: ${nextScreenValue?.nextScreenBundle.name}");
     if (nextScreenValue != null) {
       onButtonClick = """
     ${tab}${tab}${tab}startActivity(
-    ${tab}${tab}${tab}${tab}Intent(this, ${makeActivityName(nextScreenValue.nextScreenBundle!)}::class.java)
+    ${tab}${tab}${tab}${tab}Intent(this, ${makeActivityName(nextScreenValue.nextScreenBundle)}::class.java)
     ${tab}${tab}${tab})""";
     } // else {
 // todo:

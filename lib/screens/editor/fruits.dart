@@ -30,8 +30,6 @@ class AreasEditorFruit {
 }
 
 class PlatformFilesEditorFruit {
-  var package = "com.example";
-
   LayoutCodeGenerator layoutGenerator = LayoutCodeGenerator();
   LogicCodeGenerator logicGenerator = LogicCodeGenerator();
   SettingsCodeGenerator settingsGenerator = SettingsCodeGenerator();

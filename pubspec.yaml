@@ -39,7 +39,7 @@ dependencies:
   shared_preferences: ^2.0.15
   image_picker_web: ^2.1.1
   flutter_html: ^2.2.1
-  file_picker: ^5.0.1
+  file_picker: ^5.2.10
   json_serializable: ^6.6.1
   json_annotation: ^4.8.1
   file_saver: ^0.2.4

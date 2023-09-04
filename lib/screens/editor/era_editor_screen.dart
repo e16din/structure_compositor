@@ -5,11 +5,12 @@
 // import 'dart:math';
 // import 'dart:typed_data';
 
+import 'dart:io';
+
 import 'package:code_text_field/code_text_field.dart';
 import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:highlight/languages/xml.dart';
 import 'package:flutter_highlight/themes/monokai-sublime.dart';
 import 'package:highlight/languages/markdown.dart';
 import 'package:file_picker/file_picker.dart';
@@ -681,7 +682,8 @@ class _EraEditorPageState extends State<EraEditorPage> {
 
   Map<String, LayoutBundle> nextScreensMap = {};
 
-  Widget _buildEditorReceptorListItem(CodeElement element, CodeReceptor receptor) {
+  Widget _buildEditorReceptorListItem(
+      CodeElement element, CodeReceptor receptor) {
     List<Widget> innerActionWidgets = [];
     for (var innerAction in receptor.actions) {
       String innerActionName;
@@ -859,8 +861,43 @@ class _EraEditorPageState extends State<EraEditorPage> {
     });
   }
 
-  void _downloadAllProjectFiles() {
-    // todo:
+  void _downloadAllProjectFiles() async {
+    String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+    debugPrint("selectedDirectory: $selectedDirectory");
+
+    if (selectedDirectory != null) {
+      appFruits.selectedProject?.layouts.forEach((element) {
+        element.settingsFiles.forEach((file) async {
+          var path = "$selectedDirectory/src/main";
+          await Directory(path).create(recursive: true);
+          await File("$path/${file.fileName}")
+              .writeAsString(file.codeController.text);
+        });
+
+        element.layoutFiles.forEach((file) async {
+          var path = "$selectedDirectory/src/main/res/layout";
+          await Directory(path).create(recursive: true);
+          await File("$path/${file.fileName}")
+              .writeAsString(file.codeController.text);
+        });
+
+        element.logicFiles.forEach((file) async {
+          var package = file.package.replaceAll(".", "/");
+          var path = "$selectedDirectory/src/main/java/$package/screens";
+          await Directory(path).create(recursive: true);
+          await File("$path/${file.fileName}")
+              .writeAsString(file.codeController.text);
+        });
+
+        element.dataFiles.forEach((file) async {
+          var package = file.package.replaceAll(".", "/");
+          var path = "$selectedDirectory/src/main/java/$package/data";
+          await Directory(path).create(recursive: true);
+          await File("$path/${file.fileName}")
+              .writeAsString(file.codeController.text);
+        });
+      });
+    }
   }
 }
 

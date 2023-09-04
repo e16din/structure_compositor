@@ -10,5 +10,11 @@
 	<true/>
 	<key>com.apple.security.files.downloads.read-write</key>
     <true/>
+    <key>com.apple.security.network.client</key>
+    <true/>
+    <key>LSSupportsOpeningDocumentsInPlace</key>
+    <true/>
+    <key>UIFileSharingEnabled</key>
+    <true/>
 </dict>
 </plist>
