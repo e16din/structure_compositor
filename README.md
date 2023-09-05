@@ -11,8 +11,9 @@
 Идея в том чтобы ускорить разработку приложения и получать 80% результата за 20% усилий.
 
 Видео-примеры:
-- [Создаем прототип магазина волшебных товаров из набросков на бумаге](https://youtu.be/yDqQJ-uk3qo)
-- [Делаем код проекта со скриншетов Telegram](https://youtu.be/fMw-fU_FZB8)
+- [[Version 2] Показываю код приложения из скринов Telegram и рассказываю о новой версии](https://youtu.be/woOurE1w8is)
+- [[Version 1] Создаем прототип магазина волшебных товаров из набросков на бумаге](https://youtu.be/yDqQJ-uk3qo)
+- [[Version 1] Делаем код проекта со скриншетов Telegram](https://youtu.be/fMw-fU_FZB8)
 
 
 ![Structure Compositor в деле](https://github.com/e16din/structure_compositor/blob/main/screen1.png)
