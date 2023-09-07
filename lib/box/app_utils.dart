@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:get/get.dart';
+
 import 'data_classes.dart';
 
 AppDataFruits appFruits = AppDataFruits();
@@ -22,3 +24,5 @@ Future<Uint8List> readFileByte(String filePath) async {
   });
   return bytes!;
 }
+
+

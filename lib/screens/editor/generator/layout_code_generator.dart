@@ -10,6 +10,8 @@ import 'package:highlight/languages/xml.dart';
 class LayoutCodeGenerator {
 
   void updateFiles(ElementNode rootNode) {
+    var package = "com.example";
+
     var layout = getLayoutBundle()!;
     for(var f in layout.layoutFiles){
       f.codeController.dispose();
@@ -18,7 +20,7 @@ class LayoutCodeGenerator {
 
     String fileName = "${makeLayoutName(layout as ScreenBundle)}.xml";
     CodeFile rootFile = CodeFile(CodeLanguage.xml, fileName,
-        CodeController(language: xml, text: ""), rootNode);
+        CodeController(language: xml, text: ""), rootNode, "/src/main/res/layout", package);
     layout.layoutFiles.add(rootFile);
 
     var itemNodes = rootNode.getNodesWhere((node) =>
@@ -32,7 +34,7 @@ class LayoutCodeGenerator {
           CodeLanguage.xml,
           "item_${node.element.id}.xml",
           CodeController(language: xml, text: ""),
-          node);
+          node, "/src/main/res/layout", package);
       layout.layoutFiles.add(itemFile);
     }
 

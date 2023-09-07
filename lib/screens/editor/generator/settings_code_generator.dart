@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
-
+import '../../../box/app_utils.dart';
 import 'package:code_text_field/code_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -10,38 +10,80 @@ import '../../../box/app_utils.dart';
 import '../../../box/data_classes.dart';
 
 import 'package:highlight/languages/xml.dart';
+import 'package:highlight/languages/kotlin.dart';
 
 import 'logic_code_generator.dart';
 
 class SettingsCodeGenerator {
+  // /todo: request field to enter package
+  // /todo: add gradle files for build and for app
 
   void updateFiles(ElementNode rootNode) {
+    var package = "com.example";
+
     ScreenBundle screen = getLayoutBundle()! as ScreenBundle;
-    for(var f in screen.settingsFiles){
+    for (var f in screen.settingsFiles) {
       f.codeController.dispose();
     }
     screen.settingsFiles.clear();
 
     var manifest = _generateManifest();
-    CodeFile manifestFile = CodeFile(
-        CodeLanguage.xml,
-        "AndroidManifest.xml",
-        CodeController(language: xml, text: manifest),
-        null);
-
+    CodeFile manifestFile = CodeFile(CodeLanguage.xml, "AndroidManifest.xml",
+        CodeController(language: xml, text: manifest), null, "/src/main", package);
     screen.settingsFiles.add(manifestFile);
+
+    var app = _generateApp(package);
+    CodeFile appFile = CodeFile(CodeLanguage.kotlin, "App.kt",
+        CodeController(language: kotlin, text: app), null,"/src/main/java/${package.replaceAll(".", "/")}", package);
+    screen.settingsFiles.add(appFile);
+  }
+
+  String _generateApp(String package) {
+    var dataSources = "";
+    for (var screen in appFruits.selectedProject!.layouts) {
+      var allActions = screen.elements
+          .mapMany((e) => e.receptors)
+          .mapMany((r) => r.actions)
+          .where((a) => a.dataSourceValue != null);
+      allActions.forEach((action) {
+        dataSources +=
+            "\n\tval ${action.dataSourceValue?.dataSource.name.decapitalizeFirst()} = ${action.dataSourceValue?.dataSource.name}()";
+      });
+    }
+
+    var result = """package $package
+
+import android.app.Application
+import $package.data.*
+import $package.*
+
+object AppDataState {
+$dataSources
+
+}
+
+class App: Application() {
+
+    override fun onCreate() {
+        super.onCreate()
+    }
+}
+ """;
+
+    return result;
   }
 
   String _generateManifest() {
     var activities = "";
 
-    for (var screen in appFruits.selectedProject!.layouts.whereType<ScreenBundle>()) {
+    for (var screen
+        in appFruits.selectedProject!.layouts.whereType<ScreenBundle>()) {
       if (screen.isLauncher) {
         continue;
       }
 
       activities +=
-      """\n\n${tab}${tab}<activity android:name=".screens.${makeActivityName(screen)}"
+          """\n\n${tab}${tab}<activity android:name=".screens.${makeActivityName(screen)}"
 ${tab}${tab}${tab}android:exported="false"
 ${tab}${tab}${tab}android:screenOrientation="fullSensor"/>""";
     }
@@ -81,5 +123,12 @@ ${tab}</application>
     """;
 
     return result;
+  }
+}
+
+extension on String {
+  String decapitalizeFirst() {
+    if (this.isBlank == true) return this;
+    return this[0].toLowerCase() + this.substring(1).toLowerCase();
   }
 }

@@ -1,11 +1,16 @@
+import 'dart:typed_data';
+
 import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/state_manager.dart';
 import 'package:structure_compositor/box/data_classes.dart';
 
 import '../../box/app_utils.dart';
 import '../../box/widget_utils.dart';
 import 'fruits.dart';
+import 'package:image/image.dart' as img;
+import 'package:flutter/rendering.dart';
 
 class AreasEditorWidget extends StatefulWidget {
   const AreasEditorWidget({super.key});
@@ -197,4 +202,35 @@ class AreasEditorState extends State<AreasEditorWidget> {
       ),
     );
   }
+
+
+//   img.Image? photo;
+//
+//   void setImageBytes(imageBytes) {
+//     print("setImageBytes");
+//     List<int> values = imageBytes.buffer.asUint8List();
+//     photo = null;
+//     photo = img.decodeImage(values)!;
+//   }
+//
+//   // image lib uses uses KML color format, convert #AABBGGRR to regular #AARRGGBB
+//   int abgrToArgb(int argbColor) {
+//     int r = (argbColor >> 16) & 0xFF;
+//     int b = argbColor & 0xFF;
+//     return (argbColor & 0xFF00FF00) | (b << 16) | r;
+//   }
+//
+//   Future<Color> _getColor(Uint8List data) async {
+//     setImageBytes(data);
+//
+// //FractionalOffset(1.0, 0.0); //represents the top right of the [Size].
+//     double px = 1.0;
+//     double py = 0.0;
+//
+//     int pixel32 = photo!.getPixelSafe(px.toInt(), py.toInt());
+//     int hex = abgrToArgb(pixel32);
+//     print("Value of int: $hex ");
+//
+//     return Color(hex);
+//   }
 }

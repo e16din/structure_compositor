@@ -1,10 +1,6 @@
-import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:code_text_field/code_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:structure_compositor/screens/editor/fruits.dart';
 
 import '../../../box/app_utils.dart';
 import '../../../box/data_classes.dart';
@@ -28,6 +24,7 @@ String makeLayoutName(ScreenBundle screen) {
 
 class LogicCodeGenerator {
   void updateFiles(ElementNode rootNode) {
+    var package = "com.example";
     ScreenBundle screen = getLayoutBundle()! as ScreenBundle;
     for (var f in screen.logicFiles) {
       f.codeController.dispose();
@@ -36,7 +33,7 @@ class LogicCodeGenerator {
 
     var rootFileName = "${makeActivityName(screen)}.kt";
     CodeFile rootFile = CodeFile(CodeLanguage.kotlin, rootFileName,
-        CodeController(language: kotlin, text: ""), rootNode);
+        CodeController(language: kotlin, text: ""), rootNode, "/src/main/java/${package.replaceAll(".", "/")}/screens", package);
     screen.logicFiles.add(rootFile);
     // var itemNodes = rootNode.getNodesWhere((node) =>
     // node.containerNode?.element.selectedViewType == ViewType.list);
@@ -62,7 +59,7 @@ class LogicCodeGenerator {
           CodeLanguage.kotlin,
           "$adapterClassName.kt",
           CodeController(language: kotlin, text: ""),
-          node);
+          node, "/src/main/java/${package.replaceAll(".", "/")}/screens", package);
       screen.logicFiles.add(adapterFile);
       String adapterLogicText =
           _makeAdapterClass(adapterFile.elementNode!, screen, adapterClassName, adapterFile);

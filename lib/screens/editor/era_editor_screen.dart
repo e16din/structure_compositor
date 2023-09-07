@@ -572,13 +572,15 @@ class _EraEditorPageState extends State<EraEditorPage> {
     platformFilesEditorFruit.layoutGenerator.updateFiles(rootNode);
     platformFilesEditorFruit.logicGenerator.updateFiles(rootNode);
     platformFilesEditorFruit.settingsGenerator.updateFiles(rootNode);
+    platformFilesEditorFruit.dataGenerator.updateFiles(rootNode);
   }
 
   void _updateTaskFiles(ElementNode rootNode) {
+    var package = "com.example";
     var layout = getLayoutBundle()!;
     layout.taskFiles.clear();
     layout.taskFiles.add(CodeFile(CodeLanguage.markdown,
-        "${layout.name}_task.txt", taskController, rootNode));
+        "${layout.name}_task.txt", taskController, rootNode, package.replaceAll(".", "/"), package));
   }
 
   void _onActionTypeSelected(CodeElement element /* may be reusable */,
@@ -868,46 +870,44 @@ class _EraEditorPageState extends State<EraEditorPage> {
     if (selectedDirectory != null) {
       appFruits.selectedProject?.layouts.forEach((element) {
         element.settingsFiles.forEach((file) async {
-          var path = "$selectedDirectory/src/main";
+          var path = "$selectedDirectory${file.localPath}";
           var directory = Directory(path);
           try {
             directory.deleteSync(recursive: true);
-          } catch(Exception) {}
+          } catch (Exception) {}
           await directory.create(recursive: true);
           await File("$path/${file.fileName}")
               .writeAsString(file.codeController.text);
         });
 
         element.layoutFiles.forEach((file) async {
-          var path = "$selectedDirectory/src/main/res/layout";
+          var path = "$selectedDirectory/${file.localPath}";
           var directory = Directory(path);
           try {
             directory.deleteSync(recursive: true);
-          } catch(Exception) {}
+          } catch (Exception) {}
           await directory.create(recursive: true);
           await File("$path/${file.fileName}")
               .writeAsString(file.codeController.text);
         });
 
         element.logicFiles.forEach((file) async {
-          var package = file.package.replaceAll(".", "/");
-          var path = "$selectedDirectory/src/main/java/$package/screens";
+          var path = "$selectedDirectory${file.localPath}";
           var directory = Directory(path);
           try {
             directory.deleteSync(recursive: true);
-          } catch(Exception) {}
+          } catch (Exception) {}
           await directory.create(recursive: true);
           await File("$path/${file.fileName}")
               .writeAsString(file.codeController.text);
         });
 
         element.dataFiles.forEach((file) async {
-          var package = file.package.replaceAll(".", "/");
-          var path = "$selectedDirectory/src/main/java/$package/data";
+          var path = "$selectedDirectory${file.localPath}";
           var directory = Directory(path);
           try {
             directory.deleteSync(recursive: true);
-          } catch(Exception) {}
+          } catch (Exception) {}
           await directory.create(recursive: true);
           await File("$path/${file.fileName}")
               .writeAsString(file.codeController.text);

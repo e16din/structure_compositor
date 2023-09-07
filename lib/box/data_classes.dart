@@ -137,9 +137,10 @@ class CodeFile {
   CodeController codeController;
   ElementNode? elementNode;
 
-  var package = "com.example";
+  String localPath; // example: /src/main/java/com/example/screens
+  String package;
 
-  CodeFile(this.language, this.fileName, this.codeController, this.elementNode);
+  CodeFile(this.language, this.fileName, this.codeController, this.elementNode, this.localPath, this.package);
 }
 
 class ElementNode {
@@ -248,8 +249,14 @@ class CodeAction {
   bool withDataSource = false;
 
   NextScreenValue? nextScreenValue;
+  DataSourceValue? dataSourceValue;
 
   CodeAction({required this.id, required this.type, required this.name});
+}
+
+class CodeDataSource {
+  String name = "";
+  // todo:
 }
 
 class ActionValue {
@@ -262,6 +269,12 @@ class NextScreenValue extends ActionValue {
   ScreenBundle nextScreenBundle;
 
   NextScreenValue(this.nextScreenBundle) : super(ActionType.moveToNextScreen);
+}
+
+class DataSourceValue extends ActionValue {
+  CodeDataSource dataSource;
+
+  DataSourceValue(this.dataSource) : super(ActionType.updateDataSource);
 }
 
 // ===============
