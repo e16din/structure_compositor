@@ -42,7 +42,7 @@
 - [Делаю запрос на инвестиции на youtube-канале у изобретателя - Хасая Алиева](https://www.youtube.com/watch?v=rlcbn9IOsG8)
 - [Национальная технологическая инициатива](https://xn--d1ach8g.xn--c1aenmdblfega.xn--p1ai/improject-47083/ideas/82471)
 - [Planeta.ru](https://planeta.ru/campaigns/structure_compositor)
-- [Презентация для инвесторов](https://disk.yandex.ru/i/LJzCS5S4ZBzKhQ)
+- [Презентация для инвесторов](https://disk.yandex.ru/d/CcsNZaVmh9G-tg)
 
 ## Спасибо за поддержку
 
