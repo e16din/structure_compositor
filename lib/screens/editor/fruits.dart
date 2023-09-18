@@ -15,6 +15,7 @@ class AreaBundle {
   Rect rect;
   Color color;
   String elementId;
+  String backgroundHex = "";
 
   AreaBundle(this.rect, this.color, this.elementId);
 }

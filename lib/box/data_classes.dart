@@ -420,3 +420,4 @@ class LifecycleEventBlock extends ListenerCodeBlock {
     return LifecycleEventBlock()..selectedEvent = selectedEvent;
   }
 }
+
