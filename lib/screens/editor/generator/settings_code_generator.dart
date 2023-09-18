@@ -27,6 +27,11 @@ class SettingsCodeGenerator {
     }
     screen.settingsFiles.clear();
 
+    // var package = _generateManifest();
+    // CodeFile manifestFile = CodeFile(CodeLanguage.xml, "AndroidManifest.xml",
+    //     CodeController(language: xml, text: manifest), null, "/src/main", package);
+    // screen.settingsFiles.add(manifestFile);
+
     var manifest = _generateManifest();
     CodeFile manifestFile = CodeFile(CodeLanguage.xml, "AndroidManifest.xml",
         CodeController(language: xml, text: manifest), null, "/src/main", package);

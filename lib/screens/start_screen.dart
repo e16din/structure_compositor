@@ -5,6 +5,9 @@
 // import 'dart:math';
 // import 'dart:typed_data';
 
+import 'dart:io';
+
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:structure_compositor/box/widget_utils.dart';
@@ -121,6 +124,7 @@ class _StartPageState extends State<StartPage> {
     // });
 
     // var box = Hive.box(BOX_APP_DATA_TREE);
+    _createTempProjectProperties(newProject);
     setState(() {
       appFruits.projects.add(newProject);
       // var className = appDataTree.runtimeType.toString();
@@ -183,4 +187,16 @@ class _StartPageState extends State<StartPage> {
         break;
     }
   }
+
+  void _createTempProjectProperties(Project project) async {
+    final directory = await getApplicationDocumentsDirectory();
+    await directory.create(recursive: true);
+    var fileName = "${project.name.replaceAll(" ", "_").toLowerCase()}.properties";
+    debugPrint("fileName: $fileName");
+    project.propertiesPath = "${directory.path}/$fileName";
+    await File("${directory.path}/$fileName")
+        .writeAsString("");
+  }
+
+
 }

@@ -22,7 +22,11 @@ class Project {
 
   LayoutBundle? selectedLayout;
 
+  String propertiesPath = "";
+  Map<String, String> propertiesMap = {};
+
   Project({required this.name});
+
 }
 
 class LayoutBundle {

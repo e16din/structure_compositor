@@ -231,6 +231,20 @@ class _EraEditorPageState extends State<EraEditorPage> {
     };
   }
 
+  void loadProperties() async {
+    var project = appFruits.selectedProject!;
+    var projectPropertiesFile = File(project.propertiesPath);
+    var properties = await projectPropertiesFile.readAsString();
+    var lines = properties.split("\n");
+
+    for (var prop in lines) {
+      var pair = prop.split("=");
+      project.propertiesMap[pair[0]] = pair[1];
+
+      debugPrint("prop: ${prop} | value: ${pair[1]}");
+    }
+  }
+
   @override
   void dispose() {
     EasyDebounce.cancelAll();
@@ -252,6 +266,7 @@ class _EraEditorPageState extends State<EraEditorPage> {
 
   @override
   Widget build(BuildContext context) {
+    loadProperties();
     debugPrint("build!");
     return Scaffold(
       appBar: AppBar(
