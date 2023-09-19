@@ -7,6 +7,8 @@
 
 import 'dart:io';
 
+import 'package:easy_debounce/easy_debounce.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -16,9 +18,8 @@ import 'package:structure_compositor/box/widget_utils.dart';
 // import 'dart:developer' as developer;
 // import 'package:file_picker/file_picker.dart';
 import '../box/app_utils.dart';
-import 'aria/aria_editor_screen.dart';
 import '../box/data_classes.dart';
-import 'editor/era_editor_screen.dart';
+import 'editor/era_editor_widget.dart';
 
 class StartScreen extends StatelessWidget {
   const StartScreen({Key? key}) : super(key: key);
@@ -36,15 +37,6 @@ class StartScreen extends StatelessWidget {
   }
 }
 
-enum WayToCreateCode {
-  aria("Functional Areas Editor"),
-  elemental("Actions Code Editor");
-
-  final String title;
-
-  const WayToCreateCode(this.title);
-}
-
 // todo: сохранять последние открытые вкладки/ восстанавливать их при загрузке
 class StartPage extends StatefulWidget {
   const StartPage({Key? key, required this.title}) : super(key: key);
@@ -56,33 +48,17 @@ class StartPage extends StatefulWidget {
 }
 
 class _StartPageState extends State<StartPage> {
-  // var KEY_APP_DATA = 'KEY_APP_DATA';
-  // var KEY_LAST_PROJECT = 'KEY_LAST_PROJECT';
-
-  // final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
-
-  Project makeNewProject() {
-    return Project(name: "New Project");
-  }
 
   @override
   void initState() {
     super.initState();
 
-    // _prefs.then((prefs) {
-    //
-    //   if (prefs.containsKey(KEY_APP_DATA)) {
-    //     var json = prefs.getString(KEY_APP_DATA)!;
-    //     var jsonMap = jsonDecode(json);
-    //     setState(() {
-    //       appDataTree = AppDataTree.fromJson(jsonMap);
-    //     });
-    //   }
-    // });
+    _loadProjects();
   }
 
   @override
   Widget build(BuildContext context) {
+    debugPrint("appFruits.projects.length: ${appFruits.projects.length}");
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
@@ -114,22 +90,34 @@ class _StartPageState extends State<StartPage> {
     );
   }
 
-  void _onAddProjectPressed() {
-    var newProject = makeNewProject();
+  void _onAddProjectPressed() async {
+    String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
 
-    // _prefs.then((prefs) {
-    //   var jsonMap = appDataTree.toJson();
-    //   var json = jsonEncode(jsonMap);
-    //   prefs.setString(KEY_APP_DATA, json);
-    // });
+    var projectName = "New Project";
 
-    // var box = Hive.box(BOX_APP_DATA_TREE);
-    _createTempProjectProperties(newProject);
-    setState(() {
-      appFruits.projects.add(newProject);
-      // var className = appDataTree.runtimeType.toString();
-      // box.put(className, appDataTree);
-    });
+    if (selectedDirectory != null) {
+      final appDirectory = await getApplicationDocumentsDirectory();
+      var projectsListFile =
+          File("${appDirectory.path}/$PROJECTS_LIST_FILE_NAME");
+
+      String lastList = "";
+      if (await projectsListFile.exists()) {
+        lastList = await projectsListFile.readAsString();
+        lastList += "\n$selectedDirectory";
+      } else {
+        lastList += "$selectedDirectory";
+      }
+      await projectsListFile.writeAsString(lastList);
+
+      var newProject = Project(name: projectName, path: selectedDirectory);
+
+      _createTempProjectProperties(newProject);
+      setState(() {
+        appFruits.projects.add(newProject);
+        // var className = appDataTree.runtimeType.toString();
+        // box.put(className, appDataTree);
+      });
+    }
   }
 
   Widget _buildProjectRow(Project project) {
@@ -144,8 +132,14 @@ class _StartPageState extends State<StartPage> {
                 Expanded(
                   child: TextFormField(
                     initialValue: project.name,
+                    key: Key(project.path),
                     onChanged: (text) {
                       project.name = text;
+                      EasyDebounce.debounce(
+                          "project_name", const Duration(milliseconds: 550),
+                          () {
+                        _updateProjectsList(project);
+                      });
                     },
                   ),
                 ),
@@ -160,43 +154,45 @@ class _StartPageState extends State<StartPage> {
         onTap: () async {
           appFruits.selectedProject = project;
 
-          var way = WayToCreateCode.aria;
-          await showDialog(
-              context: context,
-              builder: (context) {
-                Map<String, WayToCreateCode> itemsMap = {};
-                for (var way in WayToCreateCode.values) {
-                  itemsMap[way.title] = way;
-                }
-
-                return AlertDialog(
-                    title: const Text("Select The Way:"),
-                    content: makeMenuWidget(
-                        itemsMap, context, (selected) => {way = selected}));
-              }).then((value) => {_onProjectClick(way)});
+          Get.to(const EraEditorScreen());
         });
   }
 
-  void _onProjectClick(selected) {
-    switch (selected) {
-      case WayToCreateCode.aria:
-        Get.to(const AriaEditorScreen());
-        break;
-      case WayToCreateCode.elemental:
-        Get.to(const EraEditorScreen());
-        break;
-    }
+  void _updateProjectsList(Project project) async {
+    final appDirectory = await getApplicationDocumentsDirectory();
+    var projectsListFile =
+        File("${appDirectory.path}/$PROJECTS_LIST_FILE_NAME");
+
+    String lastList = "";
+    lastList = await projectsListFile.readAsString();
+    var lines = lastList.split("\n");
+    var oldValue = lines.firstWhere((text) => text.contains(project.path));
+    var newValue = "${project.name}=${project.path}";
+    lastList = lastList.replaceFirst(oldValue, newValue);
+    debugPrint("12123: "+lastList);
+    await projectsListFile.writeAsString(lastList);
   }
 
   void _createTempProjectProperties(Project project) async {
-    final directory = await getApplicationDocumentsDirectory();
-    await directory.create(recursive: true);
-    var fileName = "${project.name.replaceAll(" ", "_").toLowerCase()}.properties";
+    var fileName =
+        "${project.name.replaceAll(" ", "_").toLowerCase()}.properties";
     debugPrint("fileName: $fileName");
-    project.propertiesPath = "${directory.path}/$fileName";
-    await File("${directory.path}/$fileName")
-        .writeAsString("");
+    project.propertiesPath = "${project.path}/$fileName";
+    await File("${project.path}/$fileName").writeAsString("");
   }
 
+  var PROJECTS_LIST_FILE_NAME = "projects_list.txt";
 
+  void _loadProjects() async {
+    final directory = await getApplicationDocumentsDirectory();
+    var file = File("${directory.path}/$PROJECTS_LIST_FILE_NAME");
+    var projectsList = await file.readAsString();
+    projectsList.split("\n").forEach((nameAndPath) {
+      var pair = nameAndPath.split("=");
+      var project = Project(name: pair[0], path: pair[1]);
+      appFruits.projects.add(project);
+    });
+
+    setState(() {});
+  }
 }

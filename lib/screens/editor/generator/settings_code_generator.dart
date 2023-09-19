@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:easy_debounce/easy_debounce.dart';
+
 import '../../../box/app_utils.dart';
 import 'package:code_text_field/code_text_field.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +13,7 @@ import '../../../box/data_classes.dart';
 
 import 'package:highlight/languages/xml.dart';
 import 'package:highlight/languages/kotlin.dart';
+import 'package:highlight/languages/properties.dart' as lang;
 
 import 'logic_code_generator.dart';
 
@@ -18,34 +21,84 @@ class SettingsCodeGenerator {
   // /todo: request field to enter package
   // /todo: add gradle files for build and for app
 
-  void updateFiles(ElementNode rootNode) {
+  void updateFiles(ElementNode rootNode) async {
     var package = "com.example";
 
     ScreenBundle screen = getLayoutBundle()! as ScreenBundle;
-    for (var f in screen.settingsFiles) {
+    Project project = appFruits.selectedProject!;
+    for (var f in project.settingsFiles) {
       f.codeController.dispose();
     }
-    screen.settingsFiles.clear();
+    project.settingsFiles.clear();
+
+    /////////
+
+    var projectPropertiesFile = File(project.propertiesPath);
+    var properties = await projectPropertiesFile.readAsString();
+    var lines = properties.split("\n");
+
+    project.propertiesMap.clear();
+    for (var prop in lines) {
+      var pair = prop.split("=");
+      if (pair.length > 1) {
+        project.propertiesMap[pair[0]] = pair[1];
+
+        debugPrint("prop: ${prop} | value: ${pair[1]}");
+      }
+    }
+
+    var fileName = project.propertiesPath.split("/").last;
+    var lastPropertyFile = project.settingsFiles
+        .firstWhereOrNull((codeFile) => codeFile.fileName == fileName);
+    if (lastPropertyFile != null) {
+      lastPropertyFile.codeController.text = properties;
+    } else {
+      CodeFile propertiesFile = CodeFile(
+          fileName,
+          CodeController(language: lang.properties, text: properties),
+          null,
+          "",
+          "",
+          "stub");
+      project.settingsFiles.add(propertiesFile);
+      propertiesFile.codeController.addListener(() {
+        EasyDebounce.debounce('properties', const Duration(milliseconds: 500),
+            ()  {
+          File(appFruits.selectedProject!.propertiesPath)
+              .writeAsString(propertiesFile.codeController.text);
+        });
+      });
+    }
 
     // var package = _generateManifest();
-    // CodeFile manifestFile = CodeFile(CodeLanguage.xml, "AndroidManifest.xml",
+    // CodeFile manifestFile = CodeFile("AndroidManifest.xml",
     //     CodeController(language: xml, text: manifest), null, "/src/main", package);
     // screen.settingsFiles.add(manifestFile);
 
     var manifest = _generateManifest();
-    CodeFile manifestFile = CodeFile(CodeLanguage.xml, "AndroidManifest.xml",
-        CodeController(language: xml, text: manifest), null, "/src/main", package);
-    screen.settingsFiles.add(manifestFile);
+    CodeFile manifestFile = CodeFile(
+        "AndroidManifest.xml",
+        CodeController(language: xml, text: manifest),
+        null,
+        "/src/main",
+        package,
+        "stub");
+    project.settingsFiles.add(manifestFile);
 
     var app = _generateApp(package);
-    CodeFile appFile = CodeFile(CodeLanguage.kotlin, "App.kt",
-        CodeController(language: kotlin, text: app), null,"/src/main/java/${package.replaceAll(".", "/")}", package);
-    screen.settingsFiles.add(appFile);
+    CodeFile appFile = CodeFile(
+        "App.kt",
+        CodeController(language: kotlin, text: app),
+        null,
+        "/src/main/java/${package.replaceAll(".", "/")}",
+        package,
+        "stub");
+    project.settingsFiles.add(appFile);
   }
 
   String _generateApp(String package) {
     var dataSources = "";
-    for (var screen in appFruits.selectedProject!.layouts) {
+    for (var screen in appFruits.selectedProject!.screens.mapMany((screen) => screen.layouts)) {
       var allActions = screen.elements
           .mapMany((e) => e.receptors)
           .mapMany((r) => r.actions)
@@ -82,19 +135,19 @@ class App: Application() {
     var activities = "";
 
     for (var screen
-        in appFruits.selectedProject!.layouts.whereType<ScreenBundle>()) {
+        in appFruits.selectedProject!.screens.whereType<ScreenBundle>()) {
       if (screen.isLauncher) {
         continue;
       }
 
       activities +=
-          """\n\n${tab}${tab}<activity android:name=".screens.${makeActivityName(screen)}"
+          """\n\n${tab}${tab}<activity android:name=".screens.${makeActivityName(screen.layouts.first)}"
 ${tab}${tab}${tab}android:exported="false"
 ${tab}${tab}${tab}android:screenOrientation="fullSensor"/>""";
     }
 
-    var launcherScreen = appFruits.selectedProject?.layouts
-        .firstWhere((screen) => screen is ScreenBundle && screen.isLauncher);
+    var launcherScreen = appFruits.selectedProject?.screens
+        .firstWhere((screen) => screen.isLauncher);
     var result = """
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
@@ -113,7 +166,7 @@ ${tab}${tab}android:theme="@style/Theme.MyApplication"
 ${tab}${tab}tools:targetApi="31">
 
 ${tab}${tab}<activity
-${tab}${tab}${tab}android:name=".screens.${makeActivityName(launcherScreen as ScreenBundle)}"
+${tab}${tab}${tab}android:name=".screens.${makeActivityName(launcherScreen!.layouts.first)}"
 ${tab}${tab}${tab}android:exported="true">
 ${tab}${tab}${tab}<intent-filter>
 ${tab}${tab}${tab}${tab}<action android:name="android.intent.action.MAIN" />

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import 'package:get/state_manager.dart';
 import 'package:structure_compositor/box/data_classes.dart';
 
@@ -29,7 +30,8 @@ class AreasEditorState extends State<AreasEditorWidget> {
 
   @override
   Widget build(BuildContext context) {
-    var layout = appFruits.selectedProject!.selectedLayout;
+    var screen = appFruits.selectedProject!.selectedScreen;
+    var layout = screen?.selectedLayout;
     if (layout?.layoutBytes != null) {
       return Container(
         width: SCREEN_IMAGE_WIDTH,
@@ -63,19 +65,16 @@ class AreasEditorState extends State<AreasEditorWidget> {
                     children: [
                       const Text("isLauncher"),
                       Checkbox(
-                          value: (layout as ScreenBundle).isLauncher,
-                          onChanged: layout.isLauncher
-                              ? null
-                              : (checked) {
-                                  for (var layout
-                                      in appFruits.selectedProject!.layouts) {
-                                    (layout as ScreenBundle).isLauncher = false;
+                          value: screen?.isLauncher,
+                          onChanged: screen!.isLauncher ? null : (checked) {
+                                  for (var s in appFruits.selectedProject!.screens) {
+                                    s.isLauncher = false;
                                   }
-                                  layout.isLauncher = checked!;
+                                  screen.isLauncher = checked!;
 
                                   areasEditorFruit.onSelectedLayoutChanged.call(
                                       appFruits
-                                          .selectedProject?.selectedLayout);
+                                          .selectedProject?.selectedScreen?.selectedLayout);
                                 }),
                     ],
                   ),
@@ -85,18 +84,19 @@ class AreasEditorState extends State<AreasEditorWidget> {
                   padding: const EdgeInsets.only(top: 12, right: 96),
                   child: IconButton(
                       onPressed: () {
-                        appFruits.selectedProject?.layouts.remove(layout);
-                        appFruits.selectedProject?.selectedLayout =
-                            appFruits.selectedProject!.layouts.firstOrNull;
+                        appFruits.selectedProject?.selectedScreen?.layouts.remove(layout);
+                        if(appFruits.selectedProject?.selectedScreen?.layouts.isEmpty == true){
+                          appFruits.selectedProject?.screens.remove(screen);
+                        }
+                        var newSelectedScreen = appFruits.selectedProject!.screens.firstOrNull;
+                        appFruits.selectedProject?.selectedScreen = newSelectedScreen;
 
-                        if (layout.isLauncher && appFruits.selectedProject?.selectedLayout != null) {
-                          (appFruits.selectedProject?.selectedLayout
-                                  as ScreenBundle)
-                              .isLauncher = true;
+                        if (screen!.isLauncher && newSelectedScreen != null) {
+                          newSelectedScreen.isLauncher = true;
                         }
 
                         areasEditorFruit.onSelectedLayoutChanged
-                            .call(appFruits.selectedProject?.selectedLayout);
+                            .call(appFruits.selectedProject?.selectedScreen?.selectedLayout);
                       },
                       icon: const Icon(Icons.delete_forever)),
                 )
@@ -105,7 +105,7 @@ class AreasEditorState extends State<AreasEditorWidget> {
             Container(
               padding: const EdgeInsets.only(top: 64, bottom: 24),
               child: Stack(fit: StackFit.expand, children: [
-                Image.memory(layout.layoutBytes!, fit: BoxFit.contain),
+                Image.memory(layout!.layoutBytes!, fit: BoxFit.contain),
                 Listener(
                     onPointerDown: _onPointerDown,
                     onPointerUp: _onPointerUp,
@@ -162,6 +162,7 @@ class AreasEditorState extends State<AreasEditorWidget> {
   String _nextElementId() => 'element${getLayoutBundle()!.elements.length + 1}';
 
   Widget _buildLayoutsListWidget() {
+    var layouts = appFruits.selectedProject!.screens.mapMany((screen)=>screen.layouts).toList();
     return Container(
       width: 96,
       decoration: BoxDecoration(
@@ -175,11 +176,11 @@ class AreasEditorState extends State<AreasEditorWidget> {
           endIndent: 24,
         ),
         scrollDirection: Axis.vertical,
-        itemCount: appFruits.selectedProject!.layouts.length,
+        itemCount: layouts.length,
         itemBuilder: (BuildContext context, int index) {
-          var layout = appFruits.selectedProject!.layouts[index];
+          var layout = layouts[index];
 
-          var borderColor = appFruits.selectedProject?.selectedLayout == layout
+          var borderColor = appFruits.selectedProject?.selectedScreen?.selectedLayout == layout
               ? Colors.indigoAccent
               : Colors.transparent;
           return Container(
@@ -192,7 +193,14 @@ class AreasEditorState extends State<AreasEditorWidget> {
                     child:
                         Image.memory(layout.layoutBytes!, fit: BoxFit.contain),
                     onTap: () {
-                      appFruits.selectedProject?.selectedLayout = layout;
+                      if(appFruits.selectedProject?.selectedScreen?.layouts.contains(layout)==true) {
+                        appFruits.selectedProject?.selectedScreen
+                            ?.selectedLayout = layout;
+                      }else {
+                        var newSelectedScreen = appFruits.selectedProject!.screens.firstWhere((screen) => screen.layouts.contains(layout));
+                        appFruits.selectedProject?.selectedScreen = newSelectedScreen;
+                        newSelectedScreen.selectedLayout = layout;
+                      }
                       areasEditorFruit.onSelectedLayoutChanged.call(layout);
                     },
                   ),

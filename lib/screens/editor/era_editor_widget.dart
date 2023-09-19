@@ -16,7 +16,7 @@ import 'package:highlight/languages/markdown.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:structure_compositor/screens/editor/areas_editor_widget.dart';
-import 'package:structure_compositor/screens/editor/files_editor_widget.dart';
+import 'package:structure_compositor/screens/editor/files_list_widget.dart';
 
 // import 'package:shared_preferences/shared_preferences.dart';
 // import 'dart:developer' as developer;
@@ -25,6 +25,8 @@ import '../../box/app_utils.dart';
 import '../../box/data_classes.dart';
 import '../../box/widget_utils.dart';
 import 'fruits.dart';
+
+import 'package:highlight/languages/properties.dart' as lang;
 
 /// * Elements - actions editor elements & areas elements
 /// * Files - code editor files
@@ -42,7 +44,7 @@ class EraEditorScreen extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const EraEditorPage(title: 'Structure Compositor: Code Editor'),
+      home: EraEditorPage(title: 'Structure Compositor: Code Editor'),
     );
   }
 }
@@ -154,8 +156,7 @@ class _EraEditorPageState extends State<EraEditorPage> {
 
   final _actionsEditorTypeSelectorState = [
     true, // Action 0
-    false, // Task 1
-    false, // Pseudo 2
+    false, // Prompts 1
   ];
 
   final _platformEditorTypeSelectorState = [
@@ -205,10 +206,6 @@ class _EraEditorPageState extends State<EraEditorPage> {
     return result;
   }
 
-  Project makeNewProject() {
-    return Project(name: "New Project");
-  }
-
   @override
   void initState() {
     super.initState();
@@ -229,20 +226,6 @@ class _EraEditorPageState extends State<EraEditorPage> {
         }
       });
     };
-  }
-
-  void loadProperties() async {
-    var project = appFruits.selectedProject!;
-    var projectPropertiesFile = File(project.propertiesPath);
-    var properties = await projectPropertiesFile.readAsString();
-    var lines = properties.split("\n");
-
-    for (var prop in lines) {
-      var pair = prop.split("=");
-      project.propertiesMap[pair[0]] = pair[1];
-
-      debugPrint("prop: ${prop} | value: ${pair[1]}");
-    }
   }
 
   @override
@@ -266,7 +249,6 @@ class _EraEditorPageState extends State<EraEditorPage> {
 
   @override
   Widget build(BuildContext context) {
-    loadProperties();
     debugPrint("build!");
     return Scaffold(
       appBar: AppBar(
@@ -324,6 +306,9 @@ class _EraEditorPageState extends State<EraEditorPage> {
       case ActionsEditModeType.none:
         // do nothing
         break;
+      case ActionsEditModeType.prompts:
+      // do nothing
+        break;
       case ActionsEditModeType.actions:
         content = Container(
           width: 640,
@@ -346,56 +331,6 @@ class _EraEditorPageState extends State<EraEditorPage> {
           ),
         );
         break;
-      case ActionsEditModeType.task:
-        if (layout != null) {
-          content = Container(
-            width: 640,
-            child: Column(
-              children: [
-                Row(
-                  // mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                        width: 120,
-                        child: TextFormField(
-                            key: Key("${layout.name}.task"),
-                            initialValue: "task.txt")),
-                    FilledButton(
-                        style: ButtonStyle(
-                            backgroundColor:
-                                MaterialStateProperty.all(Colors.blueAccent)),
-                        onPressed: () {
-                          String codeText = taskController.text;
-                          Clipboard.setData(ClipboardData(text: codeText))
-                              .then((_) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content:
-                                        Text('Copied to your clipboard!')));
-                          });
-                        },
-                        child: const Text("Copy It",
-                            style: TextStyle(fontSize: 12),
-                            textAlign: TextAlign.center)),
-                  ],
-                ),
-                CodeTheme(
-                  data: const CodeThemeData(styles: monokaiSublimeTheme),
-                  child: CodeField(
-                    controller: taskController,
-                    textStyle: const TextStyle(fontFamily: 'SourceCode'),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-        break;
-      case ActionsEditModeType.pseudo:
-        if (layout != null) {
-          content = Container(width: 640);
-        }
-        break;
     }
 
     if (platformFilesEditorFruit.selectedPlatformEditMode !=
@@ -410,7 +345,7 @@ class _EraEditorPageState extends State<EraEditorPage> {
         children: [
           Container(
             alignment: Alignment.topRight,
-            padding: const EdgeInsets.only(right: 16, top: 4, bottom: 2),
+            padding: const EdgeInsets.only(right: 40+16, top: 4, bottom: 2),
             child: ToggleButtons(
                 direction: Axis.horizontal,
                 borderRadius: const BorderRadius.all(Radius.circular(8)),
@@ -488,8 +423,7 @@ class _EraEditorPageState extends State<EraEditorPage> {
   List<Widget> _buildActionsEditorTabs() {
     return [
       Text("Actions"),
-      Text("Task"),
-      Text("Pseudo"),
+      Text("Prompts"),
     ];
   }
 
@@ -547,25 +481,28 @@ class _EraEditorPageState extends State<EraEditorPage> {
       for (var f in result.files) {
         var layoutBytes = f.bytes;
 
-        int index = appFruits.selectedProject!.layouts.length;
-        ScreenBundle screenBundle = ScreenBundle("New Screen ${index + 1}")
+        int index = appFruits.selectedProject!.screens.length;
+        ScreenBundle screenBundle = ScreenBundle()
           ..isLauncher = index == 0;
+        var layoutBundle = LayoutBundle("New Screen ${index + 1}");
+        screenBundle.layouts.add(layoutBundle);
 
-        debugPrint("Add screen: ${screenBundle.name}");
+        debugPrint("Add screen: ${layoutBundle.name}");
 
         if (layoutBytes != null) {
-          screenBundle.layoutBytes = layoutBytes;
+          layoutBundle.layoutBytes = layoutBytes;
         } else if (f.path != null) {
-          screenBundle.layoutBytes = await readFileByte(f.path!);
+          layoutBundle.layoutBytes = await readFileByte(f.path!);
         }
 
         resultScreens.add(screenBundle);
-        appFruits.selectedProject!.layouts.add(screenBundle);
+        appFruits.selectedProject!.screens.add(screenBundle);
       }
 
-      appFruits.selectedProject!.selectedLayout = resultScreens.first;
+      appFruits.selectedProject!.selectedScreen = resultScreens.first;
+      appFruits.selectedProject!.selectedScreen!.selectedLayout = appFruits.selectedProject!.selectedScreen!.layouts.first;
 
-      for (var layout in resultScreens) {
+      for (var layout in resultScreens.mapMany((screen) => screen.layouts)) {
         var rootColor = Colors.white;
         var rootId = "rootContainer";
         var rootElement = CodeElement(layout.elements.length, rootId, rootColor)
@@ -583,19 +520,11 @@ class _EraEditorPageState extends State<EraEditorPage> {
 
   void _updateAllFiles(LayoutBundle layout) {
     var rootNode = ElementsTreeBuilder.buildTree(layout.elements);
-    _updateTaskFiles(rootNode);
+    platformFilesEditorFruit.settingsGenerator.updateFiles(rootNode);
+
     platformFilesEditorFruit.layoutGenerator.updateFiles(rootNode);
     platformFilesEditorFruit.logicGenerator.updateFiles(rootNode);
-    platformFilesEditorFruit.settingsGenerator.updateFiles(rootNode);
     platformFilesEditorFruit.dataGenerator.updateFiles(rootNode);
-  }
-
-  void _updateTaskFiles(ElementNode rootNode) {
-    var package = "com.example";
-    var layout = getLayoutBundle()!;
-    layout.taskFiles.clear();
-    layout.taskFiles.add(CodeFile(CodeLanguage.markdown,
-        "${layout.name}_task.txt", taskController, rootNode, package.replaceAll(".", "/"), package));
   }
 
   void _onActionTypeSelected(CodeElement element /* may be reusable */,
@@ -670,9 +599,9 @@ class _EraEditorPageState extends State<EraEditorPage> {
       var screenName = nextScreensMap[action.id]?.name;
       screenName ??= "Select Screen";
 
-      Map<String, LayoutBundle> itemsMap = {};
-      for (var screen in appFruits.selectedProject!.layouts) {
-        itemsMap[screen.name] = screen;
+      Map<String, ScreenBundle> itemsMap = {};
+      for (var screen in appFruits.selectedProject!.screens) {
+        itemsMap[screen.layouts.first.name] = screen;
       }
 
       widgets.add(Container(
@@ -883,18 +812,18 @@ class _EraEditorPageState extends State<EraEditorPage> {
     debugPrint("selectedDirectory: $selectedDirectory");
 
     if (selectedDirectory != null) {
-      appFruits.selectedProject?.layouts.forEach((element) {
-        element.settingsFiles.forEach((file) async {
-          var path = "$selectedDirectory${file.localPath}";
-          var directory = Directory(path);
-          try {
-            directory.deleteSync(recursive: true);
-          } catch (Exception) {}
-          await directory.create(recursive: true);
-          await File("$path/${file.fileName}")
-              .writeAsString(file.codeController.text);
-        });
+      appFruits.selectedProject?.settingsFiles.forEach((file) async {
+        var path = "$selectedDirectory${file.localPath}";
+        var directory = Directory(path);
+        try {
+          directory.deleteSync(recursive: true);
+        } catch (Exception) {}
+        await directory.create(recursive: true);
+        await File("$path/${file.fileName}")
+            .writeAsString(file.codeController.text);
+      });
 
+      appFruits.selectedProject?.screens.mapMany((screen) => screen.layouts).forEach((element) {
         element.layoutFiles.forEach((file) async {
           var path = "$selectedDirectory/${file.localPath}";
           var directory = Directory(path);
@@ -959,5 +888,22 @@ class ElementsTreeBuilder {
       }
     }
     container.addContent(content);
+  }
+
+  String _makeProjectXml() {
+    var project = appFruits.selectedProject!;
+    var result = "";
+
+    var screens = "";
+    project.screens.forEach((layout) {
+
+    });
+
+    result += """<?xml version="1.0" encoding="UTF-8"?>
+<project name="${project.name}">
+    $screens
+</project>""";
+
+    return result;
   }
 }

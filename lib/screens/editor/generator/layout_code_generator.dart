@@ -18,9 +18,9 @@ class LayoutCodeGenerator {
     }
     layout.layoutFiles.clear();
 
-    String fileName = "${makeLayoutName(layout as ScreenBundle)}.xml";
-    CodeFile rootFile = CodeFile(CodeLanguage.xml, fileName,
-        CodeController(language: xml, text: ""), rootNode, "/src/main/res/layout", package);
+    String fileName = "${makeLayoutName(layout)}.xml";
+    CodeFile rootFile = CodeFile(fileName,
+        CodeController(language: xml, text: ""), rootNode, "/src/main/res/layout", package, "stub");
     layout.layoutFiles.add(rootFile);
 
     var itemNodes = rootNode.getNodesWhere((node) =>
@@ -31,10 +31,9 @@ class LayoutCodeGenerator {
       debugPrint("itemNodes node: ${node.containerNode!.element.id}");
       node.containerNode?.contentNodes.remove(node);
       CodeFile itemFile = CodeFile(
-          CodeLanguage.xml,
           "item_${node.element.id}.xml",
           CodeController(language: xml, text: ""),
-          node, "/src/main/res/layout", package);
+          node, "/src/main/res/layout", package, "stub");
       layout.layoutFiles.add(itemFile);
     }
 

@@ -50,27 +50,6 @@ void showMenuDialog(BuildContext context, String title,
   });
 }
 
-class ElementPainter extends CustomPainter {
-  List<LayoutElement> elements = [];
-
-  ElementPainter(this.elements);
-
-  @override
-  void paint(Canvas canvas, Size size) async {
-    final paint = Paint()..style = PaintingStyle.stroke;
-    for (var element in elements) {
-      paint.strokeWidth = element.isInEdit ? 2 : 5;
-      paint.color = element.isInEdit ? Colors.black : element.color;
-      canvas.drawRect(element.functionalArea, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true;
-  }
-}
-
 class ActionsPainter extends CustomPainter {
   LayoutBundle layout;
   AreaBundle? lastArea;

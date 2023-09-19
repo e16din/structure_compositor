@@ -32,6 +32,7 @@ class PlatformFilesEditorState extends State<PlatformFilesEditorWidget> {
 
   @override
   Widget build(BuildContext context) {
+    var project = appFruits.selectedProject!;
     var layout = getLayoutBundle();
 
     switch (platformFilesEditorFruit.selectedPlatformEditMode) {
@@ -39,11 +40,8 @@ class PlatformFilesEditorState extends State<PlatformFilesEditorWidget> {
         // do nothing
         break;
       case PlatformEditModeType.settings:
-        if (layout != null) {
           debugPrint("init === settings");
-          return _buildEditorWidget(layout.settingsFiles);
-        }
-        break;
+          return _buildEditorWidget(project.settingsFiles);
       case PlatformEditModeType.logic:
         if (layout != null) {
           debugPrint("init === logic");

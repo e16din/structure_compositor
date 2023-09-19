@@ -7,7 +7,7 @@ import 'data_classes.dart';
 AppDataFruits appFruits = AppDataFruits();
 
 LayoutBundle? getLayoutBundle() =>
-    appFruits.selectedProject?.selectedLayout;
+    appFruits.selectedProject?.selectedScreen?.selectedLayout;
 
 Uint8List convertToUint8List(String layoutBytes) {
   Uint8List result = Uint8List.fromList(layoutBytes.codeUnits);

@@ -8,7 +8,7 @@ import '../box/app_utils.dart';
 import '../box/widget_utils.dart';
 
 class DemoScreen extends StatelessWidget {
-  final ScreenBundle demoScreen;
+  final LayoutBundle demoScreen;
 
   const DemoScreen(this.demoScreen, {super.key});
 
@@ -25,7 +25,7 @@ class DemoScreen extends StatelessWidget {
 }
 
 class DemoPage extends StatefulWidget {
-  final ScreenBundle demoScreen;
+  final LayoutBundle demoScreen;
 
   const DemoPage(this.demoScreen, {Key? key}) : super(key: key);
 
@@ -34,13 +34,13 @@ class DemoPage extends StatefulWidget {
 }
 
 class _DemoPageState extends State<DemoPage> {
-  ScreenBundle demoScreen;
+  LayoutBundle demoScreen;
 
   _DemoPageState(this.demoScreen) {
     screensHistory.add(demoScreen);
   }
 
-  List<ScreenBundle> screensHistory = [];
+  List<LayoutBundle> screensHistory = [];
 
   @override
   void initState() {
@@ -78,7 +78,7 @@ class _DemoPageState extends State<DemoPage> {
                         child: MouseRegion(
                             cursor: SystemMouseCursors.click,
                             child: CustomPaint(
-                              painter: ElementPainter(demoScreen.elementsMain),
+                              painter: ActionsPainter(demoScreen, null),
                             )),
                       ),
                     ),
@@ -130,45 +130,45 @@ class _DemoPageState extends State<DemoPage> {
 
   void _onPointerUp(PointerEvent event) {
     setState(() {
-      for (var element in demoScreen.elementsMain) {
-        if (element.functionalArea.contains(event.localPosition)) {
-          for (var listener in element.listeners) {
-            for (var action in listener.actions) {
-              switch (action.actionType) {
-                case ActionCodeTypeMain.sendRequest:
-                  // TODO: Handle this case.
-                  break;
-                case ActionCodeTypeMain.updateWidget:
-                  // TODO: Handle this case.
-                  break;
-                case ActionCodeTypeMain.openNextScreen:
-                  setState(() {
-                    demoScreen =
-                        (action as OpenNextScreenBlock).nextScreenBundle!;
-                    screensHistory.add(demoScreen);
-                  });
-                  break;
-                case ActionCodeTypeMain.backToPrevious:
-                  _onDemoBackPressed();
-                  break;
-                case ActionCodeTypeMain.changeData:
-                  // TODO: Handle this case.
-                  break;
-                case ActionCodeTypeMain.callFunction:
-                  // TODO: Handle this case.
-                  break;
-                case ActionCodeTypeMain.showAlertDialog:
-                  // TODO: Handle this case.
-                  break;
-                case ActionCodeTypeMain.showSnackBar:
-                  // TODO: Handle this case.
-                  break;
-                case ActionCodeTypeMain.comment:
-                  // TODO: Handle this case.
-                  break;
-              }
-            }
-          }
+      for (var element in demoScreen.elements) {
+        if (element.area.rect.contains(event.localPosition)) {
+          // for (var listener in element.listeners) {
+          //   for (var action in listener.actions) {
+          //     switch (action.actionType) {
+          //       case ActionCodeTypeMain.sendRequest:
+          //         // TODO: Handle this case.
+          //         break;
+          //       case ActionCodeTypeMain.updateWidget:
+          //         // TODO: Handle this case.
+          //         break;
+          //       case ActionCodeTypeMain.openNextScreen:
+          //         setState(() {
+          //           demoScreen =
+          //               (action as OpenNextScreenBlock).nextScreenBundle!;
+          //           screensHistory.add(demoScreen);
+          //         });
+          //         break;
+          //       case ActionCodeTypeMain.backToPrevious:
+          //         _onDemoBackPressed();
+          //         break;
+          //       case ActionCodeTypeMain.changeData:
+          //         // TODO: Handle this case.
+          //         break;
+          //       case ActionCodeTypeMain.callFunction:
+          //         // TODO: Handle this case.
+          //         break;
+          //       case ActionCodeTypeMain.showAlertDialog:
+          //         // TODO: Handle this case.
+          //         break;
+          //       case ActionCodeTypeMain.showSnackBar:
+          //         // TODO: Handle this case.
+          //         break;
+          //       case ActionCodeTypeMain.comment:
+          //         // TODO: Handle this case.
+          //         break;
+          //     }
+          //   }
+          // }
         }
       }
     });

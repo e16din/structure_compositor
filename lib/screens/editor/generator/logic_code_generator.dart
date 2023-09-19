@@ -9,8 +9,8 @@ import 'package:highlight/languages/kotlin.dart';
 
 String tab = "      "; // 6 spaces
 
-String makeActivityName(ScreenBundle screen) {
-  var parts = screen.name.split(" ");
+String makeActivityName(LayoutBundle layout) {
+  var parts = layout.name.split(" ");
   var result = "";
   for (var p in parts) {
     result += p.capitalizeFirst!;
@@ -18,23 +18,23 @@ String makeActivityName(ScreenBundle screen) {
   return "${result}Activity";
 }
 
-String makeLayoutName(ScreenBundle screen) {
-  return "activity_${screen.name.toLowerCase().replaceAll(" ", "_")}";
+String makeLayoutName(LayoutBundle layout) {
+  return "activity_${layout.name.toLowerCase().replaceAll(" ", "_")}";
 }
 
 class LogicCodeGenerator {
   void updateFiles(ElementNode rootNode) {
     var package = "com.example";
-    ScreenBundle screen = getLayoutBundle()! as ScreenBundle;
-    for (var f in screen.logicFiles) {
+    LayoutBundle layout = getLayoutBundle()!;
+    for (var f in layout.logicFiles) {
       f.codeController.dispose();
     }
-    screen.logicFiles.clear();
+    layout.logicFiles.clear();
 
-    var rootFileName = "${makeActivityName(screen)}.kt";
-    CodeFile rootFile = CodeFile(CodeLanguage.kotlin, rootFileName,
-        CodeController(language: kotlin, text: ""), rootNode, "/src/main/java/${package.replaceAll(".", "/")}/screens", package);
-    screen.logicFiles.add(rootFile);
+    var rootFileName = "${makeActivityName(layout)}.kt";
+    CodeFile rootFile = CodeFile(rootFileName,
+        CodeController(language: kotlin, text: ""), rootNode, "/src/main/java/${package.replaceAll(".", "/")}/screens", package,"stub");
+    layout.logicFiles.add(rootFile);
     // var itemNodes = rootNode.getNodesWhere((node) =>
     // node.containerNode?.element.selectedViewType == ViewType.list);
     // for (var node in itemNodes) {
@@ -47,7 +47,7 @@ class LogicCodeGenerator {
     //   screen.layoutFiles.add(itemFile);
     // }
 
-    String screenLogicText = _makeActivityClass(rootFile.elementNode!, screen, rootFile);
+    String screenLogicText = _makeActivityClass(rootFile.elementNode!, layout, rootFile);
     rootFile.codeController.text = screenLogicText;
 
     var nodesWithListElement = rootNode.getNodesWhere((node) =>
@@ -56,19 +56,18 @@ class LogicCodeGenerator {
     for (var node in nodesWithListElement) {
       var adapterClassName = "${node.element.id.capitalizeFirst}Adapter";
       CodeFile adapterFile = CodeFile(
-          CodeLanguage.kotlin,
           "$adapterClassName.kt",
           CodeController(language: kotlin, text: ""),
-          node, "/src/main/java/${package.replaceAll(".", "/")}/screens", package);
-      screen.logicFiles.add(adapterFile);
+          node, "/src/main/java/${package.replaceAll(".", "/")}/screens", package, "stub");
+      layout.logicFiles.add(adapterFile);
       String adapterLogicText =
-          _makeAdapterClass(adapterFile.elementNode!, screen, adapterClassName, adapterFile);
+          _makeAdapterClass(adapterFile.elementNode!, layout, adapterClassName, adapterFile);
       adapterFile.codeController.text = adapterLogicText;
     }
   }
 
   String _makeAdapterClass(
-      ElementNode node, ScreenBundle screen, String adapterClassName, CodeFile file) {
+      ElementNode node, LayoutBundle layout, String adapterClassName, CodeFile file) {
     var package = file.package;
     var e = node.element;
     var itemLayoutName = "item_${e.id.toLowerCase()}";
@@ -133,11 +132,11 @@ ${tab}}
     return result;
   }
 
-  String _makeActivityClass(ElementNode rootNode, ScreenBundle screen, CodeFile file) {
+  String _makeActivityClass(ElementNode rootNode, LayoutBundle layout, CodeFile file) {
     var package = file.package;
     var addToEndCodeList = "";
 
-    var activityName = makeActivityName(screen);
+    var activityName = makeActivityName(layout);
     var result = """
 package $package.screens
 
@@ -165,9 +164,9 @@ import $package.R
 class ${activityName} : AppCompatActivity() {
 ${tab}override fun onCreate(savedInstanceState: Bundle?) {
 ${tab}${tab}super.onCreate(savedInstanceState)
-${tab}${tab}setContentView(R.layout.${makeLayoutName(screen)})""";
+${tab}${tab}setContentView(R.layout.${makeLayoutName(layout)})""";
 
-    for (var e in screen.elements) {
+    for (var e in layout.elements) {
       var valName = _makeViewId(e);
       result +=
           "\n${tab}${tab}val $valName = findViewById<${_makeViewClassName(e)}>(R.id.$valName)";
@@ -292,11 +291,11 @@ ${tab}${tab}}
         .firstWhereOrNull(
             (action) => action.type == ActionType.moveToNextScreen)
         ?.nextScreenValue;
-    debugPrint("nextScreenValue: ${nextScreenValue?.nextScreenBundle.name}");
+    debugPrint("nextScreenValue: ${nextScreenValue?.nextScreenBundle.layouts.first.name}");
     if (nextScreenValue != null) {
       onButtonClick = """
     ${tab}${tab}${tab}startActivity(
-    ${tab}${tab}${tab}${tab}Intent(this, ${makeActivityName(nextScreenValue.nextScreenBundle)}::class.java)
+    ${tab}${tab}${tab}${tab}Intent(this, ${makeActivityName(nextScreenValue.nextScreenBundle.layouts.first)}::class.java)
     ${tab}${tab}${tab})""";
     } // else {
 // todo:
