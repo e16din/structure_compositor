@@ -14,9 +14,8 @@ var actionsEditorFruit = ActionsEditorFruit();
 class AreaBundle {
   Rect rect;
   Color color;
-  String elementId;
 
-  AreaBundle(this.rect, this.color, this.elementId);
+  AreaBundle(this.rect, this.color);
 }
 
 class AreasEditorFruit {

@@ -34,13 +34,10 @@ class Project {
 
 class LayoutBundle {
   String name;
-
-  String? layoutPath;
-
-  Uint8List? layoutBytes;
-
+  String? path;
   List<CodeElement> elements = [];
-
+  
+  Uint8List? layoutBytes;
   List<CodeFile> layoutFiles = [];
   List<CodeFile> logicFiles = [];
   List<CodeFile> dataFiles = [];
@@ -57,17 +54,11 @@ class LayoutBundle {
   void resetActiveAction() {
     activeReceptor = elements.firstOrNull?.receptors.firstOrNull;
   }
-
-  List<CodeReceptor> getAllReceptors() {
-    List<CodeReceptor> result = [];
-    for (var element in elements) {
-      result.addAll(element.receptors);
-    }
-    return result;
-  }
 }
 
 class ScreenBundle {
+  
+  String name = "";
 
   var isLauncher = false;
 
@@ -198,9 +189,6 @@ class ElementNode {
 
 class CodeElement {
   String id;
-  Color color;
-
-  int widgetId;
 
   List<ViewType> viewTypes = [];
   ViewType selectedViewType = ViewType.otherView;
@@ -209,7 +197,7 @@ class CodeElement {
 
   List<CodeReceptor> receptors = [];
 
-  CodeElement(this.widgetId, this.id, this.color);
+  CodeElement(this.id);
 
   bool contains(CodeElement elementContent) {
     return area.rect.contains(elementContent.area.rect.topLeft) &&
@@ -219,13 +207,10 @@ class CodeElement {
 
 class CodeReceptor {
   String id;
+  String name;
 
   String description = "";
-
   ReceptorType type;
-
-  String name;
-  Color color = Colors.deepPurpleAccent;
 
   List<CodeAction> actions = [];
 
@@ -236,15 +221,11 @@ class CodeReceptor {
 
 class CodeAction {
   String id;
-
-  String? dataSourceId;
+  String name;
 
   ActionType type;
 
-  String name;
-
-  bool withComment = false;
-  bool withDataSource = false;
+  String description = "";
 
   NextScreenValue? nextScreenValue;
   DataSourceValue? dataSourceValue;
@@ -270,6 +251,7 @@ class NextScreenValue extends ActionValue {
 }
 
 class DataSourceValue extends ActionValue {
+  String? dataSourceId;
   CodeDataSource dataSource;
 
   DataSourceValue(this.dataSource) : super(ActionType.updateDataSource);

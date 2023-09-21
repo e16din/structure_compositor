@@ -134,8 +134,7 @@ class AreasEditorState extends State<AreasEditorWidget> {
     setState(() {
       areasEditorFruit.lastArea = AreaBundle(
           Rect.fromPoints(event.localPosition, event.localPosition),
-          getNextColor(getLayoutBundle()?.elements.length),
-          _nextElementId());
+          getNextColor(getLayoutBundle()?.elements.length));
     });
   }
 
@@ -158,8 +157,6 @@ class AreasEditorState extends State<AreasEditorWidget> {
       areasEditorFruit.onNewArea.call(areasEditorFruit.lastArea!);
     }
   }
-
-  String _nextElementId() => 'element${getLayoutBundle()!.elements.length + 1}';
 
   Widget _buildLayoutsListWidget() {
     var layouts = appFruits.selectedProject!.screens.mapMany((screen)=>screen.layouts).toList();

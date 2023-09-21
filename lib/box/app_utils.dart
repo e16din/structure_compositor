@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui';
 import 'package:get/get.dart';
 
 import 'data_classes.dart';
@@ -23,6 +24,10 @@ Future<Uint8List> readFileByte(String filePath) async {
     bytes = Uint8List.fromList(value);
   });
   return bytes!;
+}
+
+String toHex(Color color) {
+  return '${color.value.toRadixString(16)}';
 }
 
 

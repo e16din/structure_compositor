@@ -59,7 +59,13 @@ class EraEditorPage extends StatefulWidget {
 }
 
 String nextActionId() =>
-    'action${getLayoutBundle()!.getAllReceptors().length + 1}';
+    'action${getLayoutBundle()!.elements
+        .mapMany((e) => e.receptors)
+        .mapMany((r) => r.actions).length + 1}';
+
+String nextReceptorId() =>
+    'receptor${getLayoutBundle()!.elements
+        .mapMany((e) => e.receptors).length + 1}';
 
 class CodeActionFabric {
   static CodeReceptor createReceptor(ReceptorType type) {
@@ -89,17 +95,17 @@ class CodeActionFabric {
       case ActionType.showList:
         return CodeAction(
             id: nextActionId(), type: ActionType.showList, name: "showList")
-          ..withDataSource = true;
+          ..dataSourceValue = DataSourceValue(CodeDataSource());
       case ActionType.showGrid:
         return CodeAction(
             id: nextActionId(), type: ActionType.showGrid, name: "showGrid")
-          ..withDataSource = true;
+          ..dataSourceValue = DataSourceValue(CodeDataSource());
       case ActionType.updateDataSource:
         return CodeAction(
             id: nextActionId(),
             type: ActionType.updateDataSource,
             name: "updateDataSource")
-          ..withDataSource = true;
+          ..dataSourceValue = DataSourceValue(CodeDataSource());
       case ActionType.moveToNextScreen:
         return CodeAction(
             id: nextActionId(),
@@ -112,15 +118,13 @@ class CodeActionFabric {
             name: "moveToBackScreen");
       case ActionType.todo:
         return CodeAction(
-            id: nextActionId(), type: ActionType.todo, name: "TODO()")
-          ..withComment = true;
+            id: nextActionId(), type: ActionType.todo, name: "TODO()");
       case ActionType.nothing:
         return CodeAction(
             id: nextActionId(), type: ActionType.nothing, name: "nothing");
       case ActionType.note:
         return CodeAction(
-            id: nextActionId(), type: ActionType.note, name: "// NOTE:")
-          ..withComment = true;
+            id: nextActionId(), type: ActionType.note, name: "// NOTE:");
     }
   }
 
@@ -206,15 +210,17 @@ class _EraEditorPageState extends State<EraEditorPage> {
     return result;
   }
 
+  String _nextElementId() => 'element${getLayoutBundle()!.elements.length + 1}';
+
   @override
   void initState() {
     super.initState();
 
     areasEditorFruit.onNewArea = (area) {
-      var newElement = CodeElement(
-          getLayoutBundle()!.elements.length, area.elementId, area.color)
+      var elementId = _nextElementId();
+      var newElement = CodeElement(elementId)
         ..area = area
-        ..id = area.elementId;
+        ..id = elementId;
 
       _selectActions(newElement);
     };
@@ -301,13 +307,13 @@ class _EraEditorPageState extends State<EraEditorPage> {
     var layout = getLayoutBundle();
 
     Widget content = Container(width: 640);
-    var allReceptors = layout?.getAllReceptors();
+    var allReceptors = layout?.elements.mapMany((e) => e.receptors).toList();
     switch (actionsEditorFruit.selectedActionsEditMode) {
       case ActionsEditModeType.none:
         // do nothing
         break;
       case ActionsEditModeType.prompts:
-      // do nothing
+        // do nothing
         break;
       case ActionsEditModeType.actions:
         content = Container(
@@ -345,7 +351,7 @@ class _EraEditorPageState extends State<EraEditorPage> {
         children: [
           Container(
             alignment: Alignment.topRight,
-            padding: const EdgeInsets.only(right: 40+16, top: 4, bottom: 2),
+            padding: const EdgeInsets.only(right: 40 + 16, top: 4, bottom: 2),
             child: ToggleButtons(
                 direction: Axis.horizontal,
                 borderRadius: const BorderRadius.all(Radius.circular(8)),
@@ -482,8 +488,7 @@ class _EraEditorPageState extends State<EraEditorPage> {
         var layoutBytes = f.bytes;
 
         int index = appFruits.selectedProject!.screens.length;
-        ScreenBundle screenBundle = ScreenBundle()
-          ..isLauncher = index == 0;
+        ScreenBundle screenBundle = ScreenBundle()..isLauncher = index == 0;
         var layoutBundle = LayoutBundle("New Screen ${index + 1}");
         screenBundle.layouts.add(layoutBundle);
 
@@ -500,15 +505,16 @@ class _EraEditorPageState extends State<EraEditorPage> {
       }
 
       appFruits.selectedProject!.selectedScreen = resultScreens.first;
-      appFruits.selectedProject!.selectedScreen!.selectedLayout = appFruits.selectedProject!.selectedScreen!.layouts.first;
+      appFruits.selectedProject!.selectedScreen!.selectedLayout =
+          appFruits.selectedProject!.selectedScreen!.layouts.first;
 
       for (var layout in resultScreens.mapMany((screen) => screen.layouts)) {
         var rootColor = Colors.white;
         var rootId = "rootContainer";
-        var rootElement = CodeElement(layout.elements.length, rootId, rootColor)
+        var rootElement = CodeElement(rootId)
           ..viewTypes = [ViewType.otherView]
           ..selectedViewType = ViewType.otherView
-          ..area = AreaBundle(Rect.largest, rootColor, rootId);
+          ..area = AreaBundle(Rect.largest, rootColor);
 
         layout.elements.add(rootElement);
         _updateAllFiles(layout);
@@ -535,10 +541,10 @@ class _EraEditorPageState extends State<EraEditorPage> {
       var layout = getLayoutBundle()!;
       layout.activeReceptor = newReceptor;
 
-      if (newAction.withDataSource) {
+      if (newAction.dataSourceValue != null) {
         //todo: make copy of object
         newAction
-          ..dataSourceId = 'dataSource${layout.getAllReceptors().length + 1}'
+          ..dataSourceValue?.dataSourceId = 'dataSource${layout.elements.mapMany((e) => e.receptors).length + 1}'
           ..id = nextActionId();
       }
       newReceptor.actions.add(newAction);
@@ -565,7 +571,7 @@ class _EraEditorPageState extends State<EraEditorPage> {
     final Widget result;
     if (getLayoutBundle()!.activeReceptor == receptor) {
       result = TextFormField(
-        key: Key("${element.widgetId}.${receptor.id}"),
+        key: Key("${element.id}.${receptor.id}"),
         initialValue: element.id,
         onChanged: (text) {
           EasyDebounce.debounce('ElementId', const Duration(milliseconds: 500),
@@ -588,7 +594,7 @@ class _EraEditorPageState extends State<EraEditorPage> {
       CodeAction action, String actionName) {
     List<Widget> widgets = [];
 
-    if (action.withDataSource) {
+    if (action.dataSourceValue != null) {
       widgets.add(Container(
         child: FilledButton(
             onPressed: () {}, child: Text("${element.id}DataSource")),
@@ -631,13 +637,8 @@ class _EraEditorPageState extends State<EraEditorPage> {
   Widget _buildEditorReceptorListItem(
       CodeElement element, CodeReceptor receptor) {
     List<Widget> innerActionWidgets = [];
-    for (var innerAction in receptor.actions) {
-      String innerActionName;
-      if (innerAction.withComment) {
-        innerActionName = innerAction.name;
-      } else {
-        innerActionName = "${innerAction.name}()";
-      }
+    for (var action in receptor.actions) {
+      String innerActionName = "${action.name}()";
 
       var innerActionWidget = Container(
           alignment: Alignment.topLeft,
@@ -656,8 +657,8 @@ class _EraEditorPageState extends State<EraEditorPage> {
                     child: IconButton(
                         onPressed: () {
                           setState(() {
-                            receptor.actions.remove(innerAction);
-                            nextScreensMap.remove(innerAction.id);
+                            receptor.actions.remove(action);
+                            nextScreensMap.remove(action.id);
                           });
                         },
                         icon: const Icon(Icons.remove_circle)),
@@ -665,7 +666,7 @@ class _EraEditorPageState extends State<EraEditorPage> {
                 ],
               ),
               _buildAdditionActionWidgets(
-                  element, receptor, innerAction, innerActionName)
+                  element, receptor, action, innerActionName)
             ],
           ));
       innerActionWidgets.add(innerActionWidget);
@@ -691,8 +692,8 @@ class _EraEditorPageState extends State<EraEditorPage> {
       focusColor: Colors.white,
       highlightColor: Colors.white,
       child: Container(
-        decoration:
-            BoxDecoration(border: Border.all(color: element.color, width: 4)),
+        decoration: BoxDecoration(
+            border: Border.all(color: element.area.color, width: 4)),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
@@ -823,7 +824,9 @@ class _EraEditorPageState extends State<EraEditorPage> {
             .writeAsString(file.codeController.text);
       });
 
-      appFruits.selectedProject?.screens.mapMany((screen) => screen.layouts).forEach((element) {
+      appFruits.selectedProject?.screens
+          .mapMany((screen) => screen.layouts)
+          .forEach((element) {
         element.layoutFiles.forEach((file) async {
           var path = "$selectedDirectory/${file.localPath}";
           var directory = Directory(path);
@@ -895,8 +898,48 @@ class ElementsTreeBuilder {
     var result = "";
 
     var screens = "";
-    project.screens.forEach((layout) {
+    project.screens.forEach((screen) {
+      String layouts = "";
+      screen.layouts.forEach((layout) {
+        String elements = "";
+        layout.elements.forEach((element) {
+          String area =
+          """<area rect="${element.area.rect}" color="${toHex(element.area.color)}"" />\n\n""";
 
+          String receptors = "";
+          element.receptors.forEach((receptor) {
+            String actions = "";
+            receptor.actions.forEach((action) {
+              actions+="""
+              <action id="${action.id}" name="${action.name}" type="${action.type}" description="${action.description}">
+$dataSourceValues
+$nextScreenValues
+              </action>\n\n""";
+            });
+
+            receptors+="""
+              <receptor id="${receptor.id}" name="${receptor.name}" description="${receptor.description}" type="${receptor.type}">
+$actions
+              </receptor>\n\n""";
+          });
+          elements += """
+              <element id="${element.id}" viewTypes="${element.viewTypes.toString()}" selectedViewType="${element.selectedViewType}">
+$area
+
+$receptors
+              </element>\n\n""";
+        });
+
+        layouts += """
+          <layout name="${layout.name}" path="${layout.path}">
+$elements
+          </layout>\n\n""";
+      });
+
+      screens += """
+      <screen name="${screen.name}" isLauncher="${screen.isLauncher}">
+$layouts
+      </screen>\n\n""";
     });
 
     result += """<?xml version="1.0" encoding="UTF-8"?>
