@@ -98,9 +98,9 @@ class _StartPageState extends State<StartPage> {
       rulesListFile.create(recursive: true);
 
       var defaultRules = """
-Android=/Volumes/Macintosh HD/Users/N1_IT_businesman_of_rostov/Downloads/TestProject
-iOS=/Volumes/Macintosh HD/Users/N1_IT_businesman_of_rostov/Downloads/TestProject2
-Flutter=/Volumes/Macintosh HD/Users/N1_IT_businesman_of_rostov/Downloads/Test3
+Android=${selectedDirectory.path}/android.rules
+iOS=${selectedDirectory.path}/ios.rules
+Flutter=${selectedDirectory.path}/flutter.rules
 """;
       await rulesListFile.writeAsString(defaultRules);
       _initRulesMap(defaultRules);
