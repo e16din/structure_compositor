@@ -252,21 +252,20 @@ class _EraEditorPageState extends State<EraEditorPage> {
                   padding: const EdgeInsets.only(right: 16),
                   child: FilledButton(
                       onPressed: () {
-                        // todo: add rules directory, get rules from files, remove SystemType
                         // todo: move generator code templates to files
-                        Map<String, SystemType> itemsMap = {};
-                        for (var system in SystemType.values) {
-                          itemsMap[system.title] = system;
+                        Map<String, String> itemsMap = {};
+                        for (var ruleName in appFruits.rulesMap.keys) {
+                          itemsMap[ruleName] = ruleName;
                         }
                         showMenuDialog(
                             context, "Select Generation Rules", itemsMap,
                             (selected) {
                           setState(() {
-                            appFruits.selectedProject!.systemType = selected;
+                            appFruits.selectedProject!.selectedRule = selected;
                           });
                         });
                       },
-                      child: Text(appFruits.selectedProject!.systemType.title)),
+                      child: Text(appFruits.selectedProject!.selectedRule)),
                 ),
                 ToggleButtons(
                     direction: Axis.horizontal,

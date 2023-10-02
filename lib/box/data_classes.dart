@@ -9,6 +9,8 @@ class AppDataFruits {
 
   Project? selectedProject;
 
+  Map<String, String> rulesMap = {}; // NOTE: rule name => rule path
+
   AppDataFruits();
 }
 
@@ -18,7 +20,7 @@ class Project {
 
   String path = "";
 
-  SystemType systemType = SystemType.android;
+  String selectedRule = "";
 
   List<ScreenBundle> screens = [];
 
@@ -88,19 +90,19 @@ enum ActionType {
   note,
 }
 
-enum SystemType {
-  //todo: load from files
-  android("Android"),
-  ios("iOS"),
-  flutter("Flutter"),
-  ai_prompt("AI Prompt"),
-  pseudo_code("Pseudo Code"),
-  addNew("Add New");
-
-  const SystemType(this.title);
-
-  final String title;
-}
+// enum SystemType {
+//   //todo: load from files
+//   android("Android"),
+//   ios("iOS"),
+//   flutter("Flutter"),
+//   ai_prompt("AI Prompt"),
+//   pseudo_code("Pseudo Code"),
+//   addNew("Add New");
+//
+//   const SystemType(this.title);
+//
+//   final String title;
+// }
 
 enum ActionsEditModeType {
   none,
