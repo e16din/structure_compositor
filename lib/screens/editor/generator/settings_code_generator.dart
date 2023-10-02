@@ -15,6 +15,7 @@ import 'package:highlight/languages/xml.dart';
 import 'package:highlight/languages/kotlin.dart';
 import 'package:highlight/languages/properties.dart' as lang;
 
+import '../../start_screen.dart';
 import 'logic_code_generator.dart';
 
 class SettingsCodeGenerator {
@@ -24,7 +25,7 @@ class SettingsCodeGenerator {
   void updateFiles(ElementNode rootNode) async {
     var package = "com.example";
 
-    ScreenBundle screen = getLayoutBundle()! as ScreenBundle;
+    // ScreenBundle screen = getScreenBundle()!;
     Project project = appFruits.selectedProject!;
     for (var f in project.settingsFiles) {
       f.codeController.dispose();
@@ -33,7 +34,7 @@ class SettingsCodeGenerator {
 
     /////////
 
-    var projectPropertiesFile = File(project.propertiesPath);
+    var projectPropertiesFile = File("${project.path}/$PROPERTIES_PATH");
     var properties = await projectPropertiesFile.readAsString();
     var lines = properties.split("\n");
 
@@ -47,14 +48,16 @@ class SettingsCodeGenerator {
       }
     }
 
-    var fileName = project.propertiesPath.split("/").last;
+    var propertyPath = "${project.path}/$PROPERTIES_PATH";
     var lastPropertyFile = project.settingsFiles
-        .firstWhereOrNull((codeFile) => codeFile.fileName == fileName);
+        .firstWhereOrNull((codeFile) => codeFile.fileName == propertyPath);
+
     if (lastPropertyFile != null) {
       lastPropertyFile.codeController.text = properties;
+
     } else {
       CodeFile propertiesFile = CodeFile(
-          fileName,
+          propertyPath,
           CodeController(language: lang.properties, text: properties),
           null,
           "",
@@ -64,7 +67,7 @@ class SettingsCodeGenerator {
       propertiesFile.codeController.addListener(() {
         EasyDebounce.debounce('properties', const Duration(milliseconds: 500),
             ()  {
-          File(appFruits.selectedProject!.propertiesPath)
+          File("${appFruits.selectedProject!.path}/$PROPERTIES_PATH")
               .writeAsString(propertiesFile.codeController.text);
         });
       });

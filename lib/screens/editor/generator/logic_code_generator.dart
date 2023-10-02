@@ -291,11 +291,12 @@ ${tab}${tab}}
         .firstWhereOrNull(
             (action) => action.type == ActionType.moveToNextScreen)
         ?.nextScreenValue;
-    debugPrint("nextScreenValue: ${nextScreenValue?.nextScreenBundle.layouts.first.name}");
-    if (nextScreenValue != null) {
-      onButtonClick = """
+      if (nextScreenValue != null) {
+        var nextScreenBundle = appFruits.selectedProject!.screens.firstWhere((screen) => screen.name == nextScreenValue!.name);
+
+        onButtonClick = """
     ${tab}${tab}${tab}startActivity(
-    ${tab}${tab}${tab}${tab}Intent(this, ${makeActivityName(nextScreenValue.nextScreenBundle.layouts.first)}::class.java)
+    ${tab}${tab}${tab}${tab}Intent(this, ${makeActivityName(nextScreenBundle.layouts.first)}::class.java)
     ${tab}${tab}${tab})""";
     } // else {
 // todo:

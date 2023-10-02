@@ -19,7 +19,9 @@ import 'package:structure_compositor/box/widget_utils.dart';
 // import 'package:file_picker/file_picker.dart';
 import '../box/app_utils.dart';
 import '../box/data_classes.dart';
-import 'editor/era_editor_widget.dart';
+import 'editor/main_screen.dart';
+
+const PROPERTIES_PATH = "project.properties";
 
 class StartScreen extends StatelessWidget {
   const StartScreen({Key? key}) : super(key: key);
@@ -27,6 +29,7 @@ class StartScreen extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+
     return GetMaterialApp(
       title: 'Structure Compositor',
       theme: ThemeData(
@@ -154,7 +157,7 @@ class _StartPageState extends State<StartPage> {
         onTap: () async {
           appFruits.selectedProject = project;
 
-          Get.to(const EraEditorScreen());
+          Get.to(MainScreen());
         });
   }
 
@@ -174,11 +177,7 @@ class _StartPageState extends State<StartPage> {
   }
 
   void _createTempProjectProperties(Project project) async {
-    var fileName =
-        "${project.name.replaceAll(" ", "_").toLowerCase()}.properties";
-    debugPrint("fileName: $fileName");
-    project.propertiesPath = "${project.path}/$fileName";
-    await File("${project.path}/$fileName").writeAsString("");
+    await File("${project.path}/$PROPERTIES_PATH").writeAsString("");
   }
 
   var PROJECTS_LIST_FILE_NAME = "projects_list.txt";

@@ -8,7 +8,7 @@ import 'generator/data_code_generator.dart';
 import 'generator/settings_code_generator.dart';
 
 var areasEditorFruit = AreasEditorFruit();
-var platformFilesEditorFruit = PlatformFilesEditorFruit();
+var eraEditorFruit = EraEditorFruit();
 var actionsEditorFruit = ActionsEditorFruit();
 
 class AreaBundle {
@@ -22,20 +22,24 @@ class AreasEditorFruit {
   AreaBundle? lastArea;
 
   var onNewArea = (AreaBundle area) {};
-  var onSelectedLayoutChanged = (LayoutBundle? layout) {};
+  var onSelectedLayoutChanged = () {};
 
   void resetData() {
     lastArea = null;
   }
 }
 
-class PlatformFilesEditorFruit {
+class EraEditorFruit {
   LayoutCodeGenerator layoutGenerator = LayoutCodeGenerator();
   LogicCodeGenerator logicGenerator = LogicCodeGenerator();
   SettingsCodeGenerator settingsGenerator = SettingsCodeGenerator();
   DataCodeGenerator dataGenerator = DataCodeGenerator();
 
   PlatformEditModeType selectedPlatformEditMode = PlatformEditModeType.none;
+
+  var onDownloadAllClick = () {};
+
+  var onStructureChanged = (LayoutBundle layout) {};
 }
 
 class ActionsEditorFruit {

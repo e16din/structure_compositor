@@ -26,7 +26,6 @@ class Project {
 
   List<CodeFile> settingsFiles = [];
 
-  String propertiesPath = "";
   Map<String, String> propertiesMap = {};
 
   Project({required this.name, required this.path});
@@ -245,9 +244,9 @@ class ActionValue {
 }
 
 class NextScreenValue extends ActionValue {
-  ScreenBundle nextScreenBundle;
+  String name = "";
 
-  NextScreenValue(this.nextScreenBundle) : super(ActionType.moveToNextScreen);
+  NextScreenValue(this.name) : super(ActionType.moveToNextScreen);
 }
 
 class DataSourceValue extends ActionValue {

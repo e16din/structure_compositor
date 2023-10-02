@@ -7,6 +7,9 @@ import 'data_classes.dart';
 
 AppDataFruits appFruits = AppDataFruits();
 
+ScreenBundle? getScreenBundle() =>
+    appFruits.selectedProject?.selectedScreen;
+
 LayoutBundle? getLayoutBundle() =>
     appFruits.selectedProject?.selectedScreen?.selectedLayout;
 

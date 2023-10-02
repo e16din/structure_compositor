@@ -15,16 +15,16 @@ import 'package:flutter_highlight/themes/vs.dart';
 import 'package:flutter_highlight/themes/xcode.dart';
 import 'package:highlight/languages/markdown.dart';
 
-class PlatformFilesEditorWidget extends StatefulWidget {
-  const PlatformFilesEditorWidget({super.key});
+class FilesListWidget extends StatefulWidget {
+  const FilesListWidget({super.key});
 
   @override
   State<StatefulWidget> createState() {
-    return PlatformFilesEditorState();
+    return FilesListState();
   }
 }
 
-class PlatformFilesEditorState extends State<PlatformFilesEditorWidget> {
+class FilesListState extends State<FilesListWidget> {
   @override
   void initState() {
     super.initState();
@@ -35,7 +35,7 @@ class PlatformFilesEditorState extends State<PlatformFilesEditorWidget> {
     var project = appFruits.selectedProject!;
     var layout = getLayoutBundle();
 
-    switch (platformFilesEditorFruit.selectedPlatformEditMode) {
+    switch (eraEditorFruit.selectedPlatformEditMode) {
       case PlatformEditModeType.none:
         // do nothing
         break;

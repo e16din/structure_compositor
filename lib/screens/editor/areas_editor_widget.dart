@@ -53,7 +53,7 @@ class AreasEditorState extends State<AreasEditorWidget> {
                       EasyDebounce.debounce(
                           'Layout Name', const Duration(milliseconds: 500), () {
                         layout?.name = text;
-                        areasEditorFruit.onSelectedLayoutChanged.call(layout);
+                        areasEditorFruit.onSelectedLayoutChanged.call();
                       });
                     },
                   ),
@@ -72,9 +72,7 @@ class AreasEditorState extends State<AreasEditorWidget> {
                                   }
                                   screen.isLauncher = checked!;
 
-                                  areasEditorFruit.onSelectedLayoutChanged.call(
-                                      appFruits
-                                          .selectedProject?.selectedScreen?.selectedLayout);
+                                  areasEditorFruit.onSelectedLayoutChanged.call();
                                 }),
                     ],
                   ),
@@ -91,12 +89,11 @@ class AreasEditorState extends State<AreasEditorWidget> {
                         var newSelectedScreen = appFruits.selectedProject!.screens.firstOrNull;
                         appFruits.selectedProject?.selectedScreen = newSelectedScreen;
 
-                        if (screen!.isLauncher && newSelectedScreen != null) {
+                        if (screen.isLauncher && newSelectedScreen != null) {
                           newSelectedScreen.isLauncher = true;
                         }
 
-                        areasEditorFruit.onSelectedLayoutChanged
-                            .call(appFruits.selectedProject?.selectedScreen?.selectedLayout);
+                        areasEditorFruit.onSelectedLayoutChanged.call();
                       },
                       icon: const Icon(Icons.delete_forever)),
                 )
@@ -193,12 +190,12 @@ class AreasEditorState extends State<AreasEditorWidget> {
                       if(appFruits.selectedProject?.selectedScreen?.layouts.contains(layout)==true) {
                         appFruits.selectedProject?.selectedScreen
                             ?.selectedLayout = layout;
-                      }else {
+                      } else {
                         var newSelectedScreen = appFruits.selectedProject!.screens.firstWhere((screen) => screen.layouts.contains(layout));
                         appFruits.selectedProject?.selectedScreen = newSelectedScreen;
                         newSelectedScreen.selectedLayout = layout;
                       }
-                      areasEditorFruit.onSelectedLayoutChanged.call(layout);
+                      areasEditorFruit.onSelectedLayoutChanged.call();
                     },
                   ),
                 ],
