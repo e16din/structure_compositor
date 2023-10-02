@@ -31,7 +31,7 @@ class SettingsCodeGenerator {
       f.codeController.dispose();
     }
     project.settingsFiles.clear();
-
+    debugPrint("settingsFiles.clear()");
     /////////
 
     var projectPropertiesFile = File("${project.path}/$PROPERTIES_PATH");
@@ -48,30 +48,34 @@ class SettingsCodeGenerator {
       }
     }
 
-    var propertyPath = "${project.path}/$PROPERTIES_PATH";
-    var lastPropertyFile = project.settingsFiles
-        .firstWhereOrNull((codeFile) => codeFile.fileName == propertyPath);
-
-    if (lastPropertyFile != null) {
-      lastPropertyFile.codeController.text = properties;
-
-    } else {
-      CodeFile propertiesFile = CodeFile(
-          propertyPath,
-          CodeController(language: lang.properties, text: properties),
-          null,
-          "",
-          "",
-          "stub");
-      project.settingsFiles.add(propertiesFile);
-      propertiesFile.codeController.addListener(() {
-        EasyDebounce.debounce('properties', const Duration(milliseconds: 500),
-            ()  {
-          File("${appFruits.selectedProject!.path}/$PROPERTIES_PATH")
-              .writeAsString(propertiesFile.codeController.text);
-        });
+    // var lastPropertyFile = project.settingsFiles
+    //     .firstWhereOrNull((codeFile) {
+    //   debugPrint("fileName: ${codeFile.fileName}");
+    //       return codeFile.fileName == PROPERTIES_PATH;
+    //     });
+    // debugPrint("propertyPath: ${propertyPath}");
+    //
+    // if (lastPropertyFile != null) {
+    //   lastPropertyFile.codeController.text = properties;
+    //
+    // } else {
+    // var propertyPath = "${project.path}/$PROPERTIES_PATH";
+    CodeFile propertiesFile = CodeFile(
+        PROPERTIES_PATH,
+        CodeController(language: lang.properties, text: properties),
+        null,
+        "",
+        "",
+        "stub");
+    project.settingsFiles.add(propertiesFile);
+    propertiesFile.codeController.addListener(() {
+      EasyDebounce.debounce('properties', const Duration(milliseconds: 500),
+          () {
+        File("${appFruits.selectedProject!.path}/$PROPERTIES_PATH")
+            .writeAsString(propertiesFile.codeController.text);
       });
-    }
+    });
+    // }
 
     // var package = _generateManifest();
     // CodeFile manifestFile = CodeFile("AndroidManifest.xml",
@@ -101,7 +105,8 @@ class SettingsCodeGenerator {
 
   String _generateApp(String package) {
     var dataSources = "";
-    for (var screen in appFruits.selectedProject!.screens.mapMany((screen) => screen.layouts)) {
+    for (var screen in appFruits.selectedProject!.screens
+        .mapMany((screen) => screen.layouts)) {
       var allActions = screen.elements
           .mapMany((e) => e.receptors)
           .mapMany((r) => r.actions)

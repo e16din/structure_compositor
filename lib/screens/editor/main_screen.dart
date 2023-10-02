@@ -34,6 +34,7 @@ class _MainPageState extends State<MainScreen> {
     areasEditorFruit.onSelectedLayoutChanged = () {
       setState(() {
         _onStructureChanged(getLayoutBundle()!);
+
       });
     };
 
@@ -80,7 +81,14 @@ class _MainPageState extends State<MainScreen> {
       for (var file in layout.logicFiles) {
         file.codeController.dispose();
       }
+      for (var file in layout.dataFiles) {
+        file.codeController.dispose();
+      }
     }
+
+    getSelectedProject()?.settingsFiles.forEach((file) {
+      file.codeController.dispose();
+    });
 
     super.dispose();
   }
