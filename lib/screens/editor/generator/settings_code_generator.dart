@@ -34,7 +34,7 @@ class SettingsCodeGenerator {
     debugPrint("settingsFiles.clear()");
     /////////
 
-    var projectPropertiesFile = File("${project.path}/$PROPERTIES_PATH");
+    var projectPropertiesFile = File("${project.path}/$PROPERTIES_FILE_NAME");
     var properties = await projectPropertiesFile.readAsString();
     var lines = properties.split("\n");
 
@@ -61,7 +61,7 @@ class SettingsCodeGenerator {
     // } else {
     // var propertyPath = "${project.path}/$PROPERTIES_PATH";
     CodeFile propertiesFile = CodeFile(
-        PROPERTIES_PATH,
+        PROPERTIES_FILE_NAME,
         CodeController(language: lang.properties, text: properties),
         null,
         "",
@@ -71,7 +71,7 @@ class SettingsCodeGenerator {
     propertiesFile.codeController.addListener(() {
       EasyDebounce.debounce('properties', const Duration(milliseconds: 500),
           () {
-        File("${appFruits.selectedProject!.path}/$PROPERTIES_PATH")
+        File("${appFruits.selectedProject!.path}/$PROPERTIES_FILE_NAME")
             .writeAsString(propertiesFile.codeController.text);
       });
     });

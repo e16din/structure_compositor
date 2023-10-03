@@ -12,11 +12,15 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:xml/xml.dart';
 import '../box/app_utils.dart';
 import '../box/data_classes.dart';
 import 'editor/main_screen.dart';
 
-const PROPERTIES_PATH = "project.properties";
+const PROPERTIES_FILE_NAME = "project.properties";
+const PROJECT_FILE_NAME = "project.xml";
+const PROJECTS_LIST_FILE_NAME = "projects_list.txt";
+const RULES_LIST_FILE_NAME = "rules_list.properties";
 
 class StartScreen extends StatelessWidget {
   const StartScreen({Key? key}) : super(key: key);
@@ -55,7 +59,6 @@ class _StartPageState extends State<StartPage> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint("appFruits.projects.length: ${appFruits.projects.length}");
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
@@ -135,19 +138,23 @@ Flutter=${selectedDirectory.path}/flutter.rules
       String lastList = "";
       if (await projectsListFile.exists()) {
         lastList = await projectsListFile.readAsString();
-        lastList += "\n$selectedDirectory";
-      } else {
-        lastList += "$selectedDirectory";
       }
+      lastList += "$selectedDirectory\n";
+
       await projectsListFile.writeAsString(lastList);
 
       var newProject = Project(name: projectName, path: selectedDirectory);
 
-      _createTempProjectProperties(newProject);
+      await File("${newProject.path}/$PROPERTIES_FILE_NAME").writeAsString("");
+
+      var projectFile = File("${newProject.path}/$PROJECT_FILE_NAME");
+      await projectFile.writeAsString("""
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="${newProject.name}" path="${newProject.path}" />
+""");
+
       setState(() {
         appFruits.projects.add(newProject);
-        // var className = appDataTree.runtimeType.toString();
-        // box.put(className, appDataTree);
       });
     }
   }
@@ -170,7 +177,7 @@ Flutter=${selectedDirectory.path}/flutter.rules
                       EasyDebounce.debounce(
                           "project_name", const Duration(milliseconds: 550),
                           () {
-                        _updateProjectsList(project);
+                            _updateProjectFile(project);
                       });
                     },
                   ),
@@ -188,11 +195,23 @@ Flutter=${selectedDirectory.path}/flutter.rules
         });
   }
 
-  void _onProjectClick(Project project) {
+  void _updateProjectFile(Project project) async {
+    var projectFile = File("${project.path}/$PROJECT_FILE_NAME");
+    var projectXml = await projectFile.readAsString();
+    final xmlDocument = XmlDocument.parse(projectXml);
+    xmlDocument.rootElement.setAttribute("name", project.name);
+
+    await projectFile.writeAsString(xmlDocument.toXmlString());
+  }
+
+  void _onProjectClick(Project project) async {
     appFruits.selectedProject = project;
 
-    // /todo: load project
-    if (hasRule) {
+    var projectFile = File("${project.path}/$PROJECT_FILE_NAME");
+    var projectXml = await projectFile.readAsString();
+    final xmlDocument = XmlDocument.parse(projectXml);
+    var rule = xmlDocument.rootElement.getAttribute("rule");
+    if (rule != null) {
       appFruits.selectedProject!.selectedRule = rule;
     } else {
       appFruits.selectedProject!.selectedRule = appFruits.rulesMap.keys.first;
@@ -201,37 +220,16 @@ Flutter=${selectedDirectory.path}/flutter.rules
     Get.to(MainScreen());
   }
 
-  void _updateProjectsList(Project project) async {
-    final appDirectory = await getApplicationDocumentsDirectory();
-    var projectsListFile =
-        File("${appDirectory.path}/$PROJECTS_LIST_FILE_NAME");
-
-    String lastList = "";
-    lastList = await projectsListFile.readAsString();
-    var lines = lastList.split("\n");
-    var oldValue = lines.firstWhere((text) => text.contains(project.path));
-    var newValue = "${project.name}=${project.path}";
-    lastList = lastList.replaceFirst(oldValue, newValue);
-    await projectsListFile.writeAsString(lastList);
-  }
-
-  void _createTempProjectProperties(Project project) async {
-    await File("${project.path}/$PROPERTIES_PATH").writeAsString("");
-  }
-
-  var PROJECTS_LIST_FILE_NAME =
-      "projects_list.txt"; //todo: save only paths, get names from project.xml
-  var RULES_LIST_FILE_NAME = "rules_list.properties";
-
   void _loadProjects() async {
     final directory = await getApplicationDocumentsDirectory();
     var file = File("${directory.path}/$PROJECTS_LIST_FILE_NAME");
-    var projectsList = await file.readAsString();
-    projectsList.split("\n").forEach((nameAndPath) {
-      var pair = nameAndPath.split("=");
-      var project = Project(name: pair[0], path: pair[1]);
+    var projectsList = (await file.readAsString()).trim().split("\n");
+    for (var path in projectsList) {
+      final projectXml = await File("$path/$PROJECT_FILE_NAME").readAsString();
+      final name = XmlDocument.parse(projectXml).rootElement.getAttribute("name");
+      final project = Project(name: name!, path: path);
       appFruits.projects.add(project);
-    });
+    }
 
     setState(() {});
   }
