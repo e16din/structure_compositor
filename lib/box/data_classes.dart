@@ -1,8 +1,14 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:code_text_field/code_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:structure_compositor/screens/editor/fruits.dart';
+
+const PROPERTIES_FILE_NAME = "project.properties";
+const PROJECT_FILE_NAME = "project.xml";
+const PROJECTS_LIST_FILE_NAME = "projects_list.txt";
+const RULES_LIST_FILE_NAME = "rules_list.properties";
 
 class AppDataFruits {
   List<Project> projects = [];
@@ -28,9 +34,26 @@ class Project {
 
   List<CodeFile> settingsFiles = [];
 
+  String properties = "";
   Map<String, String> propertiesMap = {};
 
   Project({required this.name, required this.path});
+
+  void initProperties() async {
+    var projectPropertiesFile = File("${path}/$PROPERTIES_FILE_NAME");
+    properties = await projectPropertiesFile.readAsString();
+    var lines = properties.split("\n");
+
+    propertiesMap.clear();
+    for (var prop in lines) {
+      var pair = prop.split("=");
+      if (pair.length > 1) {
+        propertiesMap[pair[0]] = pair[1];
+
+        debugPrint("prop: ${prop} | value: ${pair[1]}");
+      }
+    }
+  }
 }
 
 class LayoutBundle {
@@ -110,7 +133,7 @@ enum ActionsEditModeType {
   prompts, // NOTE: actions editor
 }
 
-enum PlatformEditModeType {
+enum FilesEditModeType {
   none,
   settings, // NOTE: Manifest, ..
   logic, // NOTE: Activity, Adapter, ..
@@ -121,7 +144,9 @@ enum PlatformEditModeType {
 class CodeFile {
   String fileName;
 
-  CodeController codeController;
+  String text;
+  CodeLanguage codeLanguage = CodeLanguage.unknown;
+
   ElementNode? elementNode;
 
   String localPath; // example: /src/main/java/com/example/screens
@@ -129,8 +154,19 @@ class CodeFile {
 
   String chewbaccaFilePath;
 
-  CodeFile(this.fileName, this.codeController, this.elementNode,
+  CodeFile(this.fileName, this.text, this.codeLanguage, this.elementNode,
       this.localPath, this.package, this.chewbaccaFilePath);
+
+  String getPathWithName() {
+    return "$localPath/$fileName";
+  }
+}
+
+enum CodeLanguage {
+  xml,
+  kotlin,
+  properties,
+  unknown
 }
 
 class ElementNode {

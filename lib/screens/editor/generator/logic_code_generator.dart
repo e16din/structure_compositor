@@ -23,17 +23,19 @@ String makeLayoutName(LayoutBundle layout) {
 }
 
 class LogicCodeGenerator {
-  void updateFiles(ElementNode rootNode) {
+  void updateFiles(ElementNode rootNode, LayoutBundle layout) {
     var package = "com.example";
-    LayoutBundle layout = getLayoutBundle()!;
-    for (var f in layout.logicFiles) {
-      f.codeController.dispose();
-    }
     layout.logicFiles.clear();
 
     var rootFileName = "${makeActivityName(layout)}.kt";
-    CodeFile rootFile = CodeFile(rootFileName,
-        CodeController(language: kotlin, text: ""), rootNode, "/src/main/java/${package.replaceAll(".", "/")}/screens", package,"stub");
+    CodeFile rootFile = CodeFile(
+        rootFileName,
+        "",
+        CodeLanguage.kotlin,
+        rootNode,
+        "/src/main/java/${package.replaceAll(".", "/")}/screens",
+        package,
+        "stub");
     layout.logicFiles.add(rootFile);
     // var itemNodes = rootNode.getNodesWhere((node) =>
     // node.containerNode?.element.selectedViewType == ViewType.list);
@@ -47,8 +49,9 @@ class LogicCodeGenerator {
     //   screen.layoutFiles.add(itemFile);
     // }
 
-    String screenLogicText = _makeActivityClass(rootFile.elementNode!, layout, rootFile);
-    rootFile.codeController.text = screenLogicText;
+    String screenLogicText =
+        _makeActivityClass(rootFile.elementNode!, layout, rootFile);
+    rootFile.text = screenLogicText;
 
     var nodesWithListElement = rootNode.getNodesWhere((node) =>
         node.element.selectedViewType == ViewType.list ||
@@ -57,17 +60,21 @@ class LogicCodeGenerator {
       var adapterClassName = "${node.element.id.capitalizeFirst}Adapter";
       CodeFile adapterFile = CodeFile(
           "$adapterClassName.kt",
-          CodeController(language: kotlin, text: ""),
-          node, "/src/main/java/${package.replaceAll(".", "/")}/screens", package, "stub");
+          "",
+          CodeLanguage.kotlin,
+          node,
+          "/src/main/java/${package.replaceAll(".", "/")}/screens",
+          package,
+          "stub");
       layout.logicFiles.add(adapterFile);
-      String adapterLogicText =
-          _makeAdapterClass(adapterFile.elementNode!, layout, adapterClassName, adapterFile);
-      adapterFile.codeController.text = adapterLogicText;
+      String adapterLogicText = _makeAdapterClass(
+          adapterFile.elementNode!, layout, adapterClassName, adapterFile);
+      adapterFile.text = adapterLogicText;
     }
   }
 
-  String _makeAdapterClass(
-      ElementNode node, LayoutBundle layout, String adapterClassName, CodeFile file) {
+  String _makeAdapterClass(ElementNode node, LayoutBundle layout,
+      String adapterClassName, CodeFile file) {
     var package = file.package;
     var e = node.element;
     var itemLayoutName = "item_${e.id.toLowerCase()}";
@@ -132,7 +139,8 @@ ${tab}}
     return result;
   }
 
-  String _makeActivityClass(ElementNode rootNode, LayoutBundle layout, CodeFile file) {
+  String _makeActivityClass(
+      ElementNode rootNode, LayoutBundle layout, CodeFile file) {
     var package = file.package;
     var addToEndCodeList = "";
 
@@ -182,8 +190,8 @@ ${tab}${tab}setContentView(R.layout.${makeLayoutName(layout)})""";
           case ReceptorType.doOnClick:
             // if (e.selectedViewType != ViewType.list &&
             //     e.selectedViewType != ViewType.grid) {
-              var actionCode = _getActionCode(receptor);
-              result += """\n${tab}${tab}$valName.setOnClickListener { 
+            var actionCode = _getActionCode(receptor);
+            result += """\n${tab}${tab}$valName.setOnClickListener { 
 $actionCode
 ${tab}${tab}}""";
             // }
@@ -234,8 +242,9 @@ ${tab}${tab}val adapter = ${e.id.capitalizeFirst}Adapter(
 ${tab}${tab}${tab}items = AppDataState.${e.id}DataSource.get(), 
 ${tab}${tab}${tab}onItemClickListener = { position, viewType ->""";
 
-          var receptor = e.receptors.firstWhereOrNull((r) => r.type == ReceptorType.doOnClick);
-          if(receptor!=null) {
+          var receptor = e.receptors
+              .firstWhereOrNull((r) => r.type == ReceptorType.doOnClick);
+          if (receptor != null) {
             var actionCode = _getActionCode(receptor);
             result += "\n$actionCode\n";
           }
@@ -291,10 +300,11 @@ ${tab}${tab}}
         .firstWhereOrNull(
             (action) => action.type == ActionType.moveToNextScreen)
         ?.nextScreenValue;
-      if (nextScreenValue != null) {
-        var nextScreenBundle = appFruits.selectedProject!.screens.firstWhere((screen) => screen.name == nextScreenValue!.name);
+    if (nextScreenValue != null) {
+      var nextScreenBundle = appFruits.selectedProject!.screens
+          .firstWhere((screen) => screen.name == nextScreenValue!.name);
 
-        onButtonClick = """
+      onButtonClick = """
     ${tab}${tab}${tab}startActivity(
     ${tab}${tab}${tab}${tab}Intent(this, ${makeActivityName(nextScreenBundle.layouts.first)}::class.java)
     ${tab}${tab}${tab})""";

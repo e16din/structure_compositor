@@ -16,7 +16,7 @@ import 'logic_code_generator.dart';
 
 class DataCodeGenerator {
 
-  void updateFiles(ElementNode rootNode) {
+  void updateFiles(ElementNode rootNode, LayoutBundle layout) {
 //     ScreenBundle screen = getLayoutBundle()! as ScreenBundle;
 //     for(var f in screen.settingsFiles){
 //       f.codeController.dispose();

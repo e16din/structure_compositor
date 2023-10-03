@@ -134,18 +134,6 @@ class EraEditorPage extends StatefulWidget {
 
 class _EraEditorPageState extends State<EraEditorPage> {
 
-  final _actionsEditorTypeSelectorState = [
-    true, // Action 0
-    false, // Prompts 1
-  ];
-
-  final _platformEditorTypeSelectorState = [
-    false, // Settings 0
-    false, // Logic 1
-    false, // Layout 2
-    false, // Data 3
-  ];
-
   Map<String, LayoutBundle> nextScreensMap = {};
 
   String _nextElementId() => 'element${getLayoutBundle()!.elements.length + 1}';
@@ -154,20 +142,18 @@ class _EraEditorPageState extends State<EraEditorPage> {
   void initState() {
     super.initState();
 
-    areasEditorFruit.onNewArea = (area) {
+    areasEditorFruit.onNewArea.add((area) {
       var elementId = _nextElementId();
       var newElement = CodeElement(elementId)
         ..area = area
         ..id = elementId;
 
       _selectActions(newElement);
-    };
+    });
   }
 
   @override
   void dispose() {
-    EasyDebounce.cancelAll();
-
     super.dispose();
   }
 
@@ -212,8 +198,8 @@ class _EraEditorPageState extends State<EraEditorPage> {
         break;
     }
 
-    if (eraEditorFruit.selectedPlatformEditMode !=
-        PlatformEditModeType.none) {
+    if (eraEditorFruit.selectedFilesEditMode !=
+        FilesEditModeType.none) {
       content = FilesListWidget();
     }
 
@@ -236,7 +222,7 @@ class _EraEditorPageState extends State<EraEditorPage> {
                   minHeight: 28.0,
                   minWidth: 80.0,
                 ),
-                isSelected: _actionsEditorTypeSelectorState,
+                isSelected: eraEditorFruit.actionsEditorTypeSelectorState,
                 onPressed: (int index) {
                   _onActionsEditorTabChanged(index);
                 },
@@ -262,6 +248,7 @@ class _EraEditorPageState extends State<EraEditorPage> {
                             (selected) {
                           setState(() {
                             appFruits.selectedProject!.selectedRule = selected;
+                            appFruits.selectedProject!.initProperties();
                           });
                         });
                       },
@@ -278,14 +265,14 @@ class _EraEditorPageState extends State<EraEditorPage> {
                       minHeight: 28.0,
                       minWidth: 80.0,
                     ),
-                    isSelected: _platformEditorTypeSelectorState,
+                    isSelected: eraEditorFruit.filesEditorTypeSelectorState,
                     onPressed: (int index) {
-                      _onPlatformEditorTabChanged(index);
+                      _onFilesTabChanged(index);
                     },
-                    children: _buildPlatformEditorTabs()),
+                    children: _buildFilesEditorTabs()),
                 IconButton(
                     onPressed: () {
-                      eraEditorFruit.onDownloadAllClick.call();
+                      eraEditorFruit.callOnDownloadAllClick();
                     },
                     color: Colors.green,
                     icon: const Icon(Icons.get_app))
@@ -298,38 +285,40 @@ class _EraEditorPageState extends State<EraEditorPage> {
     );
   }
 
-  void _onPlatformEditorTabChanged(int index) {
+  void _onFilesTabChanged(int index) {
     actionsEditorFruit.selectedActionsEditMode = ActionsEditModeType.none;
-    for (int i = 0; i < _actionsEditorTypeSelectorState.length; i++) {
-      _actionsEditorTypeSelectorState[i] = false;
+    for (int i = 0; i < eraEditorFruit.actionsEditorTypeSelectorState.length; i++) {
+      eraEditorFruit.actionsEditorTypeSelectorState[i] = false;
     }
 
     setState(() {
-      for (int i = 0; i < _platformEditorTypeSelectorState.length; i++) {
-        _platformEditorTypeSelectorState[i] = i == index;
+      for (int i = 0; i < eraEditorFruit.filesEditorTypeSelectorState.length; i++) {
+        eraEditorFruit.filesEditorTypeSelectorState[i] = i == index;
       }
-      eraEditorFruit.selectedPlatformEditMode = PlatformEditModeType
+      eraEditorFruit.selectedFilesEditMode = FilesEditModeType
           .values[
-      _platformEditorTypeSelectorState.indexWhere((element) => element) +
+      eraEditorFruit.filesEditorTypeSelectorState.indexWhere((element) => element) +
           1];
       debugPrint(
-          "selected: ${eraEditorFruit.selectedPlatformEditMode}");
+          "selected: ${eraEditorFruit.selectedFilesEditMode}");
+
+      eraEditorFruit.callOnFilesTabChanged();
     });
   }
 
   void _onActionsEditorTabChanged(int index) {
-    eraEditorFruit.selectedPlatformEditMode =
-        PlatformEditModeType.none;
-    for (int i = 0; i < _platformEditorTypeSelectorState.length; i++) {
-      _platformEditorTypeSelectorState[i] = false;
+    eraEditorFruit.selectedFilesEditMode =
+        FilesEditModeType.none;
+    for (int i = 0; i < eraEditorFruit.filesEditorTypeSelectorState.length; i++) {
+      eraEditorFruit.filesEditorTypeSelectorState[i] = false;
     }
 
     setState(() {
-      for (int i = 0; i < _actionsEditorTypeSelectorState.length; i++) {
-        _actionsEditorTypeSelectorState[i] = i == index;
+      for (int i = 0; i < eraEditorFruit.actionsEditorTypeSelectorState.length; i++) {
+        eraEditorFruit.actionsEditorTypeSelectorState[i] = i == index;
       }
       actionsEditorFruit.selectedActionsEditMode = ActionsEditModeType.values[
-      _actionsEditorTypeSelectorState.indexWhere((element) => element) + 1];
+      eraEditorFruit.actionsEditorTypeSelectorState.indexWhere((element) => element) + 1];
       debugPrint("selected: ${actionsEditorFruit.selectedActionsEditMode}");
     });
   }
@@ -418,7 +407,7 @@ class _EraEditorPageState extends State<EraEditorPage> {
                             () {
                           setState(() {
                             receptor.description = text;
-                            eraEditorFruit.onStructureChanged.call(getLayoutBundle()!);
+                            eraEditorFruit.callOnStructureChanged(getLayoutBundle());
                           });
                         });
                   },
@@ -504,7 +493,7 @@ class _EraEditorPageState extends State<EraEditorPage> {
       layout?.resetActiveElement();
       layout?.resetActiveAction();
 
-      eraEditorFruit.onStructureChanged.call(getLayoutBundle()!);
+      eraEditorFruit.callOnStructureChanged(layout);
     });
   }
 
@@ -519,7 +508,7 @@ class _EraEditorPageState extends State<EraEditorPage> {
                   () {
                 setState(() {
                   element.id = text;
-                  eraEditorFruit.onStructureChanged.call(getLayoutBundle()!);
+                  eraEditorFruit.callOnStructureChanged(getLayoutBundle());
                 });
               });
         },
@@ -559,7 +548,7 @@ class _EraEditorPageState extends State<EraEditorPage> {
                   debugPrint("selected: ${action.id}");
                   nextScreensMap[action.id] = selected;
                   action.nextScreenValue = NextScreenValue(selected);
-                  eraEditorFruit.onStructureChanged.call(getLayoutBundle()!);
+                  eraEditorFruit.callOnStructureChanged(getLayoutBundle());
                 });
               });
             },
@@ -625,7 +614,7 @@ class _EraEditorPageState extends State<EraEditorPage> {
       }
 
       // eraEditorFruit.onActionTypeSelected.call(element, newReceptor, newAction);
-      eraEditorFruit.onStructureChanged.call(getLayoutBundle()!);
+      eraEditorFruit.callOnStructureChanged(layout);
 
       areasEditorFruit.resetData();
     });
@@ -678,7 +667,7 @@ class _EraEditorPageState extends State<EraEditorPage> {
     ];
   }
 
-  List<Widget> _buildPlatformEditorTabs() {
+  List<Widget> _buildFilesEditorTabs() {
     return [
       Text("Settings"),
       Text("Logic"),

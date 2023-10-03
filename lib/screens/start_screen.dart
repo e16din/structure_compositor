@@ -17,10 +17,7 @@ import '../box/app_utils.dart';
 import '../box/data_classes.dart';
 import 'editor/main_screen.dart';
 
-const PROPERTIES_FILE_NAME = "project.properties";
-const PROJECT_FILE_NAME = "project.xml";
-const PROJECTS_LIST_FILE_NAME = "projects_list.txt";
-const RULES_LIST_FILE_NAME = "rules_list.properties";
+
 
 class StartScreen extends StatelessWidget {
   const StartScreen({Key? key}) : super(key: key);

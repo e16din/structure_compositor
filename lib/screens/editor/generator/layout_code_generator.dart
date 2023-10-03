@@ -8,40 +8,33 @@ import '../../../box/data_classes.dart';
 import 'package:highlight/languages/xml.dart';
 
 class LayoutCodeGenerator {
-
-  void updateFiles(ElementNode rootNode) {
+  void updateFiles(ElementNode rootNode, LayoutBundle layout) {
     var package = "com.example";
 
-    var layout = getLayoutBundle()!;
-    for(var f in layout.layoutFiles){
-      f.codeController.dispose();
-    }
     layout.layoutFiles.clear();
 
     String fileName = "${makeLayoutName(layout)}.xml";
-    CodeFile rootFile = CodeFile(fileName,
-        CodeController(language: xml, text: ""), rootNode, "/src/main/res/layout", package, "stub");
+    CodeFile rootFile = CodeFile(fileName, "", CodeLanguage.xml, rootNode,
+        "/src/main/res/layout", package, "stub");
     layout.layoutFiles.add(rootFile);
 
     var itemNodes = rootNode.getNodesWhere((node) =>
-    node.containerNode?.element.selectedViewType == ViewType.list ||
-    node.containerNode?.element.selectedViewType == ViewType.grid
-    );
+        node.containerNode?.element.selectedViewType == ViewType.list ||
+        node.containerNode?.element.selectedViewType == ViewType.grid);
     for (var node in itemNodes) {
       debugPrint("itemNodes node: ${node.containerNode!.element.id}");
       node.containerNode?.contentNodes.remove(node);
-      CodeFile itemFile = CodeFile(
-          "item_${node.element.id}.xml",
-          CodeController(language: xml, text: ""),
-          node, "/src/main/res/layout", package, "stub");
+      CodeFile itemFile = CodeFile("item_${node.element.id}.xml", "",
+          CodeLanguage.xml, node, "/src/main/res/layout", package, "stub");
       layout.layoutFiles.add(itemFile);
     }
 
     for (var file in layout.layoutFiles) {
       String xmlLayoutText =
-      _generateXmlViewsByElements(file.elementNode!, true);
-      file.codeController.text = xmlLayoutText;
+          _generateXmlViewsByElements(file.elementNode!, true);
+      file.text = xmlLayoutText;
     }
+
   }
 
   String _generateXmlViewsByElements(ElementNode node, bool isRoot) {
@@ -156,5 +149,4 @@ class LayoutCodeGenerator {
 
   String _getViewId(CodeElement e) =>
       "@+id/${e.id}${e.selectedViewType.viewName.removeAllWhitespace}";
-
 }

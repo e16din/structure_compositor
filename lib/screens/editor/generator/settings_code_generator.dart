@@ -22,59 +22,23 @@ class SettingsCodeGenerator {
   // /todo: request field to enter package
   // /todo: add gradle files for build and for app
 
-  void updateFiles(ElementNode rootNode) async {
+  List<CodeFile> updateFiles() {
     var package = "com.example";
 
     // ScreenBundle screen = getScreenBundle()!;
     Project project = appFruits.selectedProject!;
-    for (var f in project.settingsFiles) {
-      f.codeController.dispose();
-    }
     project.settingsFiles.clear();
-    debugPrint("settingsFiles.clear()");
     /////////
-
-    var projectPropertiesFile = File("${project.path}/$PROPERTIES_FILE_NAME");
-    var properties = await projectPropertiesFile.readAsString();
-    var lines = properties.split("\n");
-
-    project.propertiesMap.clear();
-    for (var prop in lines) {
-      var pair = prop.split("=");
-      if (pair.length > 1) {
-        project.propertiesMap[pair[0]] = pair[1];
-
-        debugPrint("prop: ${prop} | value: ${pair[1]}");
-      }
-    }
-
-    // var lastPropertyFile = project.settingsFiles
-    //     .firstWhereOrNull((codeFile) {
-    //   debugPrint("fileName: ${codeFile.fileName}");
-    //       return codeFile.fileName == PROPERTIES_PATH;
-    //     });
-    // debugPrint("propertyPath: ${propertyPath}");
-    //
-    // if (lastPropertyFile != null) {
-    //   lastPropertyFile.codeController.text = properties;
-    //
-    // } else {
-    // var propertyPath = "${project.path}/$PROPERTIES_PATH";
     CodeFile propertiesFile = CodeFile(
         PROPERTIES_FILE_NAME,
-        CodeController(language: lang.properties, text: properties),
+        project.properties,
+        CodeLanguage.properties,
         null,
         "",
         "",
         "stub");
     project.settingsFiles.add(propertiesFile);
-    propertiesFile.codeController.addListener(() {
-      EasyDebounce.debounce('properties', const Duration(milliseconds: 500),
-          () {
-        File("${appFruits.selectedProject!.path}/$PROPERTIES_FILE_NAME")
-            .writeAsString(propertiesFile.codeController.text);
-      });
-    });
+
     // }
 
     // var package = _generateManifest();
@@ -85,7 +49,8 @@ class SettingsCodeGenerator {
     var manifest = _generateManifest();
     CodeFile manifestFile = CodeFile(
         "AndroidManifest.xml",
-        CodeController(language: xml, text: manifest),
+        manifest,
+        CodeLanguage.xml,
         null,
         "/src/main",
         package,
@@ -95,12 +60,15 @@ class SettingsCodeGenerator {
     var app = _generateApp(package);
     CodeFile appFile = CodeFile(
         "App.kt",
-        CodeController(language: kotlin, text: app),
+        app,
+        CodeLanguage.kotlin,
         null,
         "/src/main/java/${package.replaceAll(".", "/")}",
         package,
         "stub");
     project.settingsFiles.add(appFile);
+
+    return project.settingsFiles;
   }
 
   String _generateApp(String package) {

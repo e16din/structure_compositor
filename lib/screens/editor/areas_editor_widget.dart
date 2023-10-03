@@ -53,7 +53,7 @@ class AreasEditorState extends State<AreasEditorWidget> {
                       EasyDebounce.debounce(
                           'Layout Name', const Duration(milliseconds: 500), () {
                         layout?.name = text;
-                        areasEditorFruit.onSelectedLayoutChanged.call();
+                        areasEditorFruit.callOnSelectedLayoutChanged();
                       });
                     },
                   ),
@@ -72,7 +72,7 @@ class AreasEditorState extends State<AreasEditorWidget> {
                                   }
                                   screen.isLauncher = checked!;
 
-                                  areasEditorFruit.onSelectedLayoutChanged.call();
+                                  areasEditorFruit.callOnSelectedLayoutChanged();
                                 }),
                     ],
                   ),
@@ -93,7 +93,7 @@ class AreasEditorState extends State<AreasEditorWidget> {
                           newSelectedScreen.isLauncher = true;
                         }
 
-                        areasEditorFruit.onSelectedLayoutChanged.call();
+                        areasEditorFruit.callOnSelectedLayoutChanged();
                       },
                       icon: const Icon(Icons.delete_forever)),
                 )
@@ -151,7 +151,7 @@ class AreasEditorState extends State<AreasEditorWidget> {
         areasEditorFruit.resetData();
       });
     } else {
-      areasEditorFruit.onNewArea.call(areasEditorFruit.lastArea!);
+      areasEditorFruit.callOnNewArea(areasEditorFruit.lastArea!);
     }
   }
 
@@ -187,6 +187,7 @@ class AreasEditorState extends State<AreasEditorWidget> {
                     child:
                         Image.memory(layout.layoutBytes!, fit: BoxFit.contain),
                     onTap: () {
+                      debugPrint("onTap: layout");
                       if(appFruits.selectedProject?.selectedScreen?.layouts.contains(layout)==true) {
                         appFruits.selectedProject?.selectedScreen
                             ?.selectedLayout = layout;
@@ -195,7 +196,8 @@ class AreasEditorState extends State<AreasEditorWidget> {
                         appFruits.selectedProject?.selectedScreen = newSelectedScreen;
                         newSelectedScreen.selectedLayout = layout;
                       }
-                      areasEditorFruit.onSelectedLayoutChanged.call();
+
+                      areasEditorFruit.callOnSelectedLayoutChanged();
                     },
                   ),
                 ],

@@ -18,11 +18,30 @@ class AreaBundle {
   AreaBundle(this.rect, this.color);
 }
 
+void disposeFruitListeners() {
+  areasEditorFruit.onNewArea.clear();
+  areasEditorFruit.onSelectedLayoutChanged.clear();
+  eraEditorFruit.onDownloadAllClick.clear();
+  eraEditorFruit.onStructureChanged.clear();
+  eraEditorFruit.onFilesTabChanged.clear();
+}
+
 class AreasEditorFruit {
   AreaBundle? lastArea;
 
-  var onNewArea = (AreaBundle area) {};
-  var onSelectedLayoutChanged = () {};
+  List<Function(AreaBundle)> onNewArea = [(AreaBundle area) {}];
+  void callOnNewArea(AreaBundle area) {
+    for (var f in onNewArea) {
+      f.call(area);
+    }
+  }
+
+  List<Function> onSelectedLayoutChanged = [];
+  void callOnSelectedLayoutChanged() {
+    for (var f in onSelectedLayoutChanged) {
+      f.call();
+    }
+  }
 
   void resetData() {
     lastArea = null;
@@ -30,16 +49,48 @@ class AreasEditorFruit {
 }
 
 class EraEditorFruit {
+  final actionsEditorTypeSelectorState = [
+    true, // Action 0
+    false, // Prompts 1
+  ];
+
+  final filesEditorTypeSelectorState = [
+    false, // Settings 0
+    false, // Logic 1
+    false, // Layout 2
+    false, // Data 3
+  ];
+
   LayoutCodeGenerator layoutGenerator = LayoutCodeGenerator();
   LogicCodeGenerator logicGenerator = LogicCodeGenerator();
   SettingsCodeGenerator settingsGenerator = SettingsCodeGenerator();
   DataCodeGenerator dataGenerator = DataCodeGenerator();
 
-  PlatformEditModeType selectedPlatformEditMode = PlatformEditModeType.none;
+  FilesEditModeType selectedFilesEditMode = FilesEditModeType.none;
 
-  var onDownloadAllClick = () {};
+  List<Function> onDownloadAllClick = [];
 
-  var onStructureChanged = (LayoutBundle layout) {};
+  void callOnDownloadAllClick() {
+    for (var f in onDownloadAllClick) {
+      f.call();
+    }
+  }
+
+  List<Function(LayoutBundle?)> onStructureChanged = [];
+
+  void callOnStructureChanged(LayoutBundle? layout) {
+    for (var f in onStructureChanged) {
+      f.call(layout);
+    }
+  }
+
+  List<Function> onFilesTabChanged = [];
+
+  void callOnFilesTabChanged() {
+    for (var f in onFilesTabChanged) {
+      f.call();
+    }
+  }
 }
 
 class ActionsEditorFruit {

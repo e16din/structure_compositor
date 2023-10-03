@@ -15,6 +15,7 @@ import 'package:structure_compositor/screens/editor/areas_editor_widget.dart';
 import 'package:structure_compositor/screens/editor/era_editor_widget.dart';
 import '../../box/app_utils.dart';
 import '../../box/data_classes.dart';
+import '../start_screen.dart';
 import 'fruits.dart';
 
 class MainScreen extends StatefulWidget {
@@ -31,18 +32,25 @@ class _MainPageState extends State<MainScreen> {
   void initState() {
     super.initState();
 
-    areasEditorFruit.onSelectedLayoutChanged = () {
+    appFruits.selectedProject!.initProperties();
+
+    areasEditorFruit.onSelectedLayoutChanged.add(() {
       setState(() {
-        _onStructureChanged(getLayoutBundle()!);
-
+        // _updateFiles();
       });
-    };
+    });
 
-    eraEditorFruit.onDownloadAllClick = () {
+    eraEditorFruit.onFilesTabChanged.add(() {
+      setState(() {
+        // _updateFiles();
+      });
+    });
+
+    eraEditorFruit.onDownloadAllClick.add(() {
       _downloadAllProjectFiles();
-    };
+    });
 
-    eraEditorFruit.onStructureChanged = (layout) {
+    eraEditorFruit.onStructureChanged.add((layout) {
       setState(() {
         _onStructureChanged(layout);
       });
@@ -51,17 +59,20 @@ class _MainPageState extends State<MainScreen> {
       // var projectXml = _makeProjectXml();
       // File("${appFruits.selectedProject!.path}/project.xml")
       //     .writeAsString(projectXml);
-    };
+    });
   }
 
-  void _onStructureChanged(LayoutBundle layout) {
-    var rootNode = ElementsTreeBuilder.buildTree(layout.elements);
-    eraEditorFruit.settingsGenerator.updateFiles(rootNode);
+  void _onStructureChanged(LayoutBundle? layout) async {
+    var rootNode =
+        ElementsTreeBuilder.buildTree(layout != null ? layout.elements : []);
 
-    eraEditorFruit.layoutGenerator.updateFiles(rootNode);
+    if (layout != null) {
+      eraEditorFruit.layoutGenerator.updateFiles(rootNode, layout);
+      eraEditorFruit.logicGenerator.updateFiles(rootNode, layout);
+      eraEditorFruit.dataGenerator.updateFiles(rootNode, layout);
+    }
 
-    eraEditorFruit.logicGenerator.updateFiles(rootNode);
-    eraEditorFruit.dataGenerator.updateFiles(rootNode);
+    eraEditorFruit.settingsGenerator.updateFiles();
 
     //todo:
     // var projectXml = _makeProjectXml();
@@ -71,24 +82,9 @@ class _MainPageState extends State<MainScreen> {
 
   @override
   void dispose() {
+    disposeFruitListeners();
     EasyDebounce.cancelAll();
-
-    var layout = getLayoutBundle();
-    if (layout != null) {
-      for (var file in layout.layoutFiles) {
-        file.codeController.dispose();
-      }
-      for (var file in layout.logicFiles) {
-        file.codeController.dispose();
-      }
-      for (var file in layout.dataFiles) {
-        file.codeController.dispose();
-      }
-    }
-
-    getSelectedProject()?.settingsFiles.forEach((file) {
-      file.codeController.dispose();
-    });
+    areasEditorFruit.resetData();
 
     super.dispose();
   }
@@ -155,7 +151,7 @@ class _MainPageState extends State<MainScreen> {
           ..area = AreaBundle(Rect.largest, rootColor);
 
         layout.elements.add(rootElement);
-        eraEditorFruit.onStructureChanged.call(layout);
+        eraEditorFruit.callOnStructureChanged(layout);
       }
 
       setState(() {});
@@ -243,8 +239,7 @@ $layouts
           directory.deleteSync(recursive: true);
         } catch (Exception) {}
         await directory.create(recursive: true);
-        await File("$path/${file.fileName}")
-            .writeAsString(file.codeController.text);
+        await File("$path/${file.fileName}").writeAsString(file.text);
       });
 
       appFruits.selectedProject?.screens
@@ -257,8 +252,7 @@ $layouts
             directory.deleteSync(recursive: true);
           } catch (Exception) {}
           await directory.create(recursive: true);
-          await File("$path/${file.fileName}")
-              .writeAsString(file.codeController.text);
+          await File("$path/${file.fileName}").writeAsString(file.text);
         });
 
         element.logicFiles.forEach((file) async {
@@ -268,8 +262,7 @@ $layouts
             directory.deleteSync(recursive: true);
           } catch (Exception) {}
           await directory.create(recursive: true);
-          await File("$path/${file.fileName}")
-              .writeAsString(file.codeController.text);
+          await File("$path/${file.fileName}").writeAsString(file.text);
         });
 
         element.dataFiles.forEach((file) async {
@@ -279,8 +272,7 @@ $layouts
             directory.deleteSync(recursive: true);
           } catch (Exception) {}
           await directory.create(recursive: true);
-          await File("$path/${file.fileName}")
-              .writeAsString(file.codeController.text);
+          await File("$path/${file.fileName}").writeAsString(file.text);
         });
       });
 
