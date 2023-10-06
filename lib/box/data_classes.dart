@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:code_text_field/code_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:structure_compositor/screens/editor/fruits.dart';
+import 'package:xml/src/xml/nodes/document.dart';
 
 const PROPERTIES_FILE_NAME = "project.properties";
 const PROJECT_FILE_NAME = "project.xml";
@@ -37,6 +38,10 @@ class Project {
   String properties = "";
   Map<String, String> propertiesMap = {};
 
+  late XmlDocument xmlDocument;
+
+  bool isLoaded = false;
+
   Project({required this.name, required this.path});
 
   void initProperties() async {
@@ -58,7 +63,7 @@ class Project {
 
 class LayoutBundle {
   String name;
-  String? path;
+  String path;
   List<CodeElement> elements = [];
   
   Uint8List? layoutBytes;
@@ -69,7 +74,7 @@ class LayoutBundle {
   CodeReceptor? activeReceptor;
   CodeElement? activeElement;
 
-  LayoutBundle(this.name);
+  LayoutBundle(this.name, this.path);
 
   void resetActiveElement() {
     activeElement = elements.firstOrNull;
@@ -108,6 +113,7 @@ enum ActionType {
   // Navigation
   moveToNextScreen,
   moveToBackScreen,
+  moveToMenu,
   // Comment
   todo,
   note,

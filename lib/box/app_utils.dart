@@ -31,7 +31,11 @@ Future<Uint8List> readFileByte(String filePath) async {
 }
 
 String toHex(Color color) {
-  return '${color.value.toRadixString(16)}';
+  return color.value.toRadixString(16);
 }
 
-
+Color fromHex(String hex) {
+  hex = hex.toUpperCase().replaceAll("#", "");
+  String formattedHex = (hex.length == 6 ? "FF" : "") + hex;
+  return Color(int.parse(formattedHex, radix: 16));
+}

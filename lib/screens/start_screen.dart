@@ -17,8 +17,6 @@ import '../box/app_utils.dart';
 import '../box/data_classes.dart';
 import 'editor/main_screen.dart';
 
-
-
 class StartScreen extends StatelessWidget {
   const StartScreen({Key? key}) : super(key: key);
 
@@ -174,7 +172,7 @@ Flutter=${selectedDirectory.path}/flutter.rules
                       EasyDebounce.debounce(
                           "project_name", const Duration(milliseconds: 550),
                           () {
-                            _updateProjectFile(project);
+                        _updateProjectFile(project);
                       });
                     },
                   ),
@@ -207,6 +205,7 @@ Flutter=${selectedDirectory.path}/flutter.rules
     var projectFile = File("${project.path}/$PROJECT_FILE_NAME");
     var projectXml = await projectFile.readAsString();
     final xmlDocument = XmlDocument.parse(projectXml);
+    project.xmlDocument = xmlDocument;
     var rule = xmlDocument.rootElement.getAttribute("rule");
     if (rule != null) {
       appFruits.selectedProject!.selectedRule = rule;
@@ -222,10 +221,16 @@ Flutter=${selectedDirectory.path}/flutter.rules
     var file = File("${directory.path}/$PROJECTS_LIST_FILE_NAME");
     var projectsList = (await file.readAsString()).trim().split("\n");
     for (var path in projectsList) {
-      final projectXml = await File("$path/$PROJECT_FILE_NAME").readAsString();
-      final name = XmlDocument.parse(projectXml).rootElement.getAttribute("name");
-      final project = Project(name: name!, path: path);
-      appFruits.projects.add(project);
+      try {
+        final projectXml =
+            await File("$path/$PROJECT_FILE_NAME").readAsString();
+        final name =
+            XmlDocument.parse(projectXml).rootElement.getAttribute("name");
+        final project = Project(name: name!, path: path);
+        appFruits.projects.add(project);
+      } catch (e) {
+        e.printError();
+      }
     }
 
     setState(() {});

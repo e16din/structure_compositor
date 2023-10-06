@@ -13,6 +13,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:structure_compositor/screens/editor/areas_editor_widget.dart';
 import 'package:structure_compositor/screens/editor/era_editor_widget.dart';
+import 'package:xml/xml.dart';
 import '../../box/app_utils.dart';
 import '../../box/data_classes.dart';
 import '../start_screen.dart';
@@ -32,7 +33,8 @@ class _MainPageState extends State<MainScreen> {
   void initState() {
     super.initState();
 
-    appFruits.selectedProject!.initProperties();
+    var project = appFruits.selectedProject;
+    project!.initProperties();
 
     areasEditorFruit.onSelectedLayoutChanged.add(() {
       setState(() {
@@ -54,17 +56,70 @@ class _MainPageState extends State<MainScreen> {
       setState(() {
         _onStructureChanged(layout);
       });
-
-      //todo:
-      // var projectXml = _makeProjectXml();
-      // File("${appFruits.selectedProject!.path}/project.xml")
-      //     .writeAsString(projectXml);
     });
+
+    if (!project.isLoaded) {
+      _loadProject(project);
+      project.isLoaded = true;
+    }
+  }
+
+  void _loadProject(Project project) async {
+    List<PlatformFile> layoutFiles = [];
+    var layoutElements = project.xmlDocument.findAllElements("layout");
+    layoutElements.forEach((layoutElement) {
+      var path = layoutElement.getAttribute("path")!;
+      var file = PlatformFile(
+          name: layoutElement.getAttribute("name")!,
+          path: path,
+          size: 0);
+
+      layoutFiles.add(file);
+    });
+
+    await _addLayoutsFromFiles(layoutFiles);
+
+    final allLayouts = project.screens.mapMany((screen) => screen.layouts);
+    layoutElements.forEach((layoutElement) {
+      final elementElements = layoutElement.findAllElements("element");
+      elementElements.forEach((elementElement) {
+        final name = layoutElement.getAttribute("name")!;
+        final layout = allLayouts.firstWhere((layout) => layout.name == name);
+        // id="rootContainer" viewTypes="[ViewType.otherView]" selectedViewType
+        final id = elementElement.getAttribute("id")!;
+        final element = CodeElement(id);
+        element.viewTypes = ;
+        element.selectedViewType = ;
+        final areaElement = elementElement.getElement("area")!;
+        final rectAttr = areaElement.getAttribute("rect")!;
+        final rect = Rect.fromLTRB(left, top, right, bottom);
+        final colorAttr = areaElement.getAttribute("color")!;
+        final color = fromHex(colorAttr);
+        element.area = AreaBundle(rect, color);
+
+        layout.elements.add(element);
+      });
+    });
+    allLayouts.forEach((layout) {
+
+
+    });
+
+    setState(() {});
+  }
+
+  void _updateProjectXml() async {
+    debugPrint("!!!_updateProjectXml()");
+    var projectXml = _makeProjectXml();
+    File("${appFruits.selectedProject!.path}/$PROJECT_FILE_NAME")
+        .writeAsString(projectXml);
   }
 
   void _onStructureChanged(LayoutBundle? layout) async {
+    // EasyDebounce.debounce(
+    //     "_updateProjectXml", const Duration(milliseconds: 500), () {
     var rootNode =
-        ElementsTreeBuilder.buildTree(layout != null ? layout.elements : []);
+    ElementsTreeBuilder.buildTree(layout != null ? layout.elements : []);
 
     if (layout != null) {
       eraEditorFruit.layoutGenerator.updateFiles(rootNode, layout);
@@ -74,10 +129,8 @@ class _MainPageState extends State<MainScreen> {
 
     eraEditorFruit.settingsGenerator.updateFiles();
 
-    //todo:
-    // var projectXml = _makeProjectXml();
-    // File("${appFruits.selectedProject!.path}/project.xml")
-    //     .writeAsString(projectXml);
+    _updateProjectXml();
+    // });
   }
 
   @override
@@ -117,44 +170,52 @@ class _MainPageState extends State<MainScreen> {
         .pickFiles(type: FileType.image, allowMultiple: true);
 
     if (result != null) {
-      List<ScreenBundle> resultScreens = [];
-      for (var f in result.files) {
-        var layoutBytes = f.bytes;
-
-        int index = appFruits.selectedProject!.screens.length;
-        ScreenBundle screenBundle = ScreenBundle()..isLauncher = index == 0;
-        var layoutBundle = LayoutBundle("New Screen ${index + 1}");
-        screenBundle.layouts.add(layoutBundle);
-
-        debugPrint("Add screen: ${layoutBundle.name}");
-
-        if (layoutBytes != null) {
-          layoutBundle.layoutBytes = layoutBytes;
-        } else if (f.path != null) {
-          layoutBundle.layoutBytes = await readFileByte(f.path!);
-        }
-
-        resultScreens.add(screenBundle);
-        appFruits.selectedProject!.screens.add(screenBundle);
-      }
-
-      appFruits.selectedProject!.selectedScreen = resultScreens.first;
-      appFruits.selectedProject!.selectedScreen!.selectedLayout =
-          appFruits.selectedProject!.selectedScreen!.layouts.first;
-
-      for (var layout in resultScreens.mapMany((screen) => screen.layouts)) {
-        var rootColor = Colors.white;
-        var rootId = "rootContainer";
-        var rootElement = CodeElement(rootId)
-          ..viewTypes = [ViewType.otherView]
-          ..selectedViewType = ViewType.otherView
-          ..area = AreaBundle(Rect.largest, rootColor);
-
-        layout.elements.add(rootElement);
-        eraEditorFruit.callOnStructureChanged(layout);
-      }
+      await _addLayoutsFromFiles(result.files);
 
       setState(() {});
+    }
+  }
+
+  Future<void> _addLayoutsFromFiles(List<PlatformFile> files) async {
+    List<ScreenBundle> resultScreens = [];
+    debugPrint("files size: ${files.length}");
+    for (var f in files) {
+      var layoutBytes = f.bytes;
+      var path = f.path!;
+
+      int index = appFruits.selectedProject!.screens.length;
+      ScreenBundle screenBundle = ScreenBundle()
+        ..isLauncher = index == 0;
+
+      var layoutBundle = LayoutBundle("New Screen ${index + 1}", path);
+      screenBundle.layouts.add(layoutBundle);
+
+      debugPrint("Add screen: ${layoutBundle.name}");
+
+      if (layoutBytes != null) {
+        layoutBundle.layoutBytes = layoutBytes;
+      } else if (f.path != null) {
+        layoutBundle.layoutBytes = await readFileByte(path);
+      }
+
+      resultScreens.add(screenBundle);
+      appFruits.selectedProject!.screens.add(screenBundle);
+    }
+
+    appFruits.selectedProject!.selectedScreen = resultScreens.first;
+    appFruits.selectedProject!.selectedScreen!.selectedLayout =
+        appFruits.selectedProject!.selectedScreen!.layouts.first;
+
+    for (var layout in resultScreens.mapMany((screen) => screen.layouts)) {
+      var rootColor = Colors.white;
+      var rootId = "rootContainer";
+      var rootElement = CodeElement(rootId)
+        ..viewTypes = [ViewType.otherView]
+        ..selectedViewType = ViewType.otherView
+        ..area = AreaBundle(Rect.largest, rootColor);
+
+      layout.elements.add(rootElement);
+      eraEditorFruit.callOnStructureChanged(layout);
     }
   }
 
@@ -169,7 +230,8 @@ class _MainPageState extends State<MainScreen> {
         String elements = "";
         layout.elements.forEach((element) {
           String area =
-              """              <area rect="${element.area.rect}" color="${toHex(element.area.color)}"" />\n\n""";
+          """              <area rect="${element.area.rect}" color="${toHex(
+              element.area.color)}" />\n\n""";
 
           String receptors = "";
           element.receptors.forEach((receptor) {
@@ -178,16 +240,19 @@ class _MainPageState extends State<MainScreen> {
               String nextScreenValue = "";
               if (action.nextScreenValue != null) {
                 nextScreenValue =
-                    """                 <next_scree_value name="${action.nextScreenValue?.name}" />""";
+                """                 <next_scree_value name="${action
+                    .nextScreenValue?.name}" />""";
               }
               String dataSourceValue = "";
               if (action.dataSourceValue != null) {
                 dataSourceValue =
-                    """                 <data_source_value id="${action.dataSourceValue?.dataSourceId}" />""";
+                """                 <data_source_value id="${action
+                    .dataSourceValue?.dataSourceId}" />""";
               }
 
               actions += """
-              <action id="${action.id}" name="${action.name}" type="${action.type}" description="${action.description}">
+              <action id="${action.id}" name="${action.name}" type="${action
+                  .type}" description="${action.description}">
 $nextScreenValue
 
 $dataSourceValue
@@ -195,12 +260,15 @@ $dataSourceValue
             });
 
             receptors += """
-              <receptor id="${receptor.id}" name="${receptor.name}" description="${receptor.description}" type="${receptor.type}">
+              <receptor id="${receptor.id}" name="${receptor
+                .name}" description="${receptor.description}" type="${receptor
+                .type}">
 $actions
               </receptor>\n\n""";
           });
           elements += """
-              <element id="${element.id}" viewTypes="${element.viewTypes.toString()}" selectedViewType="${element.selectedViewType}">
+              <element id="${element.id}" viewTypes="${element.viewTypes
+              .toString()}" selectedViewType="${element.selectedViewType}">
 $area
 
 $receptors
@@ -220,9 +288,12 @@ $layouts
     });
 
     result += """<?xml version="1.0" encoding="UTF-8"?>
-<project name="${project.name} rule="${appFruits.selectedProject!.selectedRule}">
+<project name="${project.name}" rule="${project.selectedRule}" path="${project
+        .path}">
     $screens
 </project>""";
+
+    XmlDocument.parse(result);
 
     return result;
   }
@@ -287,8 +358,9 @@ class ElementsTreeBuilder {
   const ElementsTreeBuilder();
 
   static ElementNode buildTree(List<CodeElement> elements) {
-    elements.sort((a, b) => (b.area.rect.width * b.area.rect.height)
-        .compareTo(a.area.rect.width * a.area.rect.height));
+    elements.sort((a, b) =>
+        (b.area.rect.width * b.area.rect.height)
+            .compareTo(a.area.rect.width * a.area.rect.height));
     var root = ElementNode(elements.first);
     for (var i = 1; i < elements.length; i++) {
       _addContent(root, ElementNode(elements[i]));

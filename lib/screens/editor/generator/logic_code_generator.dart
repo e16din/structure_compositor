@@ -309,6 +309,15 @@ ${tab}${tab}}
     ${tab}${tab}${tab}${tab}Intent(this, ${makeActivityName(nextScreenBundle.layouts.first)}::class.java)
     ${tab}${tab}${tab})""";
     } // else {
+
+    var menuValue = receptor.actions
+        .firstWhereOrNull(
+            (action) => action.type == ActionType.moveToMenu)
+        ?.nextScreenValue;
+    if (menuValue != null) {
+      onButtonClick = """
+    ${tab}${tab}${tab}// TODO: show menu dialog""";
+    } // else {
 // todo:
     // var backToPrevBlock = receptor.firstWhereOrNull((listener) =>
     //     listener.actions.any((action) =>

@@ -53,6 +53,10 @@ class CodeActionFabric {
         return CodeAction(
             id: nextActionId(), type: ActionType.showList, name: "showList")
           ..dataSourceValue = DataSourceValue(CodeDataSource());
+      case ActionType.moveToMenu:
+        return CodeAction(
+            id: nextActionId(), type: ActionType.moveToMenu, name: "showMenu")
+          ..dataSourceValue = DataSourceValue(CodeDataSource());
       case ActionType.showGrid:
         return CodeAction(
             id: nextActionId(), type: ActionType.showGrid, name: "showGrid")
@@ -73,6 +77,11 @@ class CodeActionFabric {
             id: nextActionId(),
             type: ActionType.moveToBackScreen,
             name: "moveToBackScreen");
+      case ActionType.moveToMenu:
+        return CodeAction(
+            id: nextActionId(),
+            type: ActionType.moveToMenu,
+            name: "moveToMenu");
       case ActionType.todo:
         return CodeAction(
             id: nextActionId(), type: ActionType.todo, name: "TODO()");
@@ -97,6 +106,7 @@ class CodeActionFabric {
 
   static List<ActionType> getActionTypes() {
     List<ActionType> result = [
+      ActionType.todo,
       ActionType.showImage,
       ActionType.showList,
       ActionType.showGrid,
@@ -104,9 +114,8 @@ class CodeActionFabric {
       ActionType.updateDataSource,
       ActionType.moveToNextScreen,
       ActionType.moveToBackScreen,
+      ActionType.moveToMenu,
       ActionType.note,
-      ActionType.nothing,
-      ActionType.todo,
     ];
     return result;
   }
