@@ -47,7 +47,7 @@
 
 ## Инвестиции и партнерство
 
-- [Презентация с экономикой]([https://disk.yandex.ru/d/CcsNZaVmh9G-tg](https://drive.google.com/file/d/1rLn3ddn5Av0HpPhLtFx-avmuQ0Np9I4d/view?usp=sharing))
+- [Презентация с экономикой](https://drive.google.com/file/d/1rLn3ddn5Av0HpPhLtFx-avmuQ0Np9I4d/view?usp=sharing)
 
 ## Спасибо за поддержку
 
